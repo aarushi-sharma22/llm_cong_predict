@@ -174,3 +174,39 @@ gate and reports the `[approx]` learners' divergence rather than assuming it awa
   live dependencies.
 - Original repo has **no LICENSE and no citation file** → legally all-rights-reserved.
   Resolve attribution/licensing with the author before public release (see README).
+
+---
+
+## E. IO layer (`src/llm_cong_predict/io/`) — deviations & decisions
+
+### E1. `read_gene_data` raises instead of returning NULL ✅ (documented)
+The R body was an empty `#PLACEHOLDER` returning `NULL` silently. The Python port
+raises `NotImplementedError` with a clear message, so any use of gene data fails
+loudly rather than propagating a silent `None`. (Note: `_targets.R` also mis-wires
+this target — `tar_target(gene_data, read_gene_data)` passes the function itself,
+uncalled — which is handled at the pipeline layer, not here.)
+
+### E2. Stata value labels carried via `df.attrs` ✅
+`haven`/`sjlabelled` attach `value -> label` maps to columns; pandas has no direct
+equivalent, so the readers carry `pyreadstat`'s `variable_value_labels` on
+`df.attrs['value_labels']`, and `io/labels.py` provides `as_factor` /
+`to_character` / `set_na_range` to apply them where the cleaning layer needs them.
+Caveat: `df.attrs` is not always propagated across pandas operations, so labels are
+re-attached after transforms and should be read early in the cleaning chain.
+
+### E3. `combine_ncds` column-collision handling 🔦 (assumption, verify with data)
+`plyr::join_all(type="full")`'s behaviour when two frames share a non-key column is
+ambiguous. The port does a full outer join on `ncdsid` and, on any non-key overlap,
+*coalesces* (prefer left, fill from right) into one column and records it in
+`df.attrs['combine_ncds_collisions']`, rather than letting pandas suffix `_x`/`_y`.
+The NCDS waves use distinct variable codes so this is not expected to trigger; the
+coalescing rule must be checked against R once real data is available.
+
+### E4. `read_camsis` does not lower-case column names ✅ (faithful)
+Matches the R (`haven::read_dta` only). The real CAMSIS files already use lower-case
+names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
+
+### E5. `read_datalist` reads whatever the file contains ✅ (faithful)
+Thin `read_excel` wrapper. The schema mismatch (A1) is deliberately NOT fixed in the
+reader — it is a cleaning-layer concern where the provisional schema is
+reconstructed and flagged.
