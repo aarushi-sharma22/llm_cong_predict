@@ -134,6 +134,36 @@ the model-layer phase and cross-checked against the rpy2 R-SuperLearner oracle o
 real data (VALIDATION_CHECKLIST V4). Being confidently wrong here would be worse
 than deferring.
 
+**Status update — model layer built (`src/llm_cong_predict/models/`).** The native
+nested-CV Super Learner is implemented and its *structure* is tested
+(`tests/test_models.py`): folds partition correctly, the NNLS meta-learner behaves
+as known, there is no train/test leakage, library-column names match the original
+(`SL.mean_All`, `SL.ranger_screen.glmnet`, ..., and `SL.lm_All` for the lm library),
+and end-to-end output carries a real signal into the verified metric layer.
+
+What is pinned vs flagged in `base_learners.py`:
+  * `SL.mean`, `SL.lm` -> `[match]` (DummyRegressor mean / OLS). High confidence.
+  * `SL.ranger` -> `[approx]`. `n_estimators=500` (ranger num.trees). `mtry` and
+    `min.node.size` left at sklearn defaults and marked `TO_VERIFY`.
+  * `SL.nnet` -> `[approx]`. `size=2` set; but nnet vs `MLPRegressor` differ in
+    implementation, so agreement is not expected. `maxit` marked `TO_VERIFY`.
+  * `SL.ksvm` -> `[approx]`. `C=1`; RBF `gamma` uses sklearn `'scale'` vs kernlab's
+    `sigest` median heuristic (`TO_VERIFY`).
+  * `SL.xgboost.hist` -> `[approx]`. `ntrees=1000`, `max_depth=4`, `shrinkage=0.1`,
+    `min_child_weight~=10`, `tree_method="hist"`. The hist override is certain; the
+    numeric defaults are my current reading and marked `TO_VERIFY`.
+
+The `screen.glmnet` LASSO screener is approximated with `LassoCV`
+(`screeners.py`); `glmnet` and sklearn differ in path/standardisation, so the
+selected variable set can differ. This is part of what V4 measures.
+
+**Bottom line:** the native backend is structurally correct and testable, but its
+*numerical* agreement with R/the paper is a hypothesis until V4. The rpy2 oracle
+(`r_superlearner.py`, UNTESTED in this sandbox — no R) plus
+`scripts/validate_oracle.py` exist to measure the gap on identical folds and report
+it as numbers. `validate_oracle.py` treats the `[match]` learners as a tolerance
+gate and reports the `[approx]` learners' divergence rather than assuming it away.
+
 ---
 
 ## D. Unused / carried-over files (informational)

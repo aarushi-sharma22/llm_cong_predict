@@ -7,7 +7,8 @@ Python replication of the analysis pipeline from:
 > https://www.nature.com/articles/s44271-025-00274-x
 
 A faithful Python port of the original R code
-(https://github.com/tobiaswolfram/llm_paper).  Bugs in the original are fixed and **every deviation is logged**
+(https://github.com/tobiaswolfram/llm_paper), restructured as a maintainable
+software project. Bugs in the original are fixed and **every deviation is logged**
 in [`docs/PORTING_NOTES.md`](docs/PORTING_NOTES.md).
 
 ## Reproducibility status (read this first)
