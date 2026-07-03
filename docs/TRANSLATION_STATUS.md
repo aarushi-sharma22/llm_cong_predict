@@ -44,8 +44,12 @@ Legend: ✅ DONE · 🟡 STRUCTURAL (needs oracle/data to validate) · ⬜ NOT S
 
 ## `R/_targets.R` (504 lines, 177 targets)
 The DAG: data-load, essay, clean, and ~110 model/metric targets (mostly
-combinatorial). Python target: `pipeline/` (declarative model spec + runner per
-`docs/ORCHESTRATION.md`). Status: ⬜ NOT STARTED.
+combinatorial). Python target: `pipeline/` (graph + declarative model spec) + `run.py`.
+Status: 🟡 STRUCTURE BUILT & TESTED (193 targets, wiring validates: acyclic, deps
+resolve, spec expands). Does NOT execute — needs real data + clean_ncds. Blocked-node
+analysis: 159/193 blocked by 4 stub roots (clean_ncds, tokenize/readability boundary,
+gene_data); 34 runnable once data + clean_ncds exist. Target names regularised vs the
+original's ad-hoc names (dependency graph faithful).
 
 ## `R/create_data.R` (601 lines)
 Post-pipeline figure/appendix CSV generation (`fig_2..5_data.csv`,
@@ -57,7 +61,8 @@ Standalone OpenAI embedding generation (ada-002 + text-embedding-3-large). Pytho
 target: `scripts/get_gpt_embeddings.py`. Status: 🟡 PORTED (runnable with key+essays, RDS→parquet deviation).
 
 ## `R/run.R` (7 lines)
-`targets::tar_make()`. Python target: a `run.py` / CLI entry. Status: ⬜ NOT STARTED.
+`targets::tar_make()`. Python target: `run.py`. Status: 🟡 PORTED as validate+plan
+(cannot execute without real data + clean_ncds; prints the blocked-node report).
 
 ---
 
