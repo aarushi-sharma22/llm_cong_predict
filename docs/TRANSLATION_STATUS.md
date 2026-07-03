@@ -28,13 +28,13 @@ Legend: ✅ DONE · 🟡 STRUCTURAL (needs oracle/data to validate) · ⬜ NOT S
 | `read_occupation_aspiration_mapping` (43) | read mapping xlsx | `io/readers.py::read_occupation_aspiration_mapping` | 🟡 (runs on real shipped file) |
 | `read_ncds` (47) | read one NCDS .dta wave | `io/readers.py::read_ncds` | 🟡 |
 | `combine_ncds` (57) | full-join all waves | `io/readers.py::combine_ncds` | 🟡 |
-| `clean_ncds` (64) | **the big recode** (180 lines) | `cleaning/clean_ncds.py` | ⬜ |
-| `create_aspirations` (244) | CAMSIS aspiration score | `cleaning/aspirations.py::create_aspirations` | ⬜ |
-| `create_factors` (272) | psych::fa factor scores | `cleaning/factors.py::create_factors` | ⬜ |
-| `get_complete_ncds` (309) | join cleaned+factors+aspir+essay | `cleaning/assemble.py::get_complete_ncds` | ⬜ |
+| `clean_ncds` (64) | **the big recode** (180 lines) | `cleaning/clean_ncds.py` | ⬜ DEFERRED: needs real variables.xlsx (option b) |
+| `create_aspirations` (244) | CAMSIS aspiration score | `cleaning/aspirations.py::create_aspirations` | 🟡 |
+| `create_factors` (272) | psych::fa factor scores | `cleaning/factors.py::create_factors` | 🟡 Pearson factor done; 3 polychoric factors DEFERRED (V3) |
+| `get_complete_ncds` (309) | join cleaned+factors+aspir+essay | `cleaning/assemble.py::get_complete_ncds` | 🟡 |
 | `create_essay_variables` (317) | assemble+filter essay features | `features/essay_variables.py` | ⬜ |
-| `find_essay_teacher_genetics_overlap` (330) | overlap subset | `cleaning/overlap.py` | ⬜ |
-| `find_full_overlap` (348) | complete-case subset | `cleaning/overlap.py::find_full_overlap` | ⬜ |
+| `find_essay_teacher_genetics_overlap` (330) | overlap subset | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | 🟡 |
+| `find_full_overlap` (348) | complete-case subset | `cleaning/assemble.py::find_full_overlap` | 🟡 |
 | `tokenize_essays` (356) | TreeTagger tokenization | `features/readability.py` (external-tool boundary) | ⬜ |
 | `calculate_readability_metrics` (369) | koRpus readability | `features/readability.py` | ⬜ |
 | `get_spelling_error_metrics` (390) | LanguageTool spelling CSV | `features/spelling.py` (CSV-ingestion contract) | ⬜ |
@@ -62,8 +62,9 @@ target: `scripts/get_gpt_embeddings.py`. Status: ⬜ NOT STARTED.
 ---
 
 ## Honest completion estimate
-By translated source lines: ~35% of `functions.R` (metrics + models + all IO
-readers), 0% of the other three code files. The empty package folders (`io/`, `cleaning/`, `features/`, `pipeline/`) are
+By translated source lines: ~55% of `functions.R` (metrics + models + IO + the
+cleaning block except clean_ncds). clean_ncds (~180 lines) is deferred pending the
+real variables.xlsx (option b). 0% of the other three code files. The empty package folders (`io/`, `cleaning/`, `features/`, `pipeline/`) are
 placeholders for the ~75% not yet written.
 
 ## What "validation deferred" means per item

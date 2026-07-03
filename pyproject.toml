@@ -16,7 +16,6 @@ dependencies = [
     "pyyaml>=6.0",         # versioned mapping/schema artifacts
     "scikit-learn>=1.4",   # native base learners + CV
     "xgboost>=2.0",        # SL.xgboost equivalent
-    "factor_analyzer>=0.5",# psych::fa equivalent (create_factors)
     "scipy>=1.11",         # nnls meta-learner, stats
 ]
 

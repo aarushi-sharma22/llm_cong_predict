@@ -210,3 +210,48 @@ names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
 Thin `read_excel` wrapper. The schema mismatch (A1) is deliberately NOT fixed in the
 reader — it is a cleaning-layer concern where the provisional schema is
 reconstructed and flagged.
+
+---
+
+## F. Cleaning block (`src/llm_cong_predict/cleaning/`) — deviations & decisions
+
+Scope note: `clean_ncds` itself is **deferred** (option (b), user decision): a
+strictly-grounded schema (no guessing) would be only partial, so rather than build a
+half-known variable renamer that would likely be redone, `clean_ncds` waits for the
+author's real `variables.xlsx`. The other five cleaning functions are ported now.
+
+### F1. `create_factors` — polychoric factors DEFERRED, not guessed 🔦 (V3)
+Three of the four factors use `psych::fa(cor="poly")` (polychoric). A polychoric
+estimator matching R's `polycor`/`psych` is nontrivial, and substituting a Pearson
+correlation would change the numbers while appearing to work. So only the Pearson
+factor (`s2_co_factor_ability`) is computed; the three polychoric factors raise
+unless `include_polychoric=True`, which itself raises until V3 provides a validated
+estimator or an rpy2 `psych::fa` fallback. This is the "don't guess where data/method
+is missing" rule applied to a method gap.
+
+### F2. `create_factors` implemented in numpy, not `factor_analyzer` ✅ (forced + better)
+`factor_analyzer` 0.5.1 (its latest release) is INCOMPATIBLE with the installed
+scikit-learn: it calls the removed `force_all_finite` argument and errors on `fit`.
+So the single-factor minres extraction and regression (Thurstone) scores are
+implemented directly in numpy/scipy. Side benefit: the factor math is auditable for
+a replication rather than hidden in a library. Still PARITY-UNVERIFIED vs `psych`
+(V3) — psych's minres and scoring differ in detail; V3 compares via |correlation|
+because factor scores are identified only up to sign and scale.
+
+### F3. `create_aspirations` sex comparison reproduced faithfully, incl. its quirk ✅
+The R computes `sex = as.character(as_factor(sex))` and then
+`ifelse(sex == 1, camsis_male, camsis_female)` — comparing a *character* ("Male"/
+"Female" or "1"/"2" depending on the file's labels) to the numeric literal `1`. If
+the sex variable carries text labels, that equality is never true and every
+respondent takes the female score. This is reproduced exactly (the male branch fires
+only when the character sex equals the string "1"), and flagged here because it is a
+latent data-dependent quirk of the original to check against real data.
+
+### F4. `get_complete_ncds` gene argument made explicit ✅ (see A3)
+The R definition takes 4 args but is called with 5 (`gene_data`), silently dropped.
+The port adds an explicit optional `ncds_gene`; `None` reproduces the 4-arg R exactly.
+
+### F5. `find_essay_teacher_genetics_overlap` — raw teacher codes grounded ✅
+Uses raw codes `n876`–`n885`, which are explicit in the R and correspond to the
+age-11 teacher ratings; converts to labels, sets the "Dont know" label to missing,
+keeps complete cases, then inner-joins with essays and the ability-complete frame.
