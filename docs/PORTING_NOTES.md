@@ -1,12 +1,7 @@
 # Porting Notes
 
 Every deviation from the original R code (`tobiaswolfram/llm_paper`), and every
-non-obvious fidelity decision, is logged here. The stance agreed with the project
-owner: **fix bugs, but document every fix**. This file is the audit trail that
-distinguishes "a documented translation" from "a rewrite."
-
-Status legend: ✅ done · 🔦 flagged, decision pending real data · ⏳ not yet ported.
-
+non-obvious fidelity decision, is logged here. 
 ---
 
 ## A. Bugs and inconsistencies in the original repo
