@@ -255,3 +255,48 @@ The port adds an explicit optional `ncds_gene`; `None` reproduces the 4-arg R ex
 Uses raw codes `n876`–`n885`, which are explicit in the R and correspond to the
 age-11 teacher ratings; converts to labels, sets the "Dont know" label to missing,
 keeps complete cases, then inner-joins with essays and the ability-complete frame.
+
+---
+
+## G. Feature layer (`src/llm_cong_predict/features/`) — deviations & decisions
+
+### G1. GPT embeddings: RDS round-trip replaced; original reshaper is contradictory 🔦
+The R reshaper `get_gpt_embeddings` does `readRDS(essays)` (argument = PATH to the
+raw OpenAI-response `.rds`) but then `bind_cols(essays, .)` (argument = essays data
+frame) — the same argument used two incompatible ways. `.rds` is also an R-only
+binary format. The Python port therefore (a) ports the generation script
+(`get_gpt_embeddings.R` → `scripts/get_gpt_embeddings.py`) to save a Python-native
+Parquet/CSV with `ncdsid` + embedding columns, and (b) makes the reshaper read that
+and return the reshaper's INTENDED output (`id` + embedding columns). Deviation and
+the original contradiction both documented.
+
+### G2. RoBERTa mean-pooling matches the R exactly, including padding ✅
+`get_roberta_embeddings` takes `tf$reduce_mean(last_hidden_state, axis=1)` after
+passing only input_ids (no attention_mask), so padding positions ARE included in the
+mean. The port (PyTorch) reproduces this exactly — mean over all `max_len=250`
+positions, padding included. A mask-weighted mean would give different numbers, so it
+is deliberately NOT used. Framework differs (TF→PyTorch) but the `roberta-base`
+weights are identical. Runnable with the real essays; not run in the sandbox.
+
+### G3. SALAT + spelling = INGESTION ONLY (user decision) ✅ flagged
+`get_salat_metrics` and `get_spelling_error_metrics` read CSVs from external tools
+(SALAT desktop apps; LanguageTool CLI) and reshape them. They do NOT generate the
+metrics. Reimplementing the metrics in Python would produce different numbers than
+the paper, so generation stays external and these consume its output. Tested on
+synthetic CSVs. One pandas-specific fix: the spelling merge coerces `ncdsid` to
+string on both sides (pandas refuses to merge str-vs-int keys; R was type-tolerant).
+
+### G4. Readability/tokenization are an EXTERNAL-TOOL BOUNDARY that raises 🔦
+`tokenize_essays` (TreeTagger) and `calculate_readability_metrics` (koRpus) generate
+metrics with R-specific / external tools. Rather than substitute a different Python
+readability library (which would silently diverge from the paper), these RAISE with
+guidance. An `ingest_readability_metrics` path is provided so pre-computed
+readability (koRpus output, or the author's derived features) can enter the pipeline
+the same way SALAT/spelling CSVs do. A validated native re-implementation is a
+possible future checklist item, not a silent default.
+
+### G5. `create_essay_variables` — data-dependent filter, embedding arg renamed ✅
+The final `select_if` keeps only columns that are non-NA, finite, and non-constant,
+so the essay feature-matrix width depends on the data (matched, flagged). The 4th
+argument is named `embeddings` (the R named it `roberta_embeddings` but the pipeline
+passes `gpt_embeddings`; see A4).

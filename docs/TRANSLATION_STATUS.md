@@ -32,15 +32,15 @@ Legend: ✅ DONE · 🟡 STRUCTURAL (needs oracle/data to validate) · ⬜ NOT S
 | `create_aspirations` (244) | CAMSIS aspiration score | `cleaning/aspirations.py::create_aspirations` | 🟡 |
 | `create_factors` (272) | psych::fa factor scores | `cleaning/factors.py::create_factors` | 🟡 Pearson factor done; 3 polychoric factors DEFERRED (V3) |
 | `get_complete_ncds` (309) | join cleaned+factors+aspir+essay | `cleaning/assemble.py::get_complete_ncds` | 🟡 |
-| `create_essay_variables` (317) | assemble+filter essay features | `features/essay_variables.py` | ⬜ |
+| `create_essay_variables` (317) | assemble+filter essay features | `features/essay_variables.py::create_essay_variables` | 🟡 |
 | `find_essay_teacher_genetics_overlap` (330) | overlap subset | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | 🟡 |
 | `find_full_overlap` (348) | complete-case subset | `cleaning/assemble.py::find_full_overlap` | 🟡 |
-| `tokenize_essays` (356) | TreeTagger tokenization | `features/readability.py` (external-tool boundary) | ⬜ |
-| `calculate_readability_metrics` (369) | koRpus readability | `features/readability.py` | ⬜ |
-| `get_spelling_error_metrics` (390) | LanguageTool spelling CSV | `features/spelling.py` (CSV-ingestion contract) | ⬜ |
-| `get_salat_metrics` (419) | SALAT tool CSVs | `features/salat.py` (CSV-ingestion contract) | ⬜ |
-| `get_roberta_embeddings` (446) | RoBERTa embeddings | `features/embeddings.py::roberta` | ⬜ |
-| `get_gpt_embeddings` (2) | read GPT embedding RDS | `features/embeddings.py::gpt` | ⬜ |
+| `tokenize_essays` (356) | TreeTagger tokenization | `features/readability.py::tokenize_essays` | ⬜ EXTERNAL-TOOL BOUNDARY (raises) |
+| `calculate_readability_metrics` (369) | koRpus readability | `features/readability.py` (+ ingest path) | ⬜ EXTERNAL-TOOL BOUNDARY (raises) |
+| `get_spelling_error_metrics` (390) | LanguageTool spelling CSV | `features/salat.py::get_spelling_error_metrics` | 🟡 (ingestion) |
+| `get_salat_metrics` (419) | SALAT tool CSVs | `features/salat.py::get_salat_metrics` | 🟡 (ingestion) |
+| `get_roberta_embeddings` (446) | RoBERTa embeddings | `features/embeddings.py::roberta_embeddings` | 🟡 (runnable, not run here) |
+| `get_gpt_embeddings` (2) | reshape saved GPT embeddings | `features/embeddings.py::gpt_embeddings` | 🟡 (RDS→parquet, flagged) |
 
 ## `R/_targets.R` (504 lines, 177 targets)
 The DAG: data-load, essay, clean, and ~110 model/metric targets (mostly
@@ -54,7 +54,7 @@ Post-pipeline figure/appendix CSV generation (`fig_2..5_data.csv`,
 
 ## `R/get_gpt_embeddings.R` (52 lines)
 Standalone OpenAI embedding generation (ada-002 + text-embedding-3-large). Python
-target: `scripts/get_gpt_embeddings.py`. Status: ⬜ NOT STARTED.
+target: `scripts/get_gpt_embeddings.py`. Status: 🟡 PORTED (runnable with key+essays, RDS→parquet deviation).
 
 ## `R/run.R` (7 lines)
 `targets::tar_make()`. Python target: a `run.py` / CLI entry. Status: ⬜ NOT STARTED.
@@ -62,9 +62,11 @@ target: `scripts/get_gpt_embeddings.py`. Status: ⬜ NOT STARTED.
 ---
 
 ## Honest completion estimate
-By translated source lines: ~55% of `functions.R` (metrics + models + IO + the
-cleaning block except clean_ncds). clean_ncds (~180 lines) is deferred pending the
-real variables.xlsx (option b). 0% of the other three code files. The empty package folders (`io/`, `cleaning/`, `features/`, `pipeline/`) are
+By translated source lines: ~90% of `functions.R` (metrics + models + IO + cleaning
+except clean_ncds + the whole feature layer). clean_ncds (~180 lines) deferred
+(option b); tokenize_essays + calculate_readability are external-tool boundaries
+(TreeTagger/koRpus, raise not substitute). Of the other files: get_gpt_embeddings.R
+ported; _targets.R and create_data.R still 0%. The empty package folders (`io/`, `cleaning/`, `features/`, `pipeline/`) are
 placeholders for the ~75% not yet written.
 
 ## What "validation deferred" means per item
