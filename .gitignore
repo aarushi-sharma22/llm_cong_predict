@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+# pipeline outputs / caches
+outputs/
+.cache_pipeline/
+# restricted data must NEVER be committed
+data/ncds_*/
+data/essays/
+data/embeddings_*.rds
+data/salat_metrics/
+data/spelling_mistakes.csv
+*.rds

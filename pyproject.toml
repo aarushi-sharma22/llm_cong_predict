@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-cong-predict-replication"
+version = "0.1.0"
+description = "Python replication of Wolfram (2025), 'Large Language Models Predict Cognition and Education Close to or Better than Genomics or Expert Assessment'."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyreadstat>=1.2",     # .dta IO (replaces haven)
+    "openpyxl>=3.1",       # xlsx IO (replaces readxl)
+    "pyyaml>=6.0",         # versioned mapping/schema artifacts
+    "scikit-learn>=1.4",   # native base learners + CV
+    "xgboost>=2.0",        # SL.xgboost equivalent
+    "factor_analyzer>=0.5",# psych::fa equivalent (create_factors)
+    "scipy>=1.11",         # nnls meta-learner, stats
+]
+
+[project.optional-dependencies]
+# Numerical-oracle backend. Requires a working R install + the R packages below.
+# Used ONLY to validate the native backend against the original on real data.
+oracle = ["rpy2>=3.5"]
+embeddings = ["torch>=2.1", "transformers>=4.38", "openai>=1.0"]
+dev = ["pytest>=8.0", "ruff>=0.3"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
