@@ -38,8 +38,8 @@ one status:
 | `get_salat_metrics` (419) | `features/salat.py::get_salat_metrics` | INGESTION | SALAT tools' output; natural joins (G3). |
 | `get_roberta_embeddings` (446) | `features/embeddings.py::roberta_embeddings`, `features/roberta_step.py` | PORTED | Batched; a separate step in its own process (G2, ORCHESTRATION). Not run on real weights here. |
 | `SL.xgboost.hist` (492) | `models/base_learners.py::_make_xgboost_hist` | PORTED-APPROX | C8, AP6. |
-| `get_general_superlearner_cv_model` (496) | `models/native_superlearner.py::fit_cv_superlearner` + `superlearner_library()` | PORTED-APPROX | Mechanics faithful (C1); learners and screener APPROX (C2–C9). The wrapper that selects columns, does `na.omit` and returns `(fit, var)` is Task 2.3. V4. |
-| `get_lm_cv_model` (526) | `models/native_superlearner.py::fit_cv_superlearner` + `lm_library()` | PORTED-APPROX | As above; SL.lm APPROX (C4). |
+| `get_general_superlearner_cv_model` (496) | `models/run.py::fit_model(method="superlearner")` | PORTED-APPROX | Selection, `na.omit`, `(fit, var)` faithful (L1); engine mechanics faithful and matched to R for mean + lm (C1); learners and screener APPROX (C2–C9). V4. |
+| `get_lm_cv_model` (526) | `models/run.py::fit_model(method="lm")` | PORTED | Matches R's `CV.SuperLearner` to 1e-14 on identical folds (C1, C4, Task 2.2). |
 | `get_cv_predictive_r2` (550) | `metrics/cv_metrics.py::cv_predictive_r2` | PORTED | B1. |
 | `get_cv_rmse` (602) | `metrics/cv_metrics.py::cv_rmse` | PORTED | |
 | `get_cv_mad` (649) | `metrics/cv_metrics.py::cv_mad` | PORTED | |

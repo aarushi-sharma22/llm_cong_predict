@@ -968,3 +968,70 @@ R embedded through rpy2 and xgboost were run in one process, in both orders (glm
 ranger and psych in R, then xgboost, and the reverse). Neither crashed. The CRAN
 builds of glmnet, ranger, kernlab and nnet link no OpenMP runtime, and psych is pure
 R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
+
+---
+
+## L. Model runner (Phase 2, Task 2.3)
+
+### L1. `fit_model`: one R model function call
+- **Label:** faithful. Refusing non-numeric predictors is a check the R does not make.
+- **R source:** `llm_paper/R/functions.R:L496–524` (`get_general_superlearner_cv_model`),
+  `L526–548` (`get_lm_cv_model`); `SuperLearner/R/SuperLearner.R:L73–75` (numeric
+  outcome).
+- **Python:** `models/run.py::fit_model(outcome_var, predictors, data, method,
+  backend="native", seed=1, n_jobs=1)`.
+  - It selects the outcome and predictors. A missing column raises; a name listed
+    twice is selected once.
+  - `na.omit` over those columns.
+  - It raises `NonNumericPredictorError` for any predictor that is not integer or
+    float (booleans, categoricals, text), and for a non-numeric outcome. Nothing is
+    coerced: the recorded data preparation (L4) must already have made them numeric.
+  - The fit uses the 6-learner or the mean + lm library. Both backends get the same
+    outer and inner folds (`native_superlearner.default_folds`), so `backend="r"` is
+    directly comparable.
+  - It returns `(fit, outcome_var)`, as the R returns `list(fit, var)`. `fit.ids`
+    carries the `ncdsid` of the rows used.
+  - `make.names` on column names is not reproduced; it changes names only.
+- **Why:** brief Task 2.3.
+- **Test:** `tests/test_run.py::test_fit_model_lm_recovers_planted_signal_and_applies_na_omit`,
+  `::test_fit_model_refuses_non_numeric_predictors`, `::test_fit_model_missing_column_raises`,
+  `::test_fit_model_superlearner_recovers_planted_signal` (slow),
+  `::test_fit_model_r_backend_uses_the_same_folds` (R).
+- **Validation:** V4.
+
+### L2. Gene-dependent targets are skipped when gene data is absent
+- **Label:** reconstruction.
+- **R source:** `llm_paper/_targets.R:L93` (`tar_target(gene_data, read_gene_data)`
+  stores the function), `L132` (`gene_variables <- colnames(gene_data)[-1]`, i.e. NULL).
+- **Python:** `pipeline/model_spec.py::split_gene_dependent`. Without gene data, the
+  26 model targets whose predictors include `gene_variables` are skipped (computed:
+  166 of the 416 fits). They are listed in `$LCP_DATA_ROOT/logs/run_log.json`
+  (`pipeline/run_log.py`). Samples defined with `gene_variables` are kept, defined
+  without it, as in R.
+- **Why:** in R a gene-only model would have no predictor, and a combined model would
+  silently lose its gene block. The published pipeline cannot run anyway (A3).
+- **Test:** `tests/test_run.py::test_gene_dependent_targets_are_skipped_and_logged`.
+- **Validation:** none.
+
+### L3. Per-person predictions only under `$LCP_DATA_ROOT/fits/`
+- **Label:** data-safety change.
+- **Python:** `models/run.py::save_predictions(fit, target)` writes
+  `fits/<target>__<outcome>.csv` (ncdsid, fold, Y, SL.predict, each learner) under
+  the data root. There is no parameter for another location, and it raises without
+  `$LCP_DATA_ROOT`.
+- **Test:** `tests/test_run.py::test_save_predictions_only_under_data_root`.
+- **Validation:** none.
+
+### L4. Data preparation inside model targets
+- **Label:** faithful.
+- **R source:** `llm_paper/_targets.R:L208, L368` (`as.numeric(s3_pa_edu)`),
+  `L258, L374` (`mutate_at(vars(sociological_variables), as.numeric)`), `L227`
+  (RoBERTa inner join), `L230` (GPT-4: drop `starts_with("embedding")`, which ignores
+  case, then inner join).
+- **Python:** `models/data_prep.py::apply_data_prep`, with `r_as_numeric_column`: a
+  categorical (R factor) gives its level position, a boolean 0/1, a number itself, and
+  text is parsed as R's `as.numeric` parses it. The inner join keeps `x`'s key and
+  drops `id`.
+- **Test:** `tests/test_run.py::test_as_numeric_gives_level_positions_and_logical_codes`,
+  `::test_data_prep_steps_from_the_spec`.
+- **Validation:** none.

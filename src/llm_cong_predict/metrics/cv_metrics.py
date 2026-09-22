@@ -74,6 +74,9 @@ class CVSuperLearnerFit:
     failures:
         Records of learner and screener failures caught as R's ``try()`` would catch
         them (outer fold, inner fold, learner, stage, error). Optional.
+    ids:
+        ``ncdsid`` of each row of ``Y``. Participant-level: stored only under
+        ``$LCP_DATA_ROOT`` (models/run.py::save_predictions). Optional.
     """
 
     Y: np.ndarray
@@ -87,6 +90,7 @@ class CVSuperLearnerFit:
     method: str = "method.NNLS"
     cv_risk: Optional[np.ndarray] = None
     failures: Optional[list] = None
+    ids: Optional[np.ndarray] = None
 
     @property
     def V(self) -> int:  # noqa: N802  (mirror R's `V`)
@@ -287,4 +291,5 @@ def _replace_sl_predict(fit: CVSuperLearnerFit, new_sl: np.ndarray) -> CVSuperLe
         method=fit.method,
         cv_risk=fit.cv_risk,
         failures=fit.failures,
+        ids=fit.ids,
     )

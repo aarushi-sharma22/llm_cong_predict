@@ -134,11 +134,22 @@ def _superlearner(X, y, X_new, library, inner_folds, seed, outer) -> dict:
             "cv_risk": cv_risk, "failures": failures}
 
 
+def _inner_folds(n_train: int, inner_v: int, seed: int, k: int) -> list[np.ndarray]:
+    # inner folds: shuffled, not stratified (control.R:L15, CVFolds.R:L23)
+    return make_folds(n_train, inner_v, seed=derive_seed(seed, k, NO_FOLD, "inner-folds"))
+
+
+def default_folds(n: int, outer_v: int, inner_v: int, seed: int):
+    """The outer folds and, per outer fold, the inner folds the native engine uses by
+    default. Passing them to both backends makes R and Python see identical folds."""
+    outer = make_folds(n, outer_v, seed=seed)
+    return outer, [_inner_folds(len(train_indices(n, f)), inner_v, seed, k) for k, f in enumerate(outer)]
+
+
 def _outer_fold(k, test_idx, X, y, library, inner_v, seed, inner_folds_k):
     tr = train_indices(len(y), test_idx)
     if inner_folds_k is None:
-        # inner folds: shuffled, not stratified (control.R:L15, CVFolds.R:L23)
-        inner_folds_k = make_folds(len(tr), inner_v, seed=derive_seed(seed, k, NO_FOLD, "inner-folds"))
+        inner_folds_k = _inner_folds(len(tr), inner_v, seed, k)
     return _superlearner(X[tr], y[tr], X[test_idx], library, inner_folds_k, seed, outer=k)
 
 

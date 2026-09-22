@@ -305,3 +305,29 @@ R_TO_PYTHON_TARGET: dict[str, str] = {
     "cog_superlearner_social_lm_overlap": "cog_lm_social_lm_overlap",
     "noncog_superlearner_social_lm_overlap": "noncog_lm_social_lm_overlap",
 }
+
+
+GENE_VARIABLES = "gene_variables"
+
+
+def is_gene_dependent(spec: ModelTargetSpec) -> bool:
+    """True when the target's predictors include the polygenic scores."""
+    return any(p.kind == "list" and p.value == GENE_VARIABLES for p in spec.predictors)
+
+
+def split_gene_dependent(specs: list[ModelTargetSpec], gene_data_available: bool):
+    """``(runnable, skipped)``: without gene data, targets whose predictors include
+    ``gene_variables`` are skipped (brief Task 2.3).
+
+    In R, ``gene_data`` is the function ``read_gene_data`` itself, so
+    ``gene_variables`` is ``NULL`` (R: llm_paper/_targets.R:L93, L132). A gene-only model
+    would then have no predictor and a combined one would silently lose the gene
+    block. The port skips these targets instead and lists them in the run log
+    (PORTING_NOTES L2). Samples defined with ``gene_variables`` (mmg, all_overlap) are
+    kept: without gene data they are defined without it, as in R.
+    """
+    if gene_data_available:
+        return list(specs), []
+    runnable = [s for s in specs if not is_gene_dependent(s)]
+    skipped = [s for s in specs if is_gene_dependent(s)]
+    return runnable, skipped
