@@ -86,6 +86,13 @@ directory named by the environment variable `LCP_DATA_ROOT`. There is no default
 directory inside the repository is refused. File names are listed in one place,
 `RESTRICTED_INPUTS` in `src/llm_cong_predict/config.py`.
 
+A table leaves `LCP_DATA_ROOT` only through the export guard,
+`export.py::export_table`, which refuses a table with an ID-like column, a free-text
+column, one row per person, or a count below the minimum cell size. That minimum has no
+default: `config.MINIMUM_CELL_SIZE` is `None`, so every export is refused until the
+value has been confirmed against the UK Data Service's output rules. Passing the guard
+is four mechanical checks, not a disclosure review.
+
 `.gitignore` is an allow-list for `data/`: only `data/variables.xlsx`,
 `data/occupation_aspiration_mapping.xlsx` and `data/camsis/*.dta` (public reference
 files) can be tracked. Because `git add -f` bypasses `.gitignore`, a checker also runs

@@ -856,6 +856,32 @@ item, if any.
 
 ---
 
+### H4. The export guard: one way out of `$LCP_DATA_ROOT` (Phase 2, Task 2.7)
+- **Label:** data-safety change (nothing in the R corresponds to it).
+- **Python:** `export.py`. `export_table` is the only function that writes a table
+  outside `$LCP_DATA_ROOT`; `export_tables` runs it over a set of tables and reports
+  each refusal instead of stopping at the first. It refuses a table that:
+  1. has an ID-like column (`ncdsid`, `NCDSID`, `id`);
+  2. has a free-text column — a value longer than 120 characters, or a name that says
+     it holds text. 120 is above the longest label the R's own tables carry (69
+     characters, `create_data.R:L164`) and well below an essay;
+  3. has as many rows as there are people in the analysis (one number, or any of the
+     run's sample sizes), which is what a per-person table looks like;
+  4. has a count column (an INTEGER column named `n`, `count`, `freq`, ...) with a
+     value below the minimum cell size. Proportions are not counts, so appendix D5 is
+     not caught by this.
+- **The minimum cell size has no default.** `config.MINIMUM_CELL_SIZE` is `None` as
+  shipped, and every export is refused until it is set, with a message saying to
+  confirm the value against the UK Data Service's output rules. The port does not
+  choose a value.
+- **What passing does not mean:** the guard is four mechanical checks, not a
+  disclosure review. Passing says only that these four found nothing.
+- **Why:** brief Task 2.7.
+- **Test:** `tests/test_export.py` (14 tests: one per refusal, the unset minimum, the
+  nonsense minimum, and that a refused table leaves no file behind),
+  `tests/test_reporting.py::test_the_built_tables_go_through_the_export_guard`.
+- **Validation:** V10.
+
 ## I. Model specification (Phase 1, Task 1.4)
 
 ### I1. Every model target records its method, outcome, predictors, sample, data preparation and scorer

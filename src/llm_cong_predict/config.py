@@ -162,6 +162,15 @@ def metrics_dir() -> Path:
     return participant_output_dir("metrics")
 
 
+# --- Export guard (export.py) --------------------------------------------------
+# The smallest count that may appear in a table written OUTSIDE $LCP_DATA_ROOT.
+# There is deliberately NO default: it is a disclosure-control decision about the
+# cohort data. Confirm the value that applies to these data against the UK Data
+# Service's output rules and set it here (or pass it to the guard). Until then every
+# export is refused. This code does not choose a value.
+MINIMUM_CELL_SIZE: int | None = None
+
+
 # Written ONLY by the synthetic-data generator (tests/fixtures/synthetic_ncds.py) at the
 # top of a synthetic $LCP_DATA_ROOT. The package never writes it. The runner refuses
 # the smoke configuration unless it is present (pipeline/execute.py).

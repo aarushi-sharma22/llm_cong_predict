@@ -87,6 +87,16 @@ The standalone TreeTagger + koRpus script of Task 2.5: `read_essays`,
 `tokenize_essays` and `calculate_readability_metrics` from `R/functions.R`, with the
 TreeTagger path and the data paths taken from the environment. **Never run** (G4, V9).
 
+## No R counterpart (added by this port)
+
+| Python | What it is |
+|---|---|
+| `export.py` | The export guard (Task 2.7): the one function through which a table may be written outside `$LCP_DATA_ROOT`. The minimum cell size has no default (PORTING_NOTES H4, V10). |
+| `scripts/check_no_restricted_data.py`, `scripts/hooks/pre-commit` | Refuse restricted data in a commit (H3). |
+| `scripts/check_essay_format.py` | Aggregate format counts for the real essays (E6). |
+| `isolation.py` | torch and xgboost never share a process (G2). |
+| `pipeline/execute.py` | The runner (M1); `run.R` is its R counterpart, listed below. |
+
 ## `run.R` (7 lines)
 
 `run.py`. **PORTED**: `python run.py` prints the plan; `python run.py --run

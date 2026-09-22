@@ -343,6 +343,20 @@ def test_write_tables_writes_only_under_the_data_root(metrics, tmp_path):
     assert len(pd.read_csv(written[0])) == len(built["fig_2_data"])
 
 
+def test_the_built_tables_go_through_the_export_guard(metrics, monkeypatch, tmp_path):
+    """Task 2.7: a reporting table leaves $LCP_DATA_ROOT only through the guard. The
+    metric tables pass; appendix D8 holds counts per job, so small cells stop it."""
+    from llm_cong_predict import config
+    from llm_cong_predict.export import export_tables
+
+    monkeypatch.setattr(config, "MINIMUM_CELL_SIZE", 10)
+    built = build_tables(metrics, ncds_1_to_9=_labelled_ncds())
+    written, refused = export_tables(built, tmp_path, n_people=[100, 111])
+    assert {p.name for p in written} >= {"fig_2_data.csv", "appendix_D12_data.csv"}
+    assert "minimum cell size" in refused["appendix_D8_data"]  # two people per job here
+    assert not (tmp_path / "appendix_D8_data.csv").exists()
+
+
 def test_every_table_of_create_data_is_accounted_for(metrics):
     """The sixteen files the R writes (docs/reference/create_data_outputs.md): ten from
     metrics, one from the fits, three from the NCDS data, and D4/D7 replaced by
