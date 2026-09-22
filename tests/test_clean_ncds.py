@@ -61,6 +61,30 @@ def _combined(mapping: pd.DataFrame, n: int = 40, seed: int = 0, drop: tuple = (
 
 # --------------------------------------------------------------- table (F1) --
 
+def test_the_n885_corrected_variant_adds_exactly_one_column(mapping):
+    """Owner decision at Checkpoint D. The R's behaviour is the default: n885
+    ("Imperfect Grasp of English") is not in variables.xlsx, so read_ncds never loads it
+    and appendix D6 stops (PORTING_NOTES N2). The corrected variant is off by default
+    and adds s2_te_imperfect_english (n885, sweep 2, teacher, type behavior); the only
+    difference in the cleaned data is that one column."""
+    corrected = read_datalist(str(VARIABLES_XLSX), include_n885=True)
+    assert len(corrected) == len(mapping) + 1 == 64
+    assert mapping.attrs["variables_include_n885"] is False
+    assert corrected.attrs["variables_include_n885"] is True
+    assert variables_table(corrected)["full_name"].iloc[-1] == "s2_te_imperfect_english"
+
+    combined = _combined(corrected)  # a sweep-2 file does hold n885
+    default_out = clean_ncds(combined, mapping)
+    corrected_out = clean_ncds(combined, corrected)
+    assert set(corrected_out.columns) - set(default_out.columns) == {"s2_te_imperfect_english"}
+    assert set(default_out.columns) - set(corrected_out.columns) == set()
+    assert len(corrected_out.columns) == len(default_out.columns) + 1
+    # the extra column sits in the behaviour block and holds that code's values
+    assert corrected_out["s2_te_imperfect_english"].notna().any()
+    shared = [c for c in default_out.columns]
+    pd.testing.assert_frame_equal(corrected_out[shared], default_out[shared])
+
+
 def test_read_datalist_gives_63_named_rows(mapping):
     """R: llm_paper/R/functions.R:L22–24 read with assigned names (PORTING_NOTES A1)."""
     assert len(mapping) == 63

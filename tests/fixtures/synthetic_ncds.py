@@ -108,7 +108,7 @@ def _variable(full_name: str, rng, lat: dict, n: int, aspiration_labels: dict) -
         # 1 = well above average: the rating falls as ability rises
         return 6.0 - ordinal(A, (-1.2, -0.4, 0.4, 1.2), weight=1.0, noise=0.5), {**RATING_5, 8: "Dont know", **NA_1}
     if full_name in ("s2_te_poor_hand_control", "s2_te_squirmy", "s2_te_poor_coordination",
-                     "s2_te_hardly_ever_still", "s2_te_poor_speech"):
+                     "s2_te_hardly_ever_still", "s2_te_poor_speech", "s2_te_imperfect_english"):
         return ordinal(B, (0.6, 1.4)), {**APPLIES_3, 8: "Dont know", **NA_1}
     if full_name.startswith("s2_te_"):  # the twelve BSAG totals
         signal = Int if full_name in BSAG_INTERNAL else B
@@ -199,6 +199,14 @@ def write_synthetic_inputs(root, seed: int, n: int = 200, gene_data: bool = Fals
         # missing-value string (clean_ncds); -99 has no label
         missing_pool[(key, row.variable)] = [float(v) for v, t in lab.items()
                                              if v < 0 or t in MISSING_LABELS] + [-99.0]
+
+    # n885 is in the real sweep-2 file but NOT in variables.xlsx, so read_ncds drops it
+    # unless the corrected variant is on (config.INCLUDE_N885; PORTING_NOTES N2).
+    values, lab = _variable("s2_te_imperfect_english", rng, lat, n, aspiration_labels)
+    columns["ncds_1_2_3"]["N885"] = values.astype(float)
+    labels["ncds_1_2_3"]["N885"] = lab
+    missing_pool[("ncds_1_2_3", "N885")] = [float(v) for v, t in lab.items()
+                                            if v < 0 or t in MISSING_LABELS] + [-99.0]
 
     # Missing values: a share of cohort members get one to three missing codes (a
     # negative code, or a positive code whose label is a missing-value string).

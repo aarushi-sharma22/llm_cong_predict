@@ -94,10 +94,11 @@ directory inside the repository is refused. File names are listed in one place,
 
 A table leaves `LCP_DATA_ROOT` only through the export guard,
 `export.py::export_table`, which refuses a table with an ID-like column, a free-text
-column, one row per person, or a count below the minimum cell size. That minimum has no
-default: `config.MINIMUM_CELL_SIZE` is `None`, so every export is refused until the
-value has been confirmed against the UK Data Service's output rules. Passing the guard
-is four mechanical checks, not a disclosure review.
+column, one row per person, or a count below the minimum cell size.
+`config.MINIMUM_CELL_SIZE` is 10, from the UK Data Service's handling guide (3 is the
+baseline threshold, 10 where several outputs come from the same source, as here) and
+still to be confirmed with UKDS; setting it to `None` makes the guard refuse every
+export. Passing the guard is four mechanical checks, not a disclosure review.
 
 `.gitignore` is an allow-list for `data/`: only `data/variables.xlsx`,
 `data/occupation_aspiration_mapping.xlsx` and `data/camsis/*.dta` (public reference

@@ -164,17 +164,33 @@ def metrics_dir() -> Path:
 
 # --- Export guard (export.py) --------------------------------------------------
 # The smallest count that may appear in a table written OUTSIDE $LCP_DATA_ROOT.
-# There is deliberately NO default: it is a disclosure-control decision about the
-# cohort data. Confirm the value that applies to these data against the UK Data
-# Service's output rules and set it here (or pass it to the guard). Until then every
-# export is refused. This code does not choose a value.
-MINIMUM_CELL_SIZE: int | None = None
+# Set by the owner (Checkpoint D): the UK Data Service's handling guide gives 3 as the
+# baseline threshold and advises 10 where several outputs come from the same source,
+# which is the case here (many tables from one cohort dataset).
+# STILL TO BE CONFIRMED WITH UKDS before anything is released.
+# Setting it to None makes the export guard refuse every export; the code never picks a
+# value by itself.
+MINIMUM_CELL_SIZE: int | None = 10
 
 
 # Written ONLY by the synthetic-data generator (tests/fixtures/synthetic_ncds.py) at the
 # top of a synthetic $LCP_DATA_ROOT. The package never writes it. The runner refuses
 # the smoke configuration unless it is present (pipeline/execute.py).
 SYNTHETIC_MARKER_FILE = "SYNTHETIC_DATA_MARKER.json"
+
+
+# --- Corrected variant: the code n885 (owner decision at Checkpoint D) ------------
+# R/create_data.R:L264 selects n885 ("Imperfect Grasp of English") for appendix D6, and
+# find_essay_teacher_genetics_overlap names it too, but it is NOT in data/variables.xlsx,
+# so read_ncds never loads it and both stop. The R's behaviour is the DEFAULT: D6 stays
+# unbuildable and the port raises (PORTING_NOTES N2).
+# With this flag on, read_datalist adds the row (sweep 2, teacher, type behavior,
+# s2_te_imperfect_english), so the code is read, clean_ncds' behaviour block gains one
+# column, and D6 can be built. Every output of such a run is marked with the note below,
+# the way a sample built without gene data is marked.
+INCLUDE_N885 = False
+N885_NOTE = ("includes n885 (s2_te_imperfect_english), a code the R's variable table does "
+             "not contain: corrected variant, not what the published R produces")
 
 
 # --- Factor scores -------------------------------------------------------------

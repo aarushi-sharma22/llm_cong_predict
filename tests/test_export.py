@@ -42,12 +42,17 @@ def _aggregate() -> pd.DataFrame:
 
 # --------------------------------------------------- the minimum cell size ----
 
-def test_nothing_is_exported_until_the_minimum_cell_size_is_confirmed(monkeypatch, tmp_path):
-    """Brief Task 2.7: the minimum comes from the config and has no default; the guard
-    raises with a message telling the user to confirm it against the UK Data Service's
-    output rules. The code does not choose a value."""
+def test_the_configured_minimum_cell_size_is_the_one_the_owner_set():
+    """Owner decision at Checkpoint D: 10. The UK Data Service's handling guide gives 3
+    as the baseline threshold and advises 10 where several outputs come from the same
+    source, which is the case here. Still to be confirmed with UKDS."""
+    assert config.MINIMUM_CELL_SIZE == 10
+
+
+def test_nothing_is_exported_when_no_minimum_cell_size_is_set(monkeypatch, tmp_path):
+    """Brief Task 2.7: the minimum comes from the config and the code never picks one;
+    with it unset the guard raises, pointing at the UK Data Service's output rules."""
     monkeypatch.setattr(config, "MINIMUM_CELL_SIZE", None)
-    assert config.MINIMUM_CELL_SIZE is None  # the shipped default
     with pytest.raises(MinimumCellSizeNotSet, match="UK Data Service"):
         export_table(_aggregate(), tmp_path / "fig_2_data.csv", n_people=N_PEOPLE)
     assert list(tmp_path.iterdir()) == []

@@ -51,13 +51,14 @@ def _try(result: ReportingTables, name: str, build) -> None:
 
 def build_tables(metrics: pd.DataFrame, fits: dict | None = None,
                  ncds_1_to_9: pd.DataFrame | None = None,
-                 essays: pd.DataFrame | None = None) -> ReportingTables:
+                 essays: pd.DataFrame | None = None, note: str | None = None) -> ReportingTables:
     """Build every output of ``create_data.R`` that this run's inputs allow.
 
     ``metrics`` is the runner's metric table, ``fits`` its ``values`` (target ->
     ``[(fit, outcome), ...]``, needed for appendix D3), ``ncds_1_to_9`` the combined
     NCDS data (D5, D6, D8 and the D7 summary) and ``essays`` the essay frame (the D4
-    summary).
+    summary). ``note`` marks every table that does not already carry it — the corrected
+    variant that adds n885 uses it (config.N885_NOTE, PORTING_NOTES N2).
     """
     result = ReportingTables()
     for name, build in METRIC_TABLES.items():
@@ -76,6 +77,10 @@ def build_tables(metrics: pd.DataFrame, fits: dict | None = None,
         _try(result, "appendix_D4_summary", lambda: summary_d4_essays(essays))
     else:
         result.skipped["appendix_D4_summary"] = "needs the essays (target ncds_essays)"
+    if note:
+        for table in result.tables.values():
+            if "variables_note" not in table.columns:
+                table["variables_note"] = note
     return result
 
 
@@ -89,7 +94,8 @@ def build_from_run(run_result, ncds_1_to_9: pd.DataFrame | None = None,
         ncds_1_to_9 = run_result.values.get("ncds_1_to_9")
     if essays is None:
         essays = run_result.values.get("ncds_essays")
-    return build_tables(run_result.metrics, fits=fits, ncds_1_to_9=ncds_1_to_9, essays=essays)
+    return build_tables(run_result.metrics, fits=fits, ncds_1_to_9=ncds_1_to_9, essays=essays,
+                        note=getattr(run_result, "variables_note", None))
 
 
 def write_tables(tables: ReportingTables, prefix: str = "") -> list[Path]:

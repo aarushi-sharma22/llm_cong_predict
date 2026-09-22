@@ -120,8 +120,9 @@ def columns_kept_in_essay_data(frame, essay_data, drop_first: int) -> list[str]:
     ``drop_first`` names are then removed, whatever they are. Reproduced as written:
       * readability: ``filename`` is not a column of ``essay_data`` (create_essay_variables
         drops it), so ``[-c(1:2)]`` removes ``ncdsid`` AND the first readability index;
-      * GPT: the embeddings frame has ``id``, not ``ncdsid``, so ``[-1]`` removes the
-        first embedding column.
+      * GPT: ``one_of`` has already removed the ``id`` column, because ``essay_data``
+        calls it ``ncdsid``, so the first remaining column is the first embedding
+        dimension and ``[-1]`` removes that.
     (PORTING_NOTES M3.)
     """
     return one_of(frame.columns, essay_data.columns)[drop_first:]

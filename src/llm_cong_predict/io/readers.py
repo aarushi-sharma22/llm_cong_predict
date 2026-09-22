@@ -23,6 +23,7 @@ import warnings
 import pandas as pd
 import pyreadstat
 
+from .. import config
 from .labels import (
     COLUMN_LABELS_KEY,
     VALUE_LABELS_KEY,
@@ -44,8 +45,17 @@ DATALIST_COLUMNS = ("sweep", "type", "respondent", "question", "label", "new_var
 DATALIST_REQUIRED = ("sweep", "type", "respondent", "new_varname", "variable")
 DATALIST_ROWS = 63  # computed from the public file at Checkpoint A (PORTING_NOTES A1)
 
+# CORRECTED VARIANT, off by default (config.INCLUDE_N885; owner decision at Checkpoint D).
+# n885 ("Imperfect Grasp of English") is selected by R/create_data.R:L264 for appendix D6
+# and named in find_essay_teacher_genetics_overlap (functions.R:L333), but it is not in
+# variables.xlsx, so the R stops in both places. Adding this row makes read_ncds load the
+# code and gives clean_ncds' behaviour block one more column, s2_te_imperfect_english.
+N885_ROW: dict = {"sweep": 2.0, "type": "behavior", "respondent": "teacher",
+                  "question": pd.NA, "label": pd.NA, "new_varname": "imperfect_english",
+                  "variable": "N885"}
 
-def read_datalist(path: str) -> pd.DataFrame:
+
+def read_datalist(path: str, include_n885: bool | None = None) -> pd.DataFrame:
     """Port of ``read_datalist`` (R: llm_paper/R/functions.R:L22–24), a reconstruction.
 
     The R calls ``read_excel(path)``, which makes the file's first row the header. The
@@ -56,16 +66,24 @@ def read_datalist(path: str) -> pd.DataFrame:
     columns 7 onwards (empty, apart from one cell of spaces) are dropped, and the rows
     complete on the five columns the R uses are kept. The result must have exactly 63
     rows and no duplicated ``variable`` code.
+
+    ``include_n885`` (default: ``config.INCLUDE_N885``, which is ``False``) turns on the
+    corrected variant that adds :data:`N885_ROW`. The frame records which it was, in
+    ``attrs["variables_include_n885"]``, so every output of a run can be marked.
     """
+    include_n885 = config.INCLUDE_N885 if include_n885 is None else include_n885
     raw = pd.read_excel(path, header=None)
     df = raw.iloc[:, : len(DATALIST_COLUMNS)].copy()
     df.columns = list(DATALIST_COLUMNS)
     df = df.dropna(subset=list(DATALIST_REQUIRED)).reset_index(drop=True)
     if len(df) != DATALIST_ROWS:
         raise ValueError(f"variables.xlsx: expected {DATALIST_ROWS} complete rows, found {len(df)}")
+    if include_n885:
+        df = pd.concat([df, pd.DataFrame([N885_ROW])], ignore_index=True)
     dup = df["variable"].str.lower().duplicated()
     if dup.any():
         raise ValueError(f"variables.xlsx: duplicated codes {sorted(df.loc[dup, 'variable'])}")
+    df.attrs["variables_include_n885"] = bool(include_n885)
     return df
 
 

@@ -76,7 +76,7 @@ state: docs/reference/create_data_outputs.md.
 | `appendix_D1_data`, `appendix_D2_data`, `appendix_D10_data`, `appendix_D12_data` | `reporting/tables.py` | PORTED | D2 keeps the long `type` labels, because the R's pipe ends before the relabelling (N2). |
 | `appendix_D3_data` | `reporting/tables.py::appendix_d3` | PORTED | Per-fold learner weights from the fits. |
 | `appendix_D5_data`, `appendix_D8_data` | `reporting/tables.py::appendix_d5`, `appendix_d8` | PORTED | D8 holds counts per job; the export guard decides whether it may leave the data root (Task 2.7). |
-| `appendix_D6_data` | `reporting/tables.py::appendix_d6` | BLOCKED | Needs `n885`, which is not in `variables.xlsx`, so the R's `select` stops; the port raises rather than rebuild the table from five of the six codes (N2). |
+| `appendix_D6_data` | `reporting/tables.py::appendix_d6` | BLOCKED | Needs `n885`, which is not in `variables.xlsx`, so the R's `select` stops; the port raises rather than rebuild the table from five of the six codes. A corrected variant behind `config.INCLUDE_N885` (off by default) adds the row and marks every output of the run (N2). |
 | `appendix_D4_data`, `appendix_D7_data` | `reporting/tables.py::summary_d4_essays`, `summary_d7_bsag` | REPLACED | Participant-level in the R (brief F9): aggregate summaries instead, written only under `$LCP_DATA_ROOT` (N3). |
 
 ## `R/get_gpt_embeddings.R` (52 lines)

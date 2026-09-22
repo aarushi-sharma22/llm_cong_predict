@@ -279,6 +279,29 @@ def test_appendix_d5_proportions_count_the_missing_responses_in_the_denominator(
     assert "Below average" in set(table["value"]) and table["n"].notna().all()
 
 
+def test_appendix_d6_builds_under_the_corrected_variant():
+    """With config.INCLUDE_N885 on, read_ncds loads n885 and the table can be built
+    (owner decision at Checkpoint D). Every output of such a run is marked with
+    config.N885_NOTE, the way a sample built without gene data is marked."""
+    from llm_cong_predict import config
+
+    frame = _labelled_ncds().copy()
+    labels = dict(frame.attrs["value_labels"])
+    for code in ("n881", "n882", "n883", "n884", "n885"):  # the rest of the behaviour items
+        frame[code] = [1.0, 2.0, 3.0, 1.0, 2.0, np.nan]
+        labels[code] = {1: "Does not apply", 2: "Applies somewhat", 3: "Certainly applies"}
+    frame.attrs["value_labels"] = labels
+
+    table = appendix_d6(frame)
+    assert set(table["name"]) == {"Poor Hand Control", "Squirmy, Fidgety",
+                                  "Poor Physical Coordination", "Hardly Ever Still",
+                                  "Speech Difficulties", "Imperfect Grasp of English"}
+    built = build_tables(metrics=_metric_rows("gene_superlearner", ALL_OUTCOMES),
+                         ncds_1_to_9=frame, note=config.N885_NOTE)
+    assert (built["appendix_D6_data"]["variables_note"] == config.N885_NOTE).all()
+    assert (built["appendix_D1_data"]["variables_note"] == config.N885_NOTE).all()
+
+
 def test_appendix_d6_cannot_be_built_because_n885_is_not_in_the_variable_table():
     """R: llm_paper/R/create_data.R:L257–270 selects n880–n885, but n885 is not in
     data/variables.xlsx, so read_ncds never loads it and the R's select stops. The port

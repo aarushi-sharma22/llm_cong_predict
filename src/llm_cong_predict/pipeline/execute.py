@@ -123,6 +123,7 @@ class RunResult:
     label: str
     data_source: str
     elapsed_seconds: float
+    variables_note: str | None = None
     metrics_path: Path | None = None
     log_path: Path | None = None
     prediction_paths: list[Path] = field(default_factory=list)
@@ -343,6 +344,7 @@ class _FitTask:
 class _Run:
     def __init__(self, run_config: config.RunConfig, targets: Sequence[str] | None):
         self.run_config = run_config
+        self.variables_note: str | None = None
         self.pipe = build_pipeline()
         self.specs = model_specs_by_name()
         self.values: dict[str, Any] = {}
@@ -426,6 +428,10 @@ class _Run:
             self._check_synthetic_ids(name, value)
             self.values[name] = value
         self.gene_available = self.values.get("gene_data") is not None
+        mapping = self.values.get("mapping_df")
+        # the corrected variant that adds n885 marks every output of the run (N2)
+        self.variables_note = (config.N885_NOTE if mapping is not None
+                               and mapping.attrs.get("variables_include_n885") else None)
 
     def _is_metrics(self, name: str) -> bool:
         return name.endswith(_METRICS_SUFFIX) and name[: -len(_METRICS_SUFFIX)] in self.specs
@@ -502,6 +508,7 @@ class _Run:
                 rows.append({"target": model, "r_target": PYTHON_TO_R_TARGET.get(model, ""),
                              "var": row.pop("var"), "n": row.pop("n"), **row,
                              "sample": spec.sample, "sample_note": note,
+                             "variables_note": self.variables_note,
                              "run_config": self.run_config.name, "run_label": self.label})
         return pd.DataFrame(rows)
 
@@ -521,6 +528,7 @@ class _Run:
             "factor_backend": self.run_config.factor_backend or config.FACTOR_BACKEND,
             "gene_data_available": self.gene_available,
             "sample_note": SAMPLE_NOTE_NO_GENE_DATA if not self.gene_available else None,
+            "variables_note": self.variables_note,
             "targets_built": [n for n in self.order if n in self.values],
             "n_fits": int(sum(len(v) for k, v in self.values.items() if k in self.specs)),
             "n_metric_rows": int(len(metrics)),
@@ -552,4 +560,5 @@ def run_pipeline(run_config: config.RunConfig = config.PAPER_RUN,
         metrics_path, log_path = run.write_outputs(metrics, elapsed, len(predictions))
     return RunResult(run_config=run_config, metrics=metrics, not_run=run.not_run, values=run.values,
                      label=run.label, data_source=run.data_source, elapsed_seconds=elapsed,
-                     metrics_path=metrics_path, log_path=log_path, prediction_paths=predictions)
+                     variables_note=run.variables_note, metrics_path=metrics_path,
+                     log_path=log_path, prediction_paths=predictions)

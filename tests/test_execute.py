@@ -228,6 +228,29 @@ def test_predictions_and_metrics_are_written_only_under_the_data_root(no_gene_re
         assert root in path.resolve().parents
 
 
+# ------------------------------------------- the n885 corrected variant ----
+
+def test_the_n885_corrected_variant_marks_every_output(synthetic_root_no_genes, monkeypatch,
+                                                       no_gene_result):
+    """Owner decision at Checkpoint D: the R's behaviour is the default, and with the
+    corrected variant on (config.INCLUDE_N885) every output of the run says so, the way
+    a sample built without gene data does. The models themselves do not change: no
+    predictor list contains the added column."""
+    monkeypatch.setattr(config, "INCLUDE_N885", True)
+    with data_root(synthetic_root_no_genes):
+        result = run_pipeline(_smoke(factor_backend="native", save_predictions=False),
+                              targets=["teacher_lm_lm_metrics"])
+    assert result.variables_note == config.N885_NOTE
+    assert (result.metrics["variables_note"] == config.N885_NOTE).all()
+    assert json.loads(result.log_path.read_text())["variables_note"] == config.N885_NOTE
+    assert "s2_te_imperfect_english" in result.values["ncds_1_to_9_cleaned"].columns
+
+    default_rows = no_gene_result.metrics[no_gene_result.metrics["target"] == "teacher_lm_lm"]
+    assert default_rows["variables_note"].isna().all()  # the default run is not marked
+    np.testing.assert_allclose(result.metrics["mean_r2"].to_numpy(),
+                               default_rows["mean_r2"].to_numpy())
+
+
 # ------------------------------------- the native factor backend: not run ----
 
 def test_native_factor_backend_reports_the_polychoric_outcomes_as_not_run(synthetic_root):

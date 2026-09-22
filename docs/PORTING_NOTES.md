@@ -870,10 +870,12 @@ item, if any.
   4. has a count column (an INTEGER column named `n`, `count`, `freq`, ...) with a
      value below the minimum cell size. Proportions are not counts, so appendix D5 is
      not caught by this.
-- **The minimum cell size has no default.** `config.MINIMUM_CELL_SIZE` is `None` as
-  shipped, and every export is refused until it is set, with a message saying to
-  confirm the value against the UK Data Service's output rules. The port does not
-  choose a value.
+- **The minimum cell size is a decision, not a computation.** The port never picks one:
+  with `config.MINIMUM_CELL_SIZE = None` every export is refused, with a message saying
+  to confirm the value against the UK Data Service's output rules. It is now **10**
+  (owner, Checkpoint D): the UKDS handling guide gives 3 as the baseline threshold and
+  advises 10 where several outputs come from the same source, which is the case here.
+  Still to be confirmed with UKDS (V10).
 - **What passing does not mean:** the guard is four mechanical checks, not a
   disclosure review. Passing says only that these four found nothing.
 - **Why:** brief Task 2.7.
@@ -1144,9 +1146,11 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
   - `readability_metrics_variables` (L135) drops `[-c(1:2)]`. `filename` is not a
     column of `essay_data` (`create_essay_variables` drops it, `functions.R:L323`), so
     the two dropped names are `ncdsid` and THE FIRST READABILITY INDEX.
-  - `gpt_embeddings_variables` (L137) drops `[-1]` from a frame whose first column is
-    `id`, not `ncdsid` (`one_of` merely warns about `ncdsid`), so THE FIRST GPT
-    EMBEDDING dimension is dropped.
+  - `gpt_embeddings_variables` (L137): `select(one_of(colnames(essay_data)))` has
+    ALREADY removed the `id` column, because `essay_data` calls that column `ncdsid`
+    (`one_of` merely warns about the name it cannot find). The first remaining column is
+    therefore the first embedding dimension, and that is what `[-1]` drops, so THE FIRST
+    GPT EMBEDDING dimension is lost.
   Both change which predictors a model gets. They are reproduced, not corrected
   (the stance: keep the R's quirks by default); the loss is one column out of many.
 - **Why:** brief F7 and Task 2.4.
@@ -1266,7 +1270,16 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
     `data/variables.xlsx`**, so `read_ncds` never loads it and the R's `select` stops.
     The port does not rebuild the table from the five codes that do exist: it raises
     with that reason. (`n885` is also named in `find_essay_teacher_genetics_overlap`,
-    which `_targets.R` never calls.)
+    `functions.R:L333`, which `_targets.R` never calls.)
+    **Corrected variant, OFF by default** (owner decision at Checkpoint D):
+    `config.INCLUDE_N885` — or `read_datalist(..., include_n885=True)` — adds the row
+    `sweep 2, teacher, type behavior, s2_te_imperfect_english` (`io/readers.py::N885_ROW`),
+    so the code is read, `clean_ncds`' behaviour block gains exactly that one column, and
+    D6 can be built. No predictor list contains the new column, so no model changes.
+    Every output of such a run carries `config.N885_NOTE`, the way a sample built
+    without gene data carries `sample_note`: the metric rows, the run log and every
+    reporting table. Whether the author's own variable table had `n885` is question 1 of
+    the "also useful" section in docs/OPEN_QUESTIONS_FOR_AUTHOR.md.
 - **Two things that are easy to misread, and are reproduced:** the
   "teacher + genes + essay" row of `fig_4_data` is the **mmg-sample** target, because
   `L113` overwrites the full-sample variable with the one defined at `L92`; and the
@@ -1277,8 +1290,13 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
   `::test_appendix_d9_reconstructs_the_linear_model_half_and_clamps_it_at_zero`,
   `::test_appendix_d11_has_no_teacher_model_in_the_maximum_sample_half`,
   `::test_appendix_d6_cannot_be_built_because_n885_is_not_in_the_variable_table`,
-  `::test_appendix_d1_and_d2_are_the_metric_rows_with_labels`.
-- **Validation:** V6 (the reconstructions need the author's confirmation).
+  `::test_appendix_d6_builds_under_the_corrected_variant`,
+  `::test_appendix_d1_and_d2_are_the_metric_rows_with_labels`;
+  `tests/test_clean_ncds.py::test_the_n885_corrected_variant_adds_exactly_one_column`;
+  `tests/test_execute.py::test_the_n885_corrected_variant_marks_every_output`.
+- **Validation:** V6. The four reconstructions are written up as questions for the
+  author in **docs/OPEN_QUESTIONS_FOR_AUTHOR.md** (owner decision at Checkpoint D: the
+  owner is emailing him).
 
 ### N3. D4 and D7 are participant-level: aggregate summaries instead
 - **Label:** data-safety change.

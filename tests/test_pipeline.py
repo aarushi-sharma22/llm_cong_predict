@@ -205,8 +205,9 @@ def test_data_dependent_variable_lists_follow_the_r_including_its_two_quirks():
     port reproduces (PORTING_NOTES M3):
       * readability (L135) drops ``[-c(1:2)]``, but ``filename`` is not a column of
         essay_data, so ncdsid AND the first readability index are dropped;
-      * the GPT frame (L137) has ``id``, not ``ncdsid``, so ``[-1]`` drops the first
-        embedding column.
+      * the GPT frame (L137): ``one_of`` has already dropped its ``id`` column, since
+        essay_data calls that column ncdsid, so ``[-1]`` drops the first embedding
+        column instead.
     """
     from llm_cong_predict.pipeline import variable_lists as vl
 
