@@ -7,7 +7,6 @@ from a seed, with planted relations. No real data is involved.
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 from pathlib import Path
@@ -17,6 +16,7 @@ import pandas as pd
 import pyreadstat
 import pytest
 
+from fixtures.data_root import data_root
 from fixtures.synthetic_ncds import SPELLING_CATEGORIES, write_synthetic_inputs
 from llm_cong_predict import config
 from llm_cong_predict.cleaning.clean_ncds import MISSING_LABELS
@@ -28,20 +28,6 @@ from llm_cong_predict.rbridge import r_unavailable_reason
 
 SMOKE_N = 120  # small n, as the smoke configuration allows (brief Task 2.4)
 SEED = 7
-
-
-@contextlib.contextmanager
-def data_root(path):
-    """Point $LCP_DATA_ROOT at ``path`` for the duration of the block."""
-    before = os.environ.get(config.LCP_DATA_ROOT_ENV)
-    os.environ[config.LCP_DATA_ROOT_ENV] = str(path)
-    try:
-        yield Path(path)
-    finally:
-        if before is None:
-            os.environ.pop(config.LCP_DATA_ROOT_ENV, None)
-        else:
-            os.environ[config.LCP_DATA_ROOT_ENV] = before
 
 
 @pytest.fixture(scope="session")
@@ -274,19 +260,26 @@ def test_results_do_not_depend_on_n_jobs(synthetic_root):
 
 # ------------------------------------------------------------ end to end ----
 
+@pytest.fixture(scope="session")
+def full_smoke_result(synthetic_root):
+    """One end-to-end smoke run of the whole graph, shared by the tests below. It needs
+    the "r" factor backend, because three of the twelve outcomes are polychoric factor
+    scores that the native backend does not compute (PORTING_NOTES F1)."""
+    reason = r_unavailable_reason(("psych",))
+    if reason is not None:
+        pytest.skip(f"{reason} — the end-to-end run needs the 'r' factor backend")
+    with data_root(synthetic_root):
+        return run_pipeline(_smoke(n_jobs=min(8, os.cpu_count() or 1)))
+
+
 @pytest.mark.slow
-@pytest.mark.skipif(r_unavailable_reason(("psych",)) is not None,
-                    reason=(r_unavailable_reason(("psych",)) or "") +
-                           " — the end-to-end run needs the 'r' factor backend for the three "
-                           "polychoric factors (PORTING_NOTES F1)")
-def test_smoke_run_scores_every_scored_target(synthetic_root):
+def test_smoke_run_scores_every_scored_target(full_smoke_result):
     """Brief Task 2.4: the smoke run on synthetic data produces a metric row for every
     scored target. 63 targets are scored and 409 of the 416 fits are scored; the seven
     *_mmg_lm targets are scored nowhere in the R (owner decision C6)."""
     specs = execute.model_specs_by_name()
     scored = {name: s for name, s in specs.items() if s.scorer != "none"}
-    with data_root(synthetic_root):
-        result = run_pipeline(_smoke(n_jobs=min(8, os.cpu_count() or 1)))
+    result = full_smoke_result
     metrics = result.metrics
     assert result.not_run == []
     assert set(metrics["target"]) == set(scored)
@@ -302,6 +295,33 @@ def test_smoke_run_scores_every_scored_target(synthetic_root):
                       (metrics["var"] == "s2_co_verbal_ability")]
     assert float(teacher["mean_r2"].iloc[0]) > 0.2
     assert pd.read_csv(result.metrics_path).shape[0] == len(metrics)
+
+
+@pytest.mark.slow
+def test_reporting_tables_build_from_the_end_to_end_run(full_smoke_result, synthetic_root):
+    """Brief Task 2.6: every table of R/create_data.R that can be built is built from a
+    real run — the metric rows, the fits (appendix D3) and the NCDS data (D5, D8 and the
+    D4/D7 summaries). D6 is the one that cannot be built (PORTING_NOTES N2)."""
+    from llm_cong_predict.reporting import build_from_run, write_tables
+
+    built = build_from_run(full_smoke_result)
+    assert set(built.tables) == {
+        "fig_2_data", "fig_3_data", "fig_4_data", "fig_5_data", "appendix_D1_data",
+        "appendix_D2_data", "appendix_D3_data", "appendix_D5_data", "appendix_D8_data",
+        "appendix_D9_data", "appendix_D10_data", "appendix_D11_data", "appendix_D12_data",
+        "appendix_D4_summary", "appendix_D7_summary"}
+    assert "n885" in built.skipped["appendix_D6_data"]
+    # D3: four targets x twelve outcomes x six learners
+    assert len(built["appendix_D3_data"]) == 4 * 12 * 6
+    assert built["appendix_D3_data"]["mean_weight"].between(0, 1).all()
+    # the run's label travels with the numbers into every table built from metric rows
+    assert (built["fig_2_data"]["run_label"] == config.SMOKE_RUN.label).all()
+    assert "ncdsid" not in built["appendix_D4_summary"].columns
+
+    with data_root(synthetic_root):
+        written = write_tables(built, prefix="SMOKE_")
+    assert len(written) == len(built.tables)
+    assert all(synthetic_root.resolve() in p.resolve().parents for p in written)
 
 
 @pytest.mark.slow

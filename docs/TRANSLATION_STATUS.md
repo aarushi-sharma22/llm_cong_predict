@@ -62,10 +62,19 @@ their inputs and one (`tokenized_essays`) is produced by another program.
 
 ## `R/create_data.R` (601 lines)
 
-Figure and appendix tables (`fig_2..5_data.csv`, `appendix_D1..D12_data.csv`).
-Several lines cannot run as written (A6). **NOT STARTED**: Task 2.6 ports it into
-`src/llm_cong_predict/reporting/`. D4 (essay text) and D7 (per-person BSAG values) are
-participant-level and will be replaced by aggregate summaries.
+Figure and appendix tables (`fig_2..5_data.csv`, `appendix_D1..D12_data.csv`), ported
+into `src/llm_cong_predict/reporting/` (Task 2.6). Every output, its inputs and its
+state: docs/reference/create_data_outputs.md.
+
+| Output | Python | Status | Notes |
+|---|---|---|---|
+| `fig_2_data`, `fig_3_data`, `fig_5_data` | `reporting/tables.py::fig_2`, `fig_3`, `fig_5` | PORTED | N1, N4. |
+| `fig_4_data`, `appendix_D9_data`, `appendix_D11_data` | `reporting/tables.py::fig_4`, `appendix_d9`, `appendix_d11` | PORTED (reconstruction) | The R stops on these (undefined objects, a self-reference, a trailing comma): N2. |
+| `appendix_D1_data`, `appendix_D2_data`, `appendix_D10_data`, `appendix_D12_data` | `reporting/tables.py` | PORTED | D2 keeps the long `type` labels, because the R's pipe ends before the relabelling (N2). |
+| `appendix_D3_data` | `reporting/tables.py::appendix_d3` | PORTED | Per-fold learner weights from the fits. |
+| `appendix_D5_data`, `appendix_D8_data` | `reporting/tables.py::appendix_d5`, `appendix_d8` | PORTED | D8 holds counts per job; the export guard decides whether it may leave the data root (Task 2.7). |
+| `appendix_D6_data` | `reporting/tables.py::appendix_d6` | BLOCKED | Needs `n885`, which is not in `variables.xlsx`, so the R's `select` stops; the port raises rather than rebuild the table from five of the six codes (N2). |
+| `appendix_D4_data`, `appendix_D7_data` | `reporting/tables.py::summary_d4_essays`, `summary_d7_bsag` | REPLACED | Participant-level in the R (brief F9): aggregate summaries instead, written only under `$LCP_DATA_ROOT` (N3). |
 
 ## `R/get_gpt_embeddings.R` (52 lines)
 

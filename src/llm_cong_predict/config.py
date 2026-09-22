@@ -80,9 +80,9 @@ RESTRICTED_INPUTS: dict[str, str] = {
 }
 
 # OUTPUT folders, always under $LCP_DATA_ROOT: participant-level outputs (derived,
-# fits, logs) and the aggregate metrics table, which stays there until it passes the
-# export guard (Task 2.7).
-PARTICIPANT_OUTPUT_DIRS = ("derived", "fits", "logs", "metrics")
+# fits, logs) and the aggregate tables — the metric rows and the reporting tables —
+# which stay there until they pass the export guard (Task 2.7).
+PARTICIPANT_OUTPUT_DIRS = ("derived", "fits", "logs", "metrics", "reporting")
 
 # Files written by separate pipeline steps into $LCP_DATA_ROOT/derived/ (names chosen by
 # the port). RoBERTa embeddings are generated in their own process (isolation.py).

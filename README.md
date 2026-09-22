@@ -124,6 +124,7 @@ src/llm_cong_predict/
   isolation.py     # torch and xgboost never share a process
   models/          # native Super Learner, base learners, screen.glmnet, rpy2 oracle
   metrics/         # cross-validated metric rows (get_cv_superlearner/lm_metrics)
+  reporting/       # the figure and appendix tables (port of R/create_data.R)
   pipeline/        # dependency graph, variable lists, model specification, the runner
 r/
   readability.R    # TreeTagger + koRpus readability, run by hand in R; NEVER RUN HERE

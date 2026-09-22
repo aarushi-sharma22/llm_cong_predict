@@ -135,11 +135,12 @@ upstream), and several objects used before assignment
 `cog_superlearner_social_lm` used without `tar_read`). Mixed `tar_read(...)` vs
 bare-symbol usage throughout.
 
-Handling: Task 2.6 ports the intended outputs into `src/llm_cong_predict/reporting/`
-(`fig_2..5_data.csv`, `appendix_D1..D12`), with each broken line logged there. The
-planned `scripts/make_figures.py` was never written. D4 (essay text) and D7
-(per-person BSAG values) are participant-level and become aggregate summaries
-(brief F9).
+Handling (done in Task 2.6): every output file, its inputs and its state are listed in
+**docs/reference/create_data_outputs.md**, and `src/llm_cong_predict/reporting/` builds
+them. Four outputs are reconstructed and one (`appendix_D6_data`, which needs the code
+`n885`) cannot be built at all: N2. The planned `scripts/make_figures.py` was never
+written. D4 (essay text) and D7 (per-person BSAG values) are participant-level and
+become aggregate summaries (brief F9, N3).
 
 ### A7. Machine-specific / Windows-only paths ✅
 `C:/TreeTagger` (TreeTagger install), `C:/Users/usr/anaconda3/python.exe`
@@ -1186,3 +1187,108 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
 - **Why:** the R's format (`.rds`) is R-only (G1); the port picks the format, and CSV
   keeps the dependency list smaller.
 - **Test:** covered by the end-to-end run (the synthetic set writes these files).
+
+---
+
+## N. Reporting: the port of `R/create_data.R` (Phase 2, Task 2.6)
+
+Every output file of the R, its inputs, its transformations, whether it is aggregate or
+participant-level, and whether the R can produce it: **docs/reference/create_data_outputs.md**.
+
+### N1. The reporting module
+- **Label:** faithful, except where N2–N4 say otherwise.
+- **R source:** `llm_paper/R/create_data.R:L1–601`.
+- **Python:** `src/llm_cong_predict/reporting/` (not `results/`, which git ignores):
+  - `mapping.py`: the `mapping` table (`L11–44`) and the learner-name table (`L504–517`);
+    also `dplyr_filter_equals`/`dplyr_filter_not_equals`, because dplyr drops rows whose
+    comparison is NA and pandas keeps them — which matters, since the four confounder
+    rows of the mapping have no `category_name` (`L31–34` has no `TRUE ~` fallback);
+  - `tables.py`: one function per output file, each citing its R lines;
+  - `build.py`: `build_tables` / `build_from_run` build every table the run's inputs
+    allow, and list the others with the reason; `write_tables` writes them to
+    `$LCP_DATA_ROOT/reporting/`.
+  The R's `tar_read(<target>) %>% bind_rows()` becomes a selection of the metric rows of
+  that target from the runner's metrics table (M1).
+- **A table whose inputs are missing is never built from fewer rows.** Without gene
+  data, for example, `fig_2_data` and `fig_3_data` are not produced, and say why.
+- **Why:** brief Task 2.6.
+- **Test:** `tests/test_reporting.py` (19 tests),
+  `tests/test_execute.py::test_reporting_tables_build_from_the_end_to_end_run` (slow).
+- **Validation:** V6.
+
+### N2. Four outputs are reconstructed; one cannot be built at all
+- **Label:** reconstruction (and one refusal).
+- **R source and what is wrong** (details in the inventory):
+  - `fig_4_data` (`L98`) and `appendix_D11_data` (`L367`) call
+    `get_cv_superlearner_metrics(cog_superlearner_social_lm)` on a target name that was
+    never read with `tar_read`, so the object does not exist. Reconstruction: that
+    target's metric rows.
+  - `appendix_D11_data` also depends on `L359`, which defines
+    `teacher_genes_essay_overlap_metrics` from itself before it exists (it is built at
+    `L462`). Reconstruction: the `L462` definition.
+  - `appendix_D9_data` (`L300–307`) binds `essay_full_metrics_lm`,
+    `genes_full_metrics_lm` and `teacher_full_metrics_lm`, which are never defined
+    anywhere, and its `bind_rows` has a trailing comma. Reconstruction: the same three
+    feature sets fitted by `get_lm_cv_model` (`essay_lm`, `gene_lm`, `teacher_lm`), with
+    the same `type` labels, which is what the names and the following
+    `pivot_wider(names_from = "method")` require.
+  - `appendix_D2_data` (`L173–179`): the pipe ends at `L176` and the next line starts a
+    new statement, so the wrapping and the relabelling of `type` to "RoBERTa" / "GPT 3.5"
+    / "GPT 4" never reach the table. Here the port is FAITHFUL TO WHAT RUNS: the long
+    labels are kept.
+  - `appendix_D6_data` (`L257–270`) selects `n880`–`n885`, but **`n885` is not in
+    `data/variables.xlsx`**, so `read_ncds` never loads it and the R's `select` stops.
+    The port does not rebuild the table from the five codes that do exist: it raises
+    with that reason. (`n885` is also named in `find_essay_teacher_genetics_overlap`,
+    which `_targets.R` never calls.)
+- **Two things that are easy to misread, and are reproduced:** the
+  "teacher + genes + essay" row of `fig_4_data` is the **mmg-sample** target, because
+  `L113` overwrites the full-sample variable with the one defined at `L92`; and the
+  "Maximum Observations" half of `appendix_D11_data` has no such row at all, because at
+  `L382` that variable holds the **Big Five** metrics (`L328`), whose outcomes are not
+  in the mapping, so the `category == "Life Outcomes"` filter removes them.
+- **Test:** `tests/test_reporting.py::test_fig_4_takes_the_mmg_teacher_model_and_leaves_pedu_out`,
+  `::test_appendix_d9_reconstructs_the_linear_model_half_and_clamps_it_at_zero`,
+  `::test_appendix_d11_has_no_teacher_model_in_the_maximum_sample_half`,
+  `::test_appendix_d6_cannot_be_built_because_n885_is_not_in_the_variable_table`,
+  `::test_appendix_d1_and_d2_are_the_metric_rows_with_labels`.
+- **Validation:** V6 (the reconstructions need the author's confirmation).
+
+### N3. D4 and D7 are participant-level: aggregate summaries instead
+- **Label:** data-safety change.
+- **R source:** `llm_paper/R/create_data.R:L241–242` (`appendix_D4_data.csv` is
+  `ncds_essays`: the full essay text with `ncdsid`) and `L273–288`
+  (`appendix_D7_data.csv` is every person's BSAG values with `ncdsid`). Brief F9.
+- **Python:** the port does not build either table. `summary_d4_essays` gives the word
+  counts' n, mean, sd, min, quartiles and max; `summary_d7_bsag` gives the same per BSAG
+  item. They are written as `appendix_D4_summary` and `appendix_D7_summary`, under
+  `$LCP_DATA_ROOT` like every other output of the module.
+- **Why:** neither may leave the secure area, and the figures they feed need only the
+  distribution.
+- **Test:** `tests/test_reporting.py::test_d4_and_d7_summaries_hold_no_participant_data`.
+- **Validation:** none.
+- **Note:** `appendix_D8_data` is aggregate but holds counts per aspired job, so small
+  cells are possible. Whether it may leave `$LCP_DATA_ROOT` is the export guard's
+  decision (Task 2.7).
+
+### N4. Labels are not wrapped
+- **Label:** deviation.
+- **R source:** `stringr::str_wrap` on `name` and `type` (`L67–68`, `L133–134`,
+  `L192–193`, `L207–208`, `L234–235`, `L313–314`, `L339–340`, `L398–399`, `L413–414`,
+  `L493–494`, `L499–500`).
+- **Python:** the labels are left unwrapped. `str_wrap` breaks lines with stringi's
+  `stri_wrap`, whose line breaking is not a simple greedy fill, and **stringr and
+  stringi are not installed here** (checked with `requireNamespace`), so a port of it
+  could not be verified against anything. The wrapping is presentational: it exists so
+  the paper's plots have short axis labels.
+- **Consequence handled:** three filters compare against WRAPPED strings — `L69`/`L209`
+  (`name != "General Factor\nof Cognitive\nAbility (Age\n11)"`) and `L239`
+  (`!name %in% c("Highest Education\n(Age 33)", "General Factor of\nCognitive Ability\n(Age 11)")`).
+  The port applies them to the underlying variable (`s2_co_factor_ability`,
+  `s5_co_highest_edu`), which selects exactly the same rows, so a wrapping difference
+  cannot silently change a table's contents.
+- **Test:** `tests/test_reporting.py::test_fig_2_keeps_three_models_without_the_life_outcome_or_the_general_factor`,
+  `::test_fig_5_divides_by_the_word_count_baseline`.
+- **Validation:** V6. To match the paper's released CSVs character for character, the
+  labels would have to be wrapped exactly as `stri_wrap` does; that needs stringr/stringi
+  installed to check against, which is an open question for the owner.
