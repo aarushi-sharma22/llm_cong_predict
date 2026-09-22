@@ -8,7 +8,10 @@ than hand-waved.
 
 Prerequisites:
     pip install -e '.[oracle]'
-    # and R with: SuperLearner, ranger, nnet, xgboost, kernlab, glmnet
+    # and R with: SuperLearner, nnls, ranger, nnet, kernlab, glmnet (versions in
+    # docs/REFERENCE_SOURCES.md). R's xgboost is deliberately NOT installed yet
+    # (Phase 3 pins it), so with --library full R's SL.xgboost.hist fails inside
+    # SuperLearner's try() and gets weight 0 on the R side only.
 
 Usage:
     python scripts/validate_oracle.py                 # synthetic data, lm library
@@ -51,7 +54,7 @@ def main() -> int:
                     help="max abs prediction diff to consider a [match] learner OK")
     args = ap.parse_args()
 
-    from llm_cong_predict.models.folds import make_folds
+    from llm_cong_predict.models.folds import make_folds, train_indices
     from llm_cong_predict.models.native_superlearner import fit_cv_superlearner
     from llm_cong_predict.models.base_learners import lm_library, superlearner_library
     from llm_cong_predict.metrics.cv_metrics import superlearner_metrics
@@ -64,17 +67,22 @@ def main() -> int:
 
     X, y = _synthetic(seed=args.seed)
     n = len(y)
-    folds = make_folds(n, 10, seed=args.seed)  # SAME folds for both backends
+    folds = make_folds(n, 10, seed=args.seed)  # SAME outer folds for both backends
+    inner = [make_folds(len(train_indices(n, f)), 5, seed=1000 + k)  # SAME inner folds
+             for k, f in enumerate(folds)]
 
     if args.library == "lm":
-        native = fit_cv_superlearner(X, y, lm_library(), outcome_var="y", seed=args.seed, folds=folds)
+        native = fit_cv_superlearner(X, y, lm_library(), outcome_var="y", seed=args.seed, folds=folds,
+                                     inner_folds=inner)
         r_which = "lm"
     else:
-        native = fit_cv_superlearner(X, y, superlearner_library(), outcome_var="y", seed=args.seed, folds=folds)
+        native = fit_cv_superlearner(X, y, superlearner_library(), outcome_var="y", seed=args.seed, folds=folds,
+                                     inner_folds=inner)
         r_which = "superlearner"
 
     print("Fitting R oracle (this calls CV.SuperLearner)...")
-    r_fit = fit_r_cv_superlearner(X, y, which=r_which, outcome_var="y", seed=args.seed, folds=folds)
+    r_fit = fit_r_cv_superlearner(X, y, which=r_which, outcome_var="y", seed=args.seed, folds=folds,
+                                  inner_folds=inner)
 
     assert native.library_names == r_fit.library_names, (
         f"library name mismatch: {native.library_names} vs {r_fit.library_names}"
@@ -89,7 +97,7 @@ def main() -> int:
         max_diff = float(np.max(np.abs(a - b)))
         corr = float(np.corrcoef(a, b)[0, 1]) if np.std(a) > 0 and np.std(b) > 0 else float("nan")
         flag = ""
-        if name in ("SL.mean_All", "SL.lm_All", "SL.lm_screen.glmnet"):
+        if name in ("SL.mean_All", "SL.lm_All"):
             ok = max_diff <= args.tol
             all_ok &= ok
             flag = "  <- [match] " + ("OK" if ok else "OUT OF TOLERANCE")

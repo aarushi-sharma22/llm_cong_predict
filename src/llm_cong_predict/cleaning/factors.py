@@ -182,19 +182,54 @@ class FactorResult:
     deferred: list[str] = field(default_factory=list)   # factors blocked (poly, V3)
 
 
-def create_factors(ncds_cleaned: pd.DataFrame, include_polychoric: bool = False) -> FactorResult:
-    """Port of ``create_factors(ncds_cleaned)``.
+def create_factors_r(ncds_cleaned: pd.DataFrame) -> pd.DataFrame:
+    """All four factor scores computed by R's ``psych::fa`` through rpy2, exactly as the R.
+
+    R: llm_paper/R/functions.R:L297–306 — for each definition,
+    ``ncds_cleaned %>% select(vars) %>% psych::fa(1, cor = type) %>% .$score``;
+    ``$score`` partially matches ``scores``, the only element starting with "score"
+    (checked with psych 2.6.5). The reference implementation for the three polychoric
+    factors (brief Task 2.2). Requires R, rpy2 and psych (docs/REFERENCE_SOURCES.md).
+    Returns ``ncdsid`` plus one column per factor, in the R's order.
+    """
+    from ..rbridge import converter, require_r
+
+    require_r(("psych",))
+    import rpy2.robjects as ro
+
+    out = pd.DataFrame({"ncdsid": ncds_cleaned["ncdsid"].to_numpy()})
+    with converter():
+        for name, spec in FACTOR_DEFINITIONS.items():
+            ro.globalenv["lcp_items"] = ncds_cleaned.loc[:, spec["vars"]].astype(float).reset_index(drop=True)
+            scores = ro.r(f'suppressMessages(psych::fa(lcp_items, 1, cor = "{spec["cor"]}"))$score')
+            out[name] = np.asarray(scores, dtype=float).ravel()
+        ro.r("rm(lcp_items)")
+    return out
+
+
+def create_factors(ncds_cleaned: pd.DataFrame, include_polychoric: bool = False,
+                   backend: str | None = None) -> FactorResult:
+    """Port of ``create_factors(ncds_cleaned)`` (R: llm_paper/R/functions.R:L272–307).
 
     R:
         for each factor def: ncds_cleaned %>% select(vars) %>% psych::fa(1, cor=type)
         then $score; column-bind all four; prepend ncdsid.
 
-    Because the three polychoric factors are not yet validated (V3), this returns a
-    ``FactorResult`` that separates what was actually computed (the Pearson ability
-    factor) from what is deferred. Set ``include_polychoric=True`` only once V3 has a
-    validated estimator/fallback; until then it will raise for the poly factors,
-    deliberately, rather than emit unverified numbers.
+    ``backend`` (default ``config.FACTOR_BACKEND``):
+      * ``"r"``: all four factors from ``psych::fa`` through rpy2 (:func:`create_factors_r`);
+      * ``"native"``: the Pearson factor in numpy; the three polychoric factors are
+        deferred, or raise if ``include_polychoric=True`` (no polychoric estimator
+        matching psych exists in the port).
     """
+    from ..config import FACTOR_BACKEND
+
+    backend = FACTOR_BACKEND if backend is None else backend
+    if backend == "r":
+        scores = create_factors_r(ncds_cleaned)
+        return FactorResult(scores=scores, computed=list(FACTOR_DEFINITIONS), deferred=[])
+    if backend != "native":
+        raise ValueError(f"factor backend must be 'r' or 'native', got {backend!r}")
+
     out = pd.DataFrame({"ncdsid": ncds_cleaned["ncdsid"].values})
     computed: list[str] = []
     deferred: list[str] = []

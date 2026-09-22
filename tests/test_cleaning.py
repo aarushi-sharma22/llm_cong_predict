@@ -151,7 +151,7 @@ def test_create_factors_computes_pearson_defers_polychoric():
         data[v] = base + rng.normal(scale=0.3, size=n)  # correlated -> a real factor
     df = pd.DataFrame(data)
 
-    res = create_factors(df, include_polychoric=False)
+    res = create_factors(df, include_polychoric=False, backend="native")
     # Pearson ability factor computed; the three poly factors deferred (V3).
     assert res.computed == ["s2_co_factor_ability"]
     assert set(res.deferred) == {
@@ -176,7 +176,7 @@ def test_create_factors_polychoric_raises_not_guesses():
             cols[v] = [1, 2, 3, 4]
     df = pd.DataFrame({"ncdsid": ["1", "2", "3", "4"], **cols})
     with pytest.raises(NotImplementedError):
-        create_factors(df, include_polychoric=True)
+        create_factors(df, include_polychoric=True, backend="native")
 
 
 def test_find_essay_teacher_genetics_overlap_keeps_unlabelled_codes_as_integer_codes():
@@ -209,7 +209,7 @@ def test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling():
     names = FACTOR_DEFINITIONS["s2_co_factor_ability"]["vars"]
     df = pd.DataFrame(X, columns=names)
     df.insert(0, "ncdsid", [f"SYN{i:06d}" for i in range(30)])
-    scores = create_factors(df).scores["s2_co_factor_ability"].to_numpy()
+    scores = create_factors(df, backend="native").scores["s2_co_factor_ability"].to_numpy()
 
     R = _pearson_corr(X)
     L = _minres_one_factor(R)

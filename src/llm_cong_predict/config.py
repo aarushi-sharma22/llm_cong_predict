@@ -146,6 +146,14 @@ def logs_dir() -> Path:
     return participant_output_dir("logs")
 
 
+# --- Factor scores -------------------------------------------------------------
+# "r": all four create_factors scores from R's psych::fa through rpy2, the reference
+# implementation (needs R + rpy2 + psych). "native": the Pearson factor in numpy; the
+# three polychoric factors raise (PORTING_NOTES F1, F2). "r" is the default because it
+# is the only backend that produces all four factors as the R does.
+FACTOR_BACKEND = "r"
+
+
 # --- Model / CV parameters ---------------------------------------------------
 @dataclass(frozen=True)
 class SuperLearnerConfig:

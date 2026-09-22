@@ -238,6 +238,11 @@ and **V7** (learner settings).
   - The brief's wording "cv_risk is NaN for failed learners" is therefore exact only
     for CV failures.
 - **Why:** brief F4.
+- **Measured against R (Task 2.2):** on identical outer and inner folds, R's
+  `CV.SuperLearner` (SuperLearner 2.0-42, R 4.6.1) and the native engine with the lm
+  library (`SL.mean`, `SL.lm`) agree to at most 1.7e-14. That covers library
+  predictions, weights, SL predictions, CV risks and discrete-SL predictions, with an
+  exactly collinear column included. `tests/test_oracle.py::test_sl_mean_and_sl_lm_match_r_superlearner_on_identical_folds`.
 - **Test:** `tests/test_superlearner_mechanics.py`: `::test_failing_learner_gets_weight_zero_and_ensemble_has_no_nan`,
   `::test_refit_failure_with_positive_weight_recomputes_weights`,
   `::test_refit_failure_with_zero_weight_changes_nothing`,
@@ -293,7 +298,9 @@ and **V7** (learner settings).
   solution), which changes predictions when new data break a collinearity.
   APPROX: dqrdc2's limited-pivoting arithmetic can differ at the threshold.
 - **Test:** `tests/test_learners.py::test_sl_lm_drops_exactly_collinear_column_like_r`,
-  `::test_sl_lm_with_no_columns_fits_intercept_only`.
+  `::test_sl_lm_with_no_columns_fits_intercept_only`. Against R:
+  `tests/test_oracle.py::test_sl_mean_and_sl_lm_match_r_superlearner_on_identical_folds`
+  (the data include an exactly collinear column; agreement to 1e-14).
 - **Validation:** V4, V7.
 
 ### C5. `SL.ranger`
@@ -400,6 +407,16 @@ and **V7** (learner settings).
 - **Why:** faithful selection rule. APPROX: convergence criteria differ, and R's CV
   folds are random. `foldid` and `lambdas` arguments let the Task 2.2 oracle compare
   on identical folds and grid.
+- **Measured against R (Task 2.2, glmnet 5.0, synthetic data):**
+  - With R's lambda sequence and shared folds: identical selections in 12/12
+    datasets.
+  - With each side's own default grid and early stop (the screener as the pipeline
+    uses it) and shared folds: identical selections in 40/40.
+  - The grids agree to about 1e-15 relative.
+  - The early stop gave a path one point longer or shorter than glmnet's in 5 of 40
+    datasets. In each, the relative R² gain was within about 1e-6 of the 1e-5
+    threshold, because the two coordinate-descent solutions' R² differ by up to 4.8e-4.
+  - Not reproducible: R's random CV folds (the pipeline's own folds are seeded).
 - **Test:** `tests/test_learners.py::test_screening_*`, `::test_lambda_grid_matches_glmnet_definition`,
   `::test_glmnet_early_stop_rule`, `::test_screen_invariant_to_rescaling_a_column`,
   `::test_screen_fallback_*`.
@@ -519,14 +536,28 @@ that the public `variables.xlsx` was the wrong file. That belief was wrong (A1):
 file is right and only lacks a header row. `clean_ncds` is ported in Phase 2,
 Task 2.1, as a reconstruction (A1, A2). The other five cleaning functions are ported.
 
-### F1. `create_factors` — polychoric factors DEFERRED to the R bridge (Task 2.2), not guessed 🔦 (V3)
-Three of the four factors use `psych::fa(cor="poly")` (polychoric). A polychoric
-estimator matching R's `polycor`/`psych` is nontrivial, and substituting a Pearson
-correlation would change the numbers while appearing to work. So only the Pearson
-factor (`s2_co_factor_ability`) is computed; the three polychoric factors raise
-unless `include_polychoric=True`, which itself raises until V3 provides a validated
-estimator or an rpy2 `psych::fa` fallback. This is the "don't guess where data/method
-is missing" rule applied to a method gap.
+### F1. `create_factors` backends: R's `psych::fa` (default) or native (Task 2.2)
+- **Label:** faithful with the `"r"` backend. The native backend is APPROX for the
+  Pearson factor and cannot compute the polychoric factors.
+- **R source:** `llm_paper/R/functions.R:L272–307`. Each factor is
+  `psych::fa(1, cor = type) %>% .$score`. `$score` partially matches `scores`, the only
+  element starting with "score" (checked in R with psych 2.6.5).
+- **Python:** `cleaning/factors.py::create_factors(…, backend=None)`, where `None`
+  means `config.FACTOR_BACKEND`, default `"r"`.
+  - `"r"` computes all four factors with `psych::fa` through rpy2
+    (`create_factors_r`). It is the reference implementation and the only one for the
+    three polychoric factors.
+  - `"native"` computes the Pearson factor in numpy (F2). The polychoric factors are
+    deferred, or raise with `include_polychoric=True`. A polychoric estimator matching
+    psych would be guesswork.
+  - The default `"r"` is my choice, because it is the only backend that produces all
+    four factors as the R does. It needs R, rpy2 and psych.
+- **Why:** brief Task 2.2.
+- **Test:** `tests/test_oracle.py::test_r_bridge_computes_all_four_factors`,
+  `::test_pearson_factor_matches_psych_fa`;
+  `tests/test_cleaning.py::test_create_factors_polychoric_raises_not_guesses`
+  (native).
+- **Validation:** V3.
 
 ### F2. `create_factors` implemented in numpy; Pearson-factor scoring follows `factor.scores` (scoring fixed in Phase 1, Task 1.5)
 - **Label:** faithful for the scoring; APPROX for the loadings.
@@ -545,8 +576,11 @@ is missing" rule applied to a method gap.
   minimises the same criterion, but identical loadings are not guaranteed.
 - **Test:** `tests/test_cleaning.py::test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling`,
   `::test_create_factors_computes_pearson_defers_polychoric`.
-- **Validation:** V3. The Task 2.2 oracle compares the scores and the NA pattern
-  with `psych::fa`.
+- **Measured against R (Task 2.2, psych 2.6.5):** on 4 synthetic datasets with missing
+  items, the NA pattern is identical, the correlation with `psych::fa(x, 1)$scores` is
+  ≥ 0.99999999997, and the largest absolute difference is 2.2e-5, from the loadings
+  (AP8). `tests/test_oracle.py::test_pearson_factor_matches_psych_fa`.
+- **Validation:** V3.
 
 ### F3. `create_aspirations` sex comparison reproduced faithfully, incl. its quirk ✅
 The R computes `sex = as.character(as_factor(sex))` and then
@@ -901,3 +935,36 @@ join in `create_aspirations` adds no rows (computed with pandas: 58 joined rows 
 
 ### J6. PORTING_NOTES A3 (earlier version of this file)
 An unmatched fifth argument is an error in R, not silently dropped (A3, rewritten).
+
+---
+
+## K. R bridge (Phase 2, Task 2.2)
+
+### K1. `models/r_superlearner.py` fixed, and first run
+- **Label:** faithful (it calls R itself).
+- **R source:** `SuperLearner/R/CV.SuperLearner.R:L3–39` (`cvControl`,
+  `innerCvControl`), `control.R:L15–29`, `CVFolds.R:L13–15` (`validRows`).
+- **Python:** the module had never been run. Problems found and fixed:
+  - It relied on the global `numpy2ri.activate()`; it now uses explicit
+    `localconverter` blocks (`llm_cong_predict.rbridge.converter`).
+  - rpy2 3.6 returns `None` for invisible R values; the value is now made visible.
+  - It could not fix the inner folds, so R drew its own and parity could not be
+    exact. It now passes per-outer-fold `validRows` through `innerCvControl`.
+  - It did not check R's library names; it now does.
+  - It returned no per-fold CV risks; it now returns them from `AllSL`.
+  - Results are fetched piece by piece, because the numpy/pandas converter turns an
+    R list into a `NamedList`.
+- **R's xgboost is not installed** (owner instruction; Phase 3 pins it). With the full
+  library, R's `SL.xgboost.hist` therefore fails inside `try()` and gets weight 0 on
+  the R side. The oracle tests use only the lm library.
+- **Why:** brief Task 2.2.
+- **Test:** `tests/test_oracle.py::test_sl_mean_and_sl_lm_match_r_superlearner_on_identical_folds`;
+  `scripts/validate_oracle.py` (lm library, identical outer and inner folds: every
+  difference ≤ 1.7e-14, run at Task 2.2).
+- **Validation:** V4 (the full library needs a pinned R xgboost < 3.0, Phase 3).
+
+### K2. torch, xgboost and R in one process
+R embedded through rpy2 and xgboost were run in one process, in both orders (glmnet,
+ranger and psych in R, then xgboost, and the reverse). Neither crashed. The CRAN
+builds of glmnet, ranger, kernlab and nnet link no OpenMP runtime, and psych is pure
+R. torch and xgboost remain separated (docs/ORCHESTRATION.md).

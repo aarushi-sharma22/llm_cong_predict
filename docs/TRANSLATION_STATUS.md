@@ -27,7 +27,7 @@ one status:
 | `combine_ncds` (57) | `io/readers.py::combine_ncds` | PORTED | plyr collision semantics (E3). |
 | `clean_ncds` (64) | `cleaning/clean_ncds.py::clean_ncds` | PORTED | Reconstruction of a function that cannot run as published (A1, A2, F7). V1. |
 | `create_aspirations` (244) | `cleaning/aspirations.py::create_aspirations` | PORTED | Sex-comparison quirk reproduced (F3). V5. |
-| `create_factors` (272) | `cleaning/factors.py::create_factors` | PORTED-APPROX | Pearson factor: scoring faithful, loadings APPROX (F2, AP8). The three polychoric factors raise until the R bridge (Task 2.2). V3. |
+| `create_factors` (272) | `cleaning/factors.py::create_factors` | PORTED | Default backend `"r"`: all four factors from `psych::fa` through rpy2 (F1). Native backend: Pearson factor only (APPROX, AP8). V3. |
 | `get_complete_ncds` (309) | `cleaning/assemble.py::get_complete_ncds` | PORTED | Natural joins with the keys checked; the R call passes an unused 5th argument, which is an error in R; reconstruction (A3). |
 | `create_essay_variables` (317) | `features/essay_variables.py::create_essay_variables` | PORTED | Output width depends on the data (G5). V2. |
 | `find_essay_teacher_genetics_overlap` (330) | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | PORTED | haven integer codes (F5). Never called by the R pipeline. |

@@ -29,12 +29,12 @@ are cross-referenced from `docs/PORTING_NOTES.md`.
 | ID | Where | Approximation | Measured by |
 |----|-------|---------------|-------------|
 | AP1 | `models/folds.py`, `models/seeds.py` | Folds and seeds are owned by the port; R's RNG streams cannot be reproduced (PORTING_NOTES C2). | V4 on shared folds |
-| AP2 | `base_learners.RLinearModel` | Aliased-column rule reproduces `lm.wfit`'s choice up to rounding at the 1e-7 threshold (C4). | V4 (`SL.lm` parity) |
+| AP2 | `base_learners.RLinearModel` | Aliased-column rule reproduces `lm.wfit`'s choice up to rounding at the 1e-7 threshold (C4). | V4 (`SL.lm` parity). Synthetic check at Task 2.2 with an exactly collinear column: agreement with R to 1e-14. |
 | AP3 | `base_learners._make_ranger` | sklearn counts distinct bootstrap rows per node, ranger counts draws; different tree implementation and RNG (C5). | V4 |
 | AP4 | `base_learners.NnetLike` | MLPRegressor initialisation and L-BFGS stopping differ from nnet's U(-0.7, 0.7) start and BFGS (C6). | V4 |
 | AP5 | `base_learners.KsvmLike`, `sigest_sigma` | libsvm vs kernlab solver; sigest's random row pairs differ (C7). | V4 |
 | AP6 | `base_learners._make_xgboost_hist` | R xgboost 1.7.x assumed (base_score 0.5); histogram details differ across versions (C8). | V4, V7 |
-| AP7 | `models/screeners.py` | Coordinate-descent convergence differs from glmnet's; CV folds are random in R (C9). | Task 2.2 `screen.glmnet` parity test with shared `foldid` and lambda grid; V4 |
-| AP8 | `cleaning/factors.py::_minres_one_factor` | One-factor minres loadings by iterated eigen-decomposition; psych fits uniquenesses by `optim` (PORTING_NOTES F2). | V3 |
+| AP7 | `models/screeners.py` | Coordinate-descent convergence differs from glmnet's; CV folds are random in R (C9). | Task 2.2 oracle on synthetic data: identical selections 12/12 (R's grid) and 40/40 (own grids), shared folds; early stop off by one point in 5/40 (R² gap up to 4.8e-4). V4 on real data. |
+| AP8 | `cleaning/factors.py::_minres_one_factor` | One-factor minres loadings by iterated eigen-decomposition; psych fits uniquenesses by `optim` (PORTING_NOTES F2). | Task 2.2 oracle on synthetic data: correlation ≥ 0.99999999997, max diff 2.2e-5, identical NA pattern. The default backend is R's psych (F1). V3. |
 | AP9 | `io/labels.py::r_number_string` | R's `as.character()` of doubles reproduced for integers and short decimals; long decimals not re-derived. Affects level names of unlabelled values only. | Task 2.1 tests; V1 on real labels |
 | AP10 | `io/labels.py::r_as_numeric` | R's `as.numeric()` of text: decimal, scientific, hexadecimal, Inf/NaN, whitespace trimmed; R's full grammar (e.g. "infinity") not covered. Checked against R 4.6.1 on 15 cases. | `scripts/check_essay_format.py` on the real essays (word counts that fail to parse) |
