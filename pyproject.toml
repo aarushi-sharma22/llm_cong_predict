@@ -23,7 +23,12 @@ dependencies = [
 # Numerical-oracle backend. Requires a working R install + the R packages below.
 # Used ONLY to validate the native backend against the original on real data.
 oracle = ["rpy2>=3.5"]
-embeddings = ["torch>=2.1", "transformers>=4.38", "openai>=1.0", "pyarrow>=14.0"]
+# Local embedding stack only. It must never pull in a client for an external API.
+embeddings = ["torch>=2.1", "transformers>=4.38", "pyarrow>=14.0"]
+# Client for an external API. Used only by scripts/get_gpt_embeddings.py, which refuses
+# to run without an explicit double opt-in (PORTING_NOTES H2). Kept separate so that
+# installing the local embedding stack never installs it.
+external-api = ["openai>=1.0"]
 dev = ["pytest>=8.0", "ruff>=0.3"]
 
 [tool.setuptools.packages.find]

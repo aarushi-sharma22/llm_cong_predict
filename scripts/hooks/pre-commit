@@ -1,0 +1,10 @@
+#!/bin/sh
+# Refuse commits that stage restricted or participant-level data.
+# Enable once per clone:  git config core.hooksPath scripts/hooks
+repo_root="$(git rev-parse --show-toplevel)" || exit 1
+if [ -x "$repo_root/.venv/bin/python" ]; then
+    py="$repo_root/.venv/bin/python"
+else
+    py="$(command -v python3)" || { echo "pre-commit: python3 not found" >&2; exit 1; }
+fi
+exec "$py" "$repo_root/scripts/check_no_restricted_data.py"

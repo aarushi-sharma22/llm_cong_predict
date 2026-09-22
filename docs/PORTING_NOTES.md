@@ -300,3 +300,71 @@ The final `select_if` keeps only columns that are non-NA, finite, and non-consta
 so the essay feature-matrix width depends on the data (matched, flagged). The 4th
 argument is named `embeddings` (the R named it `roberta_embeddings` but the pipeline
 passes `gpt_embeddings`; see A4).
+
+---
+
+## H. Data safety (Phase 1, Task 1.1)
+
+Entries from here on use the format of brief Section 7: ID, label, R source lines,
+what the Python does, why, the test that covers it, and the VALIDATION_CHECKLIST
+item, if any.
+
+### H1. Restricted inputs are read only from `$LCP_DATA_ROOT`
+- **Label:** data-safety change.
+- **R source:** `llm_paper/_targets.R:L41–114` reads every restricted input from the
+  project's own `data/` folder (for example `data/ncds_1_2_3/ncds0123.dta` at L45,
+  `data/spelling_mistakes.csv` at L100).
+- **Python:** `config.RESTRICTED_INPUTS` keeps the same relative names in one table.
+  `config.restricted_path(key)` resolves them under `$LCP_DATA_ROOT`. Participant-level
+  outputs go to `derived/`, `fits/` and `logs/` under the same root
+  (`config.derived_dir()`, `fits_dir()`, `logs_dir()`). `config.data_root()` raises
+  `DataRootError` when the variable is unset, when the directory is missing, or when it
+  resolves (symlinks followed) inside the repository. There is no default. Importing
+  the package never touches the data root. The file names are those of `_targets.R`
+  and are not yet confirmed against the UK Data Service downloads.
+- **Why:** restricted data must never be inside the repository (brief Section 2.3).
+- **Test:** `tests/test_data_safety.py::test_data_root_*`,
+  `::test_restricted_and_output_paths_built_under_data_root`,
+  `::test_importing_config_never_touches_the_data_root`.
+- **Validation:** none. When the real downloads arrive, confirm the names in
+  `RESTRICTED_INPUTS`.
+
+### H2. `scripts/get_gpt_embeddings.py` needs a double opt-in
+- **Label:** data-safety change.
+- **R source:** `llm_paper/R/get_gpt_embeddings.R:L19–29` and `L40–50` send every
+  essay's text to the OpenAI embeddings API.
+- **Python:** the script is kept for provenance. It refuses to run (exit code 3) unless
+  both `--i-confirm-the-data-licence-permits-external-processing` and
+  `LCP_ALLOW_EXTERNAL_API=1` are given, and prints why: the project rule is that essays
+  must never be sent to external APIs. The check runs before any essay is read and
+  before `openai` is imported. Essays are read from, and embeddings written to,
+  `$LCP_DATA_ROOT`. No code in the package or pipeline calls the script (checked with
+  `git grep`). The `openai` client moved from the `embeddings` extra to a separate
+  `external-api` extra, so installing the local embedding stack never installs it.
+- **Why:** brief Section 2.3; owner decision at Checkpoint A (item 2).
+- **Test:** `tests/test_data_safety.py::test_gpt_script_refuses_without_double_opt_in`
+  (three cases), `::test_embeddings_extra_does_not_include_openai`.
+- **Validation:** none.
+
+### H3. Git allow-list, restricted-data checker and pre-commit hook
+- **Label:** data-safety change.
+- **R source:** none. The original repository tracks `data/*.csv` and `data/*.rds`
+  through Git LFS (`llm_paper/.gitattributes`).
+- **Python:**
+  - `.gitignore` ignores everything under `data/` except `data/variables.xlsx`,
+    `data/occupation_aspiration_mapping.xlsx` and `data/camsis/*.dta`.
+  - It ignores `/reference/`, `/outputs/`, `/results/`, `/.cache_pipeline/` and the
+    data-like extensions everywhere.
+  - It ignores CSV files at the repository root. That goes beyond the brief's list;
+    it covers the root predictions CSV found in F8.6.
+  - `scripts/check_no_restricted_data.py` checks staged files (or all tracked files
+    with `--all`). It refuses: data-like extensions outside the allow-list, other files
+    under `data/`, CSV/TXT outside `tests/` and `docs/` (except `requirements*.txt`),
+    files over 5,000,000 bytes (staged blob size), and anything under `reference/`.
+  - `scripts/hooks/pre-commit` runs the checker. It is enabled per clone with
+    `git config core.hooksPath scripts/hooks`, which is documented in the README and
+    enabled in the development clone.
+- **Why:** `.gitignore` alone is bypassed by `git add -f`. Brief Task 1.1, F8.6.
+- **Test:** `tests/test_data_safety.py::test_checker_*`,
+  `::test_pre_commit_hook_blocks_commit`, `::test_gitignore_*`.
+- **Validation:** none.

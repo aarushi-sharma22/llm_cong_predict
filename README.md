@@ -43,6 +43,34 @@ pip install -e '.[dev]'
 pytest
 ```
 
+## Data safety
+
+Restricted data (NCDS sweeps, essays, derived essay features, embeddings, polygenic
+scores) and every participant-level output live **outside** this repository, in the
+directory named by the environment variable `LCP_DATA_ROOT`. There is no default, and a
+directory inside the repository is refused. File names are listed in one place,
+`RESTRICTED_INPUTS` in `src/llm_cong_predict/config.py`.
+
+`.gitignore` is an allow-list for `data/`: only `data/variables.xlsx`,
+`data/occupation_aspiration_mapping.xlsx` and `data/camsis/*.dta` (public reference
+files) can be tracked. Because `git add -f` bypasses `.gitignore`, a checker also runs
+before every commit. Enable it once per clone:
+
+```bash
+git config core.hooksPath scripts/hooks
+```
+
+The hook runs `scripts/check_no_restricted_data.py`, which refuses staged data-like
+files, anything else under `data/`, CSV/TXT files outside `tests/` and `docs/`, and any
+file over 5 MB. Run it by hand on every tracked file with
+`python scripts/check_no_restricted_data.py --all`.
+
+`scripts/get_gpt_embeddings.py` sends essays to the OpenAI API. It is kept only for
+provenance and refuses to run without both
+`--i-confirm-the-data-licence-permits-external-processing` and
+`LCP_ALLOW_EXTERNAL_API=1`. Its client is in a separate extra (`.[external-api]`), so
+installing `.[embeddings]` never installs it.
+
 ## Attribution / licensing
 
 The original repository ships no license (all rights reserved) and no citation

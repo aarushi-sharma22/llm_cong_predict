@@ -1,25 +1,28 @@
 #!/usr/bin/env python
-"""Generate GPT essay embeddings via the OpenAI API.
+"""Generate GPT essay embeddings via the OpenAI API — kept for provenance only.
 
-Port of ``R/get_gpt_embeddings.R``. Runnable once you have the real essays and an
-OpenAI API key; not exercised in the dev sandbox (no key, no essays).
+Port of ``R/get_gpt_embeddings.R``. THIS SCRIPT SENDS ESSAY TEXT TO AN EXTERNAL
+SERVICE (OpenAI). The project rule is that essays and any other participant data
+must never be sent to an external API (brief Section 2.3; PORTING_NOTES H2). The
+script therefore refuses to run unless BOTH of these are given:
+
+  * the command-line flag  --i-confirm-the-data-licence-permits-external-processing
+  * the environment variable  LCP_ALLOW_EXTERNAL_API=1
+
+It is not called by the pipeline or by any other code in this repository.
 
 Faithful to the original:
-  * batches essays in groups of 100 (the R used ``ceiling(seq/100)``);
-  * generates two embedding sets — ``text-embedding-ada-002`` ("GPT 3.5") and
-    ``text-embedding-3-large`` ("GPT 4"), the exact models the R used.
+  * batches essays in groups of 100 (R: llm_paper/R/get_gpt_embeddings.R:L14–17);
+  * two embedding sets, ``text-embedding-ada-002`` ("GPT 3.5",
+    R: llm_paper/R/get_gpt_embeddings.R:L22) and ``text-embedding-3-large``
+    ("GPT 4", R: llm_paper/R/get_gpt_embeddings.R:L43).
 
-DEVIATION (documented, PORTING_NOTES G1): the R saved raw API responses as ``.rds``
-(an R-only binary format). We instead save a Python-native Parquet with an
-``ncdsid`` column plus ``embedding_*`` columns — the shape ``features.embeddings.
-gpt_embeddings`` reads. This removes the R-only format and the original reshaper's
-path-vs-frame contradiction.
+DEVIATION (PORTING_NOTES G1): the R saved raw API responses as ``.rds``. This script
+saves a Parquet file with an ``ncdsid`` column plus ``embedding_*`` columns, the shape
+``features.embeddings.gpt_embeddings`` reads. Essays are read from and embeddings
+written to ``$LCP_DATA_ROOT`` (``config.RESTRICTED_INPUTS``), never the repository.
 
-Usage:
-    export OPENAI_API_KEY=...          # never hard-code the key (the R had "<KEY>")
-    python scripts/get_gpt_embeddings.py --essays data/essays --out data/embeddings
-
-Requires: pip install -e '.[embeddings]'  (openai)
+Requires the separate extra:  pip install -e '.[external-api]'  (openai)
 """
 
 from __future__ import annotations
@@ -28,14 +31,28 @@ import argparse
 import os
 import sys
 
-import pandas as pd
+CONFIRM_FLAG = "--i-confirm-the-data-licence-permits-external-processing"
+ALLOW_ENV = "LCP_ALLOW_EXTERNAL_API"
+
+REFUSAL = (
+    "get_gpt_embeddings.py: REFUSED. This script sends essay text to the OpenAI API, an "
+    "external service. The project rule is that essays and any other participant data "
+    "must never be sent to an external API (brief Section 2.3). It runs only if you both "
+    f"pass {CONFIRM_FLAG} and set {ALLOW_ENV}=1, after confirming that the data licence "
+    "permits external processing."
+)
 
 # The two models, matching the original script exactly.
 MODELS = {
-    "gpt35": "text-embedding-ada-002",
-    "gpt4": "text-embedding-3-large",
+    "gpt35": "text-embedding-ada-002",  # R: llm_paper/R/get_gpt_embeddings.R:L22
+    "gpt4": "text-embedding-3-large",  # R: llm_paper/R/get_gpt_embeddings.R:L43
 }
-BATCH_SIZE = 100  # R: ceiling(seq_along(1:nrow(essays)) / 100)
+BATCH_SIZE = 100  # R: llm_paper/R/get_gpt_embeddings.R:L14 (ceiling(seq/100))
+
+
+def external_processing_confirmed(argv: list[str], environ: dict[str, str]) -> bool:
+    """True only when the flag AND the environment variable are both present."""
+    return CONFIRM_FLAG in argv and environ.get(ALLOW_ENV) == "1"
 
 
 def _batched(items: list, n: int):
@@ -43,8 +60,9 @@ def _batched(items: list, n: int):
         yield i // n, items[i : i + n]
 
 
-def generate(essays: pd.DataFrame, model: str, api_key: str) -> pd.DataFrame:
+def generate(essays, model: str, api_key: str):
     """Return a frame: ncdsid + embedding_1..K for the given model."""
+    import pandas as pd
     from openai import OpenAI
 
     client = OpenAI(api_key=api_key)
@@ -61,30 +79,34 @@ def generate(essays: pd.DataFrame, model: str, api_key: str) -> pd.DataFrame:
     return emb
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--essays", required=True, help="folder of essay text files")
-    ap.add_argument("--out", required=True, help="output folder for embedding parquet files")
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    # The gate runs before anything else: no essay is read and openai is not imported.
+    if not external_processing_confirmed(argv, dict(os.environ)):
+        print(REFUSAL, file=sys.stderr)
+        return 3
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+    from llm_cong_predict import config
+    from llm_cong_predict.io.readers import read_essays
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument(CONFIRM_FLAG, action="store_true", dest="confirmed")
     ap.add_argument("--models", nargs="+", choices=list(MODELS), default=list(MODELS))
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         print("Set OPENAI_API_KEY in the environment (do not hard-code it).", file=sys.stderr)
         return 2
 
-    # Read essays via the ported reader (same parsing as the pipeline).
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-    from llm_cong_predict.io.readers import read_essays
-
-    essays = read_essays(args.essays)
-    os.makedirs(args.out, exist_ok=True)
-
+    essays = read_essays(str(config.restricted_path("essays")))
     for key in args.models:
         model = MODELS[key]
+        out_path = config.restricted_path(f"{key}_embeddings")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Generating {key} embeddings ({model}) for {len(essays)} essays...")
         emb = generate(essays, model, api_key)
-        out_path = os.path.join(args.out, f"embeddings_{key}.parquet")
         emb.to_parquet(out_path, index=False)
         print(f"  wrote {out_path}  ({emb.shape[1]-1} dims)")
     return 0

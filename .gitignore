@@ -1,3 +1,4 @@
+# --- Python ------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 .venv/
@@ -6,15 +7,41 @@ venv/
 *.egg-info/
 .pytest_cache/
 .ipynb_checkpoints/
-# third-party reference sources (other people's code; never commit)
+
+# --- third-party reference sources (other people's code; never commit) --------
 /reference/
-# pipeline outputs / caches
-outputs/
-.cache_pipeline/
-# restricted data must NEVER be committed
-data/ncds_*/
-data/essays/
-data/embeddings_*.rds
-data/salat_metrics/
-data/spelling_mistakes.csv
+
+# --- pipeline outputs and caches ---------------------------------------------
+# Anchored with a leading slash so they cannot match package folders in src/.
+/outputs/
+/results/
+/.cache_pipeline/
+
+# --- data/: allow-list --------------------------------------------------------
+# Only the three kinds of public reference file may be tracked. Restricted data
+# (NCDS sweeps, essays, derived essay features, polygenic scores) lives outside
+# the repository, under $LCP_DATA_ROOT. See scripts/check_no_restricted_data.py.
+/data/*
+!/data/variables.xlsx
+!/data/occupation_aspiration_mapping.xlsx
+!/data/camsis/
+/data/camsis/*
+!/data/camsis/*.dta
+
+# --- data-like file types, ignored everywhere ---------------------------------
+*.parquet
+*.feather
+*.npy
+*.npz
+*.pkl
+*.joblib
 *.rds
+*.RData
+*.sav
+*.tab
+*.dta
+# ...except the public CAMSIS reference files (the last matching rule wins).
+!/data/camsis/*.dta
+
+# --- per-person tables written at the repository root (brief F8.6) -----------
+/*.csv
