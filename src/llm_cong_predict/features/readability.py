@@ -58,13 +58,19 @@ def calculate_readability_metrics(ncds_essays: pd.DataFrame, tokenized_essays=No
 
 
 def ingest_readability_metrics(ncds_essays: pd.DataFrame, path: str) -> pd.DataFrame:
-    """INGESTION path (not in the original): read a pre-computed readability table
-    and attach it to the essays by ``doc_id``/``filename``.
+    """INGESTION path (not in the original): read the readability table produced
+    outside Python and attach it to the essays by ``doc_id``/``filename``.
 
-    Provided so the pipeline can proceed once readability has been generated
-    externally (koRpus, or the author's derived features), mirroring how the R's
-    SALAT/spelling metrics enter as CSVs. Kept minimal and faithful to that pattern:
-    left-join the readability CSV onto ``ncdsid`` via the essay ``doc_id``.
+    The file is the one ``r/readability.R`` writes (Task 2.5), which is this repository's
+    port of ``tokenize_essays`` and ``calculate_readability_metrics``: one row per essay,
+    the columns ``filename``, ``ncdsid`` and one column per koRpus index, values as text.
+    That script has never been run here (it needs TreeTagger and koRpus), so this reader
+    has only ever seen synthetic files. The author's own derived features would be read
+    the same way, as the SALAT and LanguageTool outputs are.
+
+    The join uses the columns the two frames share (``filename`` and ``ncdsid`` for that
+    format), so an essay with no row gets NaN — and ``create_essay_variables`` then drops
+    any index column that has one, exactly as in the R (G5).
     """
     readability = pd.read_csv(path)
     base = ncds_essays.rename(columns={"doc_id": "filename"}).loc[:, ["filename", "ncdsid"]]

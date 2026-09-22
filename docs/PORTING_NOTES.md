@@ -749,14 +749,35 @@ the original contradiction both documented.
 - **Validation:** V2. On real data, check `attrs["salat_join_keys"]`: any key other
   than `filename` means a shared metric column.
 
-### G4. Readability/tokenization are an EXTERNAL-TOOL BOUNDARY that raises 🔦
-`tokenize_essays` (TreeTagger) and `calculate_readability_metrics` (koRpus) generate
-metrics with R-specific / external tools. Rather than substitute a different Python
-readability library (which would silently diverge from the paper), these RAISE with
-guidance. An `ingest_readability_metrics` path is provided so pre-computed
-readability (koRpus output, or the author's derived features) can enter the pipeline
-the same way SALAT/spelling CSVs do. A validated native re-implementation is a
-possible future checklist item, not a silent default.
+### G4. Readability/tokenisation: an external-tool boundary, with the R script that crosses it (Task 2.5)
+- **Label:** faithful (the R script), plus a deviation for the two paths.
+- **R source:** `llm_paper/R/functions.R:L26–31` (`read_essays`), `L356–367`
+  (`tokenize_essays`), `L369–388` (`calculate_readability_metrics`).
+- **Python:** `features/readability.py`. `tokenize_essays` and
+  `calculate_readability_metrics` RAISE: a different Python readability library would
+  produce different numbers while appearing to work. `ingest_readability_metrics` reads
+  the metrics computed outside Python, the way the SALAT and LanguageTool outputs are
+  read.
+- **R:** `r/readability.R` is the standalone port of those three functions, copied line
+  for line with two changes the brief requires: the TreeTagger path comes from
+  `LCP_TREETAGGER_PATH` instead of the hard-coded `C:/TreeTagger` (`L362`), and the
+  essays are read from `$LCP_DATA_ROOT/essays` and the result written to
+  `$LCP_DATA_ROOT/readability_metrics.csv` (`config.RESTRICTED_INPUTS`), so restricted
+  data never enters the repository. It prints counts only, never text, file names or
+  IDs.
+- **IT HAS NEVER BEEN RUN.** What was checked here: it parses under R 4.6.1
+  (`Rscript -e 'parse("r/readability.R")'`). What is missing here: koRpus,
+  koRpus.lang.en, readtext and janitor are all absent (checked with
+  `requireNamespace`), TreeTagger is not installed, and the essays are restricted data.
+  So its output has never been checked, and the koRpus index names in the file it
+  writes are whatever `summary(readability(...))` returns — not verified here. Treat
+  its first run as untested code.
+- **Why:** brief Task 2.5.
+- **Test:** the Python side only, as the brief says:
+  `tests/test_features.py::test_ingest_readability_metrics_reads_what_the_korpus_script_writes`,
+  `::test_tokenize_essays_raises_external_boundary`,
+  `::test_calculate_readability_metrics_raises_external_boundary`.
+- **Validation:** V9.
 
 ### G5. `create_essay_variables` — data-dependent filter, embedding arg renamed ✅
 The final `select_if` keeps only columns that are non-NA, finite, and non-constant,

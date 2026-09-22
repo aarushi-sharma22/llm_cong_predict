@@ -56,7 +56,8 @@ A run reads the restricted inputs from `$LCP_DATA_ROOT` and writes the metric ro
 run log and the per-person predictions back under it. Three steps happen outside the
 pipeline and are read as files: the RoBERTa embeddings
 (`python -m llm_cong_predict.features.roberta_step`), the koRpus readability CSV
-(`r/readability.R`), and the SALAT and LanguageTool outputs. R is needed at run time for
+(`r/readability.R`, which needs TreeTagger and koRpus and has never been run here), and
+the SALAT and LanguageTool outputs. R is needed at run time for
 the three polychoric factor scores; see
 [`docs/ORCHESTRATION.md`](docs/ORCHESTRATION.md) for where R is used and what happens
 without it. The pipeline has so far run end to end only on synthetic data
@@ -124,6 +125,8 @@ src/llm_cong_predict/
   models/          # native Super Learner, base learners, screen.glmnet, rpy2 oracle
   metrics/         # cross-validated metric rows (get_cv_superlearner/lm_metrics)
   pipeline/        # dependency graph, variable lists, model specification, the runner
+r/
+  readability.R    # TreeTagger + koRpus readability, run by hand in R; NEVER RUN HERE
 scripts/
   check_no_restricted_data.py   # refuses restricted data in commits (pre-commit hook)
   hooks/pre-commit

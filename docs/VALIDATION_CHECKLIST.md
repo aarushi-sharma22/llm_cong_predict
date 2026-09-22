@@ -17,6 +17,8 @@ validation.
 | V7 | Base-learner settings match the SuperLearner wrappers | V4 | Done from source in Phase 1 (PORTING_NOTES C3–C9: every setting cites its wrapper or package line). Still to confirm: the package versions the paper used (unknown), in particular R xgboost < 3.0 so that `params = list(tree_method = "hist")` is passed (PORTING_NOTES C8). |
 | V8 | The end-to-end run on the REAL inputs | every result | The pipeline has run end to end only on synthetic data (PORTING_NOTES M6), where the tool column names, the file each NCDS code sits in and the polygenic format were chosen by the generator. On the real inputs check: every NCDS code is found (clean_ncds' absent-code log), `nwords` exists and comes from a real tool file, the SALAT join keys at each step (G3), which readability index and which GPT dimension the R's `[-c(1:2)]`/`[-1]` drop (M3), the sample sizes of the three overlap samples, and the polygenic file's real format (M5). |
 
+| V9 | `r/readability.R`, on its first real run | the readability feature block | The script (Task 2.5) has never been run: no TreeTagger, no koRpus, no essays here. On the first run check that it writes one row per essay with `filename` and `ncdsid` first; note the koRpus index names it produces (they decide which column the R's `[-c(1:2)]` drops, PORTING_NOTES M3); check that the values are the index's `raw`, or `grade` where `raw` is empty; and that `create_essay_variables` keeps the columns (any index with a missing value drops the whole column, G5). |
+
 Tolerance note for V4: bit-exactness is impossible (R's `clusterSetRNGStream` RNG
 stream is not reproducible in Python). The oracle test therefore fixes the folds
 externally and compares the *ensemble math*, not the RNG. Any residual divergence is

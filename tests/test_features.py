@@ -149,6 +149,27 @@ def test_calculate_readability_metrics_raises_external_boundary():
         calculate_readability_metrics(pd.DataFrame({"doc_id": ["e1"], "ncdsid": ["1"]}))
 
 
+def test_ingest_readability_metrics_reads_what_the_korpus_script_writes(tmp_path):
+    """The file r/readability.R writes (Task 2.5), the R's
+    calculate_readability_metrics output (R: llm_paper/R/functions.R:L384-387):
+    filename, ncdsid, then one column per koRpus index. The R writes the values as
+    text; pandas reads numbers back where it can, and create_essay_variables coerces
+    either way (functions.R:L324). One row per essay, in essay order; an essay with no
+    row gets NaN, which create_essay_variables then drops (G5). The script itself has
+    not been run here."""
+    essays = pd.DataFrame({"doc_id": ["e1.txt", "e2.txt", "e3.txt"],
+                           "ncdsid": ["SYN000001", "SYN000002", "SYN000003"]})
+    path = tmp_path / "readability_metrics.csv"
+    pd.DataFrame({"filename": ["e2.txt", "e1.txt"], "ncdsid": ["SYN000002", "SYN000001"],
+                  "Flesch.Kincaid": ["8.1", "10.4"], "ARI": ["9.2", "11.0"]}).to_csv(path, index=False)
+
+    out = ingest_readability_metrics(essays, str(path))
+    assert list(out.columns) == ["filename", "ncdsid", "Flesch.Kincaid", "ARI"]
+    assert out["filename"].tolist() == ["e1.txt", "e2.txt", "e3.txt"]  # essay order
+    assert float(out.loc[out["ncdsid"] == "SYN000001", "Flesch.Kincaid"].iloc[0]) == 10.4
+    assert pd.isna(out.loc[out["ncdsid"] == "SYN000003", "ARI"].iloc[0])  # no row for e3
+
+
 def test_ingest_readability_metrics_path(tmp_path):
     # the provided ingestion path should join a pre-computed readability CSV
     essays = pd.DataFrame({"doc_id": ["e1", "e2"], "ncdsid": ["1", "2"]})

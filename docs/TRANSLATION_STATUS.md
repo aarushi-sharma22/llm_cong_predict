@@ -32,8 +32,8 @@ one status:
 | `create_essay_variables` (317) | `features/essay_variables.py::create_essay_variables` | PORTED | Output width depends on the data (G5). V2. |
 | `find_essay_teacher_genetics_overlap` (330) | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | PORTED | haven integer codes (F5). Never called by the R pipeline. |
 | `find_full_overlap` (348) | `cleaning/assemble.py::find_full_overlap` | PORTED | |
-| `tokenize_essays` (356) | `features/readability.py::tokenize_essays` | BOUNDARY | TreeTagger; the function raises. Tokenisation happens inside `r/readability.R` (Task 2.5), so the pipeline target is EXTERNAL. |
-| `calculate_readability_metrics` (369) | `features/readability.py::ingest_readability_metrics` | INGESTION | koRpus; the generating function raises and `r/readability.R` (Task 2.5) writes the CSV the pipeline reads (`config.RESTRICTED_INPUTS["readability_metrics"]`). |
+| `tokenize_essays` (356) | `features/readability.py::tokenize_essays`, `r/readability.R` | BOUNDARY | TreeTagger; the Python function raises. Ported to `r/readability.R` (Task 2.5), which has never been run (G4). The pipeline target is EXTERNAL. |
+| `calculate_readability_metrics` (369) | `features/readability.py::ingest_readability_metrics`, `r/readability.R` | INGESTION | koRpus; the Python generator raises. `r/readability.R` (Task 2.5, never run, G4) writes the CSV the pipeline reads (`config.RESTRICTED_INPUTS["readability_metrics"]`). V9. |
 | `get_spelling_error_metrics` (390) | `features/salat.py::get_spelling_error_metrics` | INGESTION | LanguageTool output; the R's error cases are reproduced (G3). |
 | `get_salat_metrics` (419) | `features/salat.py::get_salat_metrics` | INGESTION | SALAT tools' output; natural joins (G3). |
 | `get_roberta_embeddings` (446) | `features/embeddings.py::roberta_embeddings`, `features/roberta_step.py` | PORTED | Batched; a separate step in its own process (G2, ORCHESTRATION). Not run on real weights here. |
@@ -71,6 +71,12 @@ participant-level and will be replaced by aggregate summaries.
 
 `scripts/get_gpt_embeddings.py`. **PORTED**, but it refuses to run without a double
 opt-in, because it sends essays to an external API (H2).
+
+## `r/readability.R` (this port, no R counterpart file)
+
+The standalone TreeTagger + koRpus script of Task 2.5: `read_essays`,
+`tokenize_essays` and `calculate_readability_metrics` from `R/functions.R`, with the
+TreeTagger path and the data paths taken from the environment. **Never run** (G4, V9).
 
 ## `run.R` (7 lines)
 
