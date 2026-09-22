@@ -17,9 +17,10 @@ contract defined below, and the metric functions consume only that.
 Fidelity notes (see docs/PORTING_NOTES.md):
   * The original computes fold-wise risks and then reports mean/min/max across
     folds. Reproduced exactly.
-  * ``superlearner_metrics`` winsorises SL predictions before computing metrics,
-    exactly as the R wrapper does, using an n-1 (sample) standard deviation to
-    match R's ``sd``.
+  * Both scorers take the MSE columns (and ``se_mse``) from the UNCLAMPED
+    predictions, because the R calls ``summary(cv_fit)`` before clamping outlying
+    SL predictions; R^2, MAD and RMSE of the ensemble use the clamped predictions.
+    The clamp uses an n-1 (sample) standard deviation to match R's ``sd``.
 """
 
 from __future__ import annotations
@@ -160,18 +161,45 @@ def cv_mad(fit: CVSuperLearnerFit, obs_weights: Optional[np.ndarray] = None) -> 
     return {"mean_mad": float(mad.mean()), "min_mad": float(mad.min()), "max_mad": float(mad.max())}
 
 
-def cv_mse(fit: CVSuperLearnerFit, obs_weights: Optional[np.ndarray] = None) -> dict:
-    """Fold-wise MSE of the Super Learner.
+def _summary_risk_row(Y: np.ndarray, pred: np.ndarray, folds: list[np.ndarray],
+                      w: np.ndarray) -> dict:
+    """One row of ``summary.CV.SuperLearner(...)$Table`` for the NNLS family.
 
-    In the original, the mean/min/max MSE came from ``summary(cv_fit)$Table`` (the
-    "Super Learner" row). That summary risk is exactly the fold-wise SL MSE, so we
-    compute it directly here rather than depending on an R summary object.
+    R pkg: SuperLearner/R/summary.CV.SuperLearner.R:L39–43, L66 (2.0-40):
+      * per fold, ``mean(w * (Y - pred)^2)``; Ave/Min/Max over the V folds (Ave is the
+        plain, unweighted mean of the fold risks);
+      * ``se = (1/sqrt(n)) * sd(w * (Y - pred)^2)`` over all observations, with R's
+        ``sd`` (denominator n - 1) and ``n = length(SL.predict)`` (L19).
+    Returned as ``mean_mse``/``se_mse``/``min_mse``/``max_mse``. R names the SE column
+    ``se`` (PORTING_NOTES B4); the brief names it ``se_mse``.
     """
-    w = _obs_weights(fit, obs_weights)
-    mse = np.empty(fit.V)
-    for i, idx in enumerate(fit.folds):
-        mse[i] = np.mean(w[idx] * (fit.Y[idx] - fit.sl_predict[idx]) ** 2)
-    return {"mean_mse": float(mse.mean()), "min_mse": float(mse.min()), "max_mse": float(mse.max())}
+    risk = np.array([np.mean(w[idx] * (Y[idx] - pred[idx]) ** 2) for idx in folds])
+    se = (1.0 / np.sqrt(len(pred))) * np.std(w * (Y - pred) ** 2, ddof=1)
+    return {"mean_mse": float(risk.mean()), "se_mse": float(se),
+            "min_mse": float(risk.min()), "max_mse": float(risk.max())}
+
+
+def cv_mse(fit: CVSuperLearnerFit, obs_weights: Optional[np.ndarray] = None) -> dict:
+    """Fold-wise MSE (mean/min/max) and SE of the Super Learner predictions.
+
+    Port of the "Super Learner" row of ``summary(cv_fit)$Table``
+    (R: llm_paper/R/functions.R:L704–705), computed from ``fit.sl_predict`` as given.
+    Callers that follow ``get_cv_superlearner_metrics`` must pass the UNCLAMPED fit,
+    because the R takes the summary before the outlier clamp on L707.
+    """
+    return _summary_risk_row(fit.Y, fit.sl_predict, fit.folds, _obs_weights(fit, obs_weights))
+
+
+def cv_learner_mse(fit: CVSuperLearnerFit, learner: str,
+                   obs_weights: Optional[np.ndarray] = None) -> dict:
+    """Fold-wise MSE (mean/min/max) and SE of one library learner's predictions.
+
+    Port of the ``<learner>`` row of ``summary(cv_fit)$Table``, e.g. ``SL.lm_All`` in
+    ``get_cv_lm_metrics`` (R: llm_paper/R/functions.R:L731–732). Library predictions
+    are never clamped in the R.
+    """
+    col = fit.library_predict[:, fit._learner_col(learner)]
+    return _summary_risk_row(fit.Y, col, fit.folds, _obs_weights(fit, obs_weights))
 
 
 def _winsorise_sl_predict(sl_predict: np.ndarray) -> np.ndarray:
@@ -194,14 +222,19 @@ def _winsorise_sl_predict(sl_predict: np.ndarray) -> np.ndarray:
 
 
 def superlearner_metrics(fit: CVSuperLearnerFit) -> dict:
-    """Port of ``get_cv_superlearner_metrics``.
+    """Port of ``get_cv_superlearner_metrics`` (R: llm_paper/R/functions.R:L696–723).
 
-    Winsorises SL predictions, then returns a single row combining MSE, predictive
-    R^2, MAD and RMSE, plus the outcome name and sample size.
+    Order of operations, as in the R:
+      1. MSE mean/min/max and ``se_mse`` from ``summary(cv_fit)`` on the UNCLAMPED
+         Super Learner predictions (L704–705);
+      2. the outlier clamp on ``SL.predict`` (L707, :func:`_winsorise_sl_predict`);
+      3. R^2, MAD and RMSE from the CLAMPED predictions (L709–713).
+    The R row also carries ``Algorithm = "Super Learner"``; it is not reproduced
+    (PORTING_NOTES B4).
     """
     fit_w = _replace_sl_predict(fit, _winsorise_sl_predict(fit.sl_predict))
     row: dict = {}
-    row.update(cv_mse(fit_w))
+    row.update(cv_mse(fit))  # unclamped (L704–705 run before the clamp on L707)
     row.update(cv_predictive_r2(fit_w))
     row.update(cv_mad(fit_w))
     row.update(cv_rmse(fit_w))
@@ -211,14 +244,18 @@ def superlearner_metrics(fit: CVSuperLearnerFit) -> dict:
 
 
 def lm_metrics(fit: CVSuperLearnerFit) -> dict:
-    """Port of ``get_cv_lm_metrics``.
+    """Port of ``get_cv_lm_metrics`` (R: llm_paper/R/functions.R:L725–749).
 
-    Same shape as :func:`superlearner_metrics` but the R^2 is the linear-model
-    learner's R^2 (``get_cv_lm_r2``) rather than the Super Learner's.
+      * MSE mean/min/max and ``se_mse`` from the ``SL.lm_All`` row of
+        ``summary(cv_fit)`` (L731–732): the linear model alone, unclamped;
+      * R^2 from ``SL.lm_All`` against ``SL.mean_All`` (``get_cv_lm_r2``, L736);
+      * MAD and RMSE from the CLAMPED ensemble predictions (L734, L738–740).
+    The R names the sample-size column ``length(cv_fit$Y)`` (L748) because
+    ``mutate`` got an unnamed argument; the port keeps ``n`` (PORTING_NOTES B4).
     """
     fit_w = _replace_sl_predict(fit, _winsorise_sl_predict(fit.sl_predict))
     row: dict = {}
-    row.update(cv_mse(fit_w))
+    row.update(cv_learner_mse(fit, LM_LEARNER))  # L731–732: the SL.lm_All row, unclamped
     row.update(cv_lm_r2(fit_w))
     row.update(cv_mad(fit_w))
     row.update(cv_rmse(fit_w))

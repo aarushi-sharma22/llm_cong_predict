@@ -17,6 +17,7 @@ from llm_cong_predict.metrics.cv_metrics import (
     cv_mse,
     cv_predictive_r2,
     cv_rmse,
+    lm_metrics,
     superlearner_metrics,
     _winsorise_sl_predict,
 )
@@ -99,7 +100,7 @@ def test_superlearner_metrics_row_shape(toy_fit):
     assert row["n"] == 4
     assert row["mean_mse"] == pytest.approx(0.025)
     assert set(row) == {
-        "mean_mse", "min_mse", "max_mse",
+        "mean_mse", "se_mse", "min_mse", "max_mse",
         "mean_r2", "min_r2", "max_r2",
         "mean_mad", "min_mad", "max_mad",
         "mean_rmse", "min_rmse", "max_rmse",
@@ -138,3 +139,76 @@ def test_winsorise_noop_when_no_outliers():
     sl = np.array([1.0, 2.0, 3.0, 4.0])
     out = _winsorise_sl_predict(sl)
     assert np.allclose(out, sl)
+
+
+# ------------------------------------------- metric rows: clamp order, SE -----
+
+def _clamp_fixture() -> CVSuperLearnerFit:
+    """100 observations, 2 folds of 50, one SL prediction far enough out to be clamped.
+
+    SL.predict: 50.0 at index 0, -1.0 at 1..49, 1.0 at 50..99. Threshold
+    10*sd(|p|) + mean(p) = 10*4.9 + 0.51 ≈ 49.5 < 50, so index 0 becomes mean(p) = 0.51.
+    """
+    Y = np.zeros(100)
+    sl = np.concatenate([[50.0], np.full(49, -1.0), np.full(50, 1.0)])
+    lib = np.column_stack([np.zeros(100), 0.5 * sl])  # SL.mean_All, SL.lm_All
+    return CVSuperLearnerFit(
+        Y=Y, sl_predict=sl, library_predict=lib, library_names=["SL.mean_All", "SL.lm_All"],
+        folds=[np.arange(50), np.arange(50, 100)], outcome_var="y",
+    )
+
+
+def test_superlearner_mse_unclamped_r2_mad_rmse_clamped():
+    """R: llm_paper/R/functions.R:L704–707 — summary(cv_fit) (MSE, se) is taken BEFORE
+    the outlier clamp on L707; R², MAD and RMSE (L709–713) use the clamped predictions."""
+    fit = _clamp_fixture()
+    clamped = _winsorise_sl_predict(fit.sl_predict)
+    assert clamped[0] == pytest.approx(0.51) and fit.sl_predict[0] == 50.0  # clamp fired
+
+    row = superlearner_metrics(fit)
+    fold0, fold1 = fit.folds
+    raw_mse = [np.mean((fit.Y[f] - fit.sl_predict[f]) ** 2) for f in (fold0, fold1)]
+    cl_mse = [np.mean((fit.Y[f] - clamped[f]) ** 2) for f in (fold0, fold1)]
+    assert row["mean_mse"] == pytest.approx(np.mean(raw_mse))  # 25.49 vs 0.9852 clamped
+    assert row["max_mse"] == pytest.approx(max(raw_mse))
+    assert row["mean_mse"] != pytest.approx(np.mean(cl_mse))
+    assert row["mean_rmse"] == pytest.approx(np.mean(np.sqrt(cl_mse)))
+    cl_mad = [np.mean(np.abs(fit.Y[f] - clamped[f])) for f in (fold0, fold1)]
+    assert row["mean_mad"] == pytest.approx(np.mean(cl_mad))
+    # R² here: mean model predicts Y exactly (risk 0) -> use a Y with variance instead
+    fit2 = CVSuperLearnerFit(
+        Y=np.linspace(-1, 1, 100), sl_predict=fit.sl_predict, library_predict=np.column_stack(
+            [np.zeros(100), np.zeros(100)]), library_names=["SL.mean_All", "SL.lm_All"],
+        folds=fit.folds,
+    )
+    row2 = superlearner_metrics(fit2)
+    r2 = [1 - np.mean((fit2.Y[f] - clamped[f]) ** 2) / np.mean(fit2.Y[f] ** 2) for f in (fold0, fold1)]
+    assert row2["mean_r2"] == pytest.approx(np.mean(r2))
+
+
+def test_lm_metrics_mse_is_sl_lm_all_fold_mean():
+    """R: llm_paper/R/functions.R:L731–732 — get_cv_lm_metrics takes mean/min/max MSE
+    from the SL.lm_All row of summary(cv_fit): the linear model alone, unclamped, not
+    the ensemble."""
+    fit = _clamp_fixture()
+    row = lm_metrics(fit)
+    lm_col = fit.library_predict[:, 1]
+    lm_mse = [np.mean((fit.Y[f] - lm_col[f]) ** 2) for f in fit.folds]
+    assert row["mean_mse"] == pytest.approx(np.mean(lm_mse))
+    assert row["min_mse"] == pytest.approx(min(lm_mse))
+    assert row["max_mse"] == pytest.approx(max(lm_mse))
+    ens_mse = [np.mean((fit.Y[f] - fit.sl_predict[f]) ** 2) for f in fit.folds]
+    assert row["mean_mse"] != pytest.approx(np.mean(ens_mse))
+    assert "n" in row  # R names this column `length(cv_fit$Y)` (L748); the port keeps n
+
+
+def test_se_mse_hand_computation(toy_fit):
+    """R pkg: SuperLearner/R/summary.CV.SuperLearner.R:L43 (2.0-40):
+    se = (1/sqrt(n)) * sd(w * (Y - pred)^2), sd with denominator n-1.
+
+    toy_fit: squared errors of SL.predict are [.01, .01, .04, .04]; their sd is
+    sqrt(4 * .015^2 / 3) = 0.0173205..., so se = 0.0173205 / sqrt(4) = 0.00866025.
+    For SL.lm_All (a perfect fit) every squared error is 0, so se = 0.
+    """
+    assert superlearner_metrics(toy_fit)["se_mse"] == pytest.approx(0.008660254037844387)
+    assert lm_metrics(toy_fit)["se_mse"] == pytest.approx(0.0)

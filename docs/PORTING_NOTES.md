@@ -113,10 +113,35 @@ SD, a single large prediction is only clamped if it exceeds ~10 SDs above the me
 so in practice the clamp fires rarely. This is faithful to the original, not a fix.
 Tested in `test_winsorise_only_clamps_beyond_10_sd`.
 
-### B4. MSE summary computed directly, not from an R summary object ✅
-The original read mean/min/max MSE from `summary(cv_fit)$Table` ("Super Learner"
-row). That summary risk equals the fold-wise SL MSE, which we compute directly
-(`cv_mse`) so the metric layer needs no R summary object. Numerically identical.
+### B4. Metric rows: MSE and SE from the unclamped predictions, and lm MSE from `SL.lm_All`
+Rewritten in Phase 1, Task 1.2. The earlier version of this note claimed the port
+was "numerically identical". It was not: it computed the MSE after the clamp, and the
+lm row used the ensemble's MSE (brief F6).
+
+- **Label:** faithful.
+- **R source:** `llm_paper/R/functions.R:L704–705` (the "Super Learner" row of
+  `summary(cv_fit)$Table`, taken **before** the clamp on `L707`);
+  `L731–732` (`get_cv_lm_metrics` takes the `SL.lm_All` row); `L748` (the lm row's
+  sample-size column is named `length(cv_fit$Y)`).
+  `SuperLearner/R/summary.CV.SuperLearner.R:L39–43, L66` (2.0-40): per-fold risk
+  `mean(w * (Y - pred)^2)`; Ave, Min and Max over folds, where Ave is the plain mean;
+  `se = (1/sqrt(n)) * sd(w * (Y - pred)^2)` with `n = length(SL.predict)` (`L19`).
+- **Python** (`metrics/cv_metrics.py`):
+  - `superlearner_metrics` takes `mean_mse`, `min_mse`, `max_mse` and `se_mse` from
+    the unclamped Super Learner predictions, and R², MAD and RMSE from the clamped
+    ones.
+  - `lm_metrics` takes `mean_mse`, `min_mse`, `max_mse` and `se_mse` from the
+    unclamped `SL.lm_All` column (the linear model alone). R² comes from `SL.lm_All`
+    against `SL.mean_All`, and MAD and RMSE from the clamped ensemble, as before.
+  - SE uses `ddof=1`.
+  - Naming: R calls the SE column **`se`**; the port calls it `se_mse` (owner decision
+    C5). The R rows also carry an `Algorithm` column ("Super Learner" or "SL.lm_All"),
+    which the port does not reproduce. The lm row's sample-size column stays `n`
+    instead of R's `length(cv_fit$Y)`.
+- **Why:** faithful order of operations (brief F6).
+- **Test:** `tests/test_cv_metrics.py::test_superlearner_mse_unclamped_r2_mad_rmse_clamped`,
+  `::test_lm_metrics_mse_is_sl_lm_all_fold_mean`, `::test_se_mse_hand_computation`.
+- **Validation:** V6. Figure and appendix CSVs against the paper.
 
 ---
 
