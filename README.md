@@ -43,6 +43,12 @@ data and completion of [`docs/VALIDATION_CHECKLIST.md`](docs/VALIDATION_CHECKLIS
   through `rpy2` on the same folds, to measure the native backend's gap. Requires R
   and the R packages listed in [`docs/REFERENCE_SOURCES.md`](docs/REFERENCE_SOURCES.md).
 
+R is not only for the oracle: three of the twelve outcomes are polychoric factor scores
+that only `psych::fa` produces, so a full run needs R, rpy2 and psych
+(`config.FACTOR_BACKEND = "r"`). With `"native"` those three outcomes, and the samples
+that need them, are reported as not run.
+[`docs/ORCHESTRATION.md`](docs/ORCHESTRATION.md) has the full table.
+
 ## Running the pipeline
 
 ```bash

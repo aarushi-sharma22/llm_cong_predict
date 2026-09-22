@@ -1,7 +1,7 @@
 # Translation status
 
 Every R object in the original repository (`tobiaswolfram/llm_paper`, commit
-`b0cfe4c`) and its Python counterpart, as of Phase 2 (updated per task). Each item has exactly
+`b0cfe4c`) and its Python counterpart, at the end of Phase 2. Each item has exactly
 one status:
 
 | Status | Meaning |
@@ -10,7 +10,10 @@ one status:
 | **PORTED-APPROX** | As PORTED, but part of it can only approximate the R implementation. Each approximation is marked `# APPROX` and listed in the VALIDATION_CHECKLIST APPROX register. |
 | **INGESTION** | The R computes the values with an external tool; the port reads that tool's output instead of generating it. |
 | **BOUNDARY** | Not reimplemented; the Python raises and points to the ingestion path. |
-| **NOT STARTED** | No Python yet. The Phase 2 task that ports it is named. |
+| **BLOCKED** | Cannot be produced, for a reason in the R itself; the port raises with that reason rather than guess. |
+| **REPLACED** | Participant-level in the R (brief F9); the port builds an aggregate summary instead. |
+
+Nothing is left unported: no entry below is "not started".
 
 ## `R/functions.R` (798 lines, 30 top-level functions; counted with grep)
 
