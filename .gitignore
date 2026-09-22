@@ -6,6 +6,8 @@ venv/
 *.egg-info/
 .pytest_cache/
 .ipynb_checkpoints/
+# third-party reference sources (other people's code; never commit)
+/reference/
 # pipeline outputs / caches
 outputs/
 .cache_pipeline/
