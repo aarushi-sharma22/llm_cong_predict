@@ -29,6 +29,14 @@ from llm_cong_predict.rbridge import r_unavailable_reason
 SMOKE_N = 120  # small n, as the smoke configuration allows (brief Task 2.4)
 SEED = 7
 
+# A run that leaves config.FACTOR_BACKEND at its default computes the three polychoric
+# factor scores through psych::fa, so it needs R, rpy2 and psych (PORTING_NOTES F1).
+# Every test that does so carries this guard, so that on a machine without R the suite
+# ends with skips and no failures (docs/PHASE_3_NOTES.md).
+R_FACTORS_REASON = r_unavailable_reason(("psych",))
+R_FACTORS_SKIP = f"{R_FACTORS_REASON} — this run needs the 'r' factor backend"
+needs_r_factors = pytest.mark.skipif(R_FACTORS_REASON is not None, reason=R_FACTORS_SKIP)
+
 
 @pytest.fixture(scope="session")
 def synthetic_root(tmp_path_factory) -> Path:
@@ -271,8 +279,11 @@ def test_native_factor_backend_reports_the_polychoric_outcomes_as_not_run(synthe
     assert sorted(log["unavailable_columns"]) == sorted(polychoric)
 
 
+@needs_r_factors
 def test_results_do_not_depend_on_n_jobs(synthetic_root):
-    """The fits are spread over worker processes; the numbers must not change."""
+    """The fits are spread over worker processes; the numbers must not change.
+
+    This run uses the default factor backend, so it needs R (PORTING_NOTES F1)."""
     targets = ["cog_lm_social_lm_metrics", "text_length_lm_metrics"]
     with data_root(synthetic_root):
         one = run_pipeline(_smoke(n_jobs=1, save_predictions=False), targets=targets)
@@ -288,9 +299,8 @@ def full_smoke_result(synthetic_root):
     """One end-to-end smoke run of the whole graph, shared by the tests below. It needs
     the "r" factor backend, because three of the twelve outcomes are polychoric factor
     scores that the native backend does not compute (PORTING_NOTES F1)."""
-    reason = r_unavailable_reason(("psych",))
-    if reason is not None:
-        pytest.skip(f"{reason} — the end-to-end run needs the 'r' factor backend")
+    if R_FACTORS_REASON is not None:
+        pytest.skip(R_FACTORS_SKIP)
     with data_root(synthetic_root):
         return run_pipeline(_smoke(n_jobs=min(8, os.cpu_count() or 1)))
 
