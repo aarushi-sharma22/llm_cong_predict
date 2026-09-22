@@ -145,49 +145,203 @@ lm row used the ensemble's MSE (brief F6).
 
 ---
 
-## C. Base-learner defaults 🔦 (the main numerical-fidelity risk)
+## C. Super Learner engine and base learners (rewritten in Phase 1, Task 1.3)
 
-The paper relied on the **default** hyperparameters of each SuperLearner wrapper
-(`SL.ranger`, `SL.nnet`, `SL.ksvm`, `SL.xgboost`, `SL.lm`) plus the `screen.glmnet`
-LASSO screener. These defaults differ from scikit-learn's — e.g. `SL.nnet` uses
-`size=2` hidden units whereas `MLPRegressor` defaults to 100. Getting the native
-backend to match therefore requires extracting each wrapper's actual defaults from
-the SuperLearner package source, **not** using sklearn defaults.
+Citations are to SuperLearner 2.0-40 and the package versions in
+`docs/REFERENCE_SOURCES.md`. The SuperLearner files involved have not changed since
+2017–2020, except the xgboost wrapper (C8). All C entries are confirmed on real data
+by VALIDATION_CHECKLIST **V4** (numerical parity with the R oracle on shared folds)
+and **V7** (learner settings).
 
-We deliberately do **not** guess these values in `config.py`. They are pinned during
-the model-layer phase and cross-checked against the rpy2 R-SuperLearner oracle on
-real data (VALIDATION_CHECKLIST V4). Being confidently wrong here would be worse
-than deferring.
+### C1. Nested-CV mechanics, failures and weights
+- **Label:** faithful.
+- **R source:**
+  - `SuperLearner/R/SuperLearner.R`: `L119–131, L143` (each screener runs once per
+    training set and its mask is shared); `L121–124, L211–213` (a failed screener
+    means All); `L143–152, L180–186` (a learner error leaves NA, the whole Z column is
+    set to 0, and the fit stops if all columns are 0); `L222–223` (screening re-run on
+    the full training set); `L249–252, L274–292` (a refit error gives NA; weights are
+    recomputed only if the failed learners' weight is positive); `L295` (prediction);
+    `L303–305` (cvRisk NA for CV failures).
+  - `method.R:L39–78` (NNLS weights; prediction over non-zero weights).
+  - `CV.SuperLearner.R:L80–91` (outer loop; discrete SL = `which.min(cvRisk)`).
+- **Python:** `models/native_superlearner.py` and `models/meta.py` follow each of
+  those lines. Any exception in a learner or screener is caught, as R's `try()`
+  catches any error, and recorded in `CVSuperLearnerFit.failures`.
+  `CVSuperLearnerFit.cv_risk` holds the per-fold learner risks.
+  - Owner decision C10: `cv_risk` is NaN only for learners that failed in the inner
+    CV. A learner that fails only in the refit keeps a number, as in R. When its
+    positive weight forced a recomputation, that number is computed from its zeroed Z
+    column.
+  - The brief's wording "cv_risk is NaN for failed learners" is therefore exact only
+    for CV failures.
+- **Why:** brief F4.
+- **Test:** `tests/test_superlearner_mechanics.py`: `::test_failing_learner_gets_weight_zero_and_ensemble_has_no_nan`,
+  `::test_refit_failure_with_positive_weight_recomputes_weights`,
+  `::test_refit_failure_with_zero_weight_changes_nothing`,
+  `::test_all_learners_failing_stops`,
+  `::test_screening_runs_once_per_training_set_and_mask_is_shared`,
+  `::test_screening_failure_keeps_all_columns`, `::test_compute_*`.
+- **Validation:** V4.
 
-**Status update — model layer built (`src/llm_cong_predict/models/`).** The native
-nested-CV Super Learner is implemented and its *structure* is tested
-(`tests/test_models.py`): folds partition correctly, the NNLS meta-learner behaves
-as known, there is no train/test leakage, library-column names match the original
-(`SL.mean_All`, `SL.ranger_screen.glmnet`, ..., and `SL.lm_All` for the lm library),
-and end-to-end output carries a real signal into the verified metric layer.
+### C2. Folds and random seeds are owned by the port
+- **Label:** APPROX.
+- **R source:** `llm_paper/R/functions.R:L506–512` (`clusterSetRNGStream(cluster, 1)`,
+  `cvControl = list(V = 10)`, `innerCvControl = list(list(V = 5))`);
+  `SuperLearner/R/control.R:L15` (shuffled, not stratified); `CVFolds.R:L23`
+  (`split(sample(1:N), rep(1:V, length = N))`).
+- **Python:**
+  - Outer folds: `make_folds(n, 10, seed)`, a shuffled split with the same fold sizes
+    as R's.
+  - Inner folds, screener CV folds and learner seeds come from
+    `models/seeds.py::derive_seed(seed, outer, inner, name)`. They depend only on the
+    base seed, the outer fold, the inner fold and the learner or screener name.
+  - Results are identical across repeated runs and across `n_jobs`. Outer folds
+    optionally run in parallel with joblib (`n_jobs`, default 1).
+  - Optional `folds` and `inner_folds` arguments fix the layout for the R oracle.
+- **Why:** R's random numbers cannot be reproduced. The outer folds are drawn in the
+  master process (`CV.SuperLearner.R:L19`), while `clusterSetRNGStream` seeds only the
+  workers.
+- **Test:** `tests/test_superlearner_mechanics.py::test_repeated_runs_are_identical`,
+  `::test_n_jobs_does_not_change_output_small_library`,
+  `::test_n_jobs_does_not_change_output_full_library` (slow),
+  `::test_fixed_folds_are_used`; `tests/test_learners.py::test_derive_seed_is_deterministic_and_distinct`.
+- **Validation:** V4 (compare on shared folds).
 
-What is pinned vs flagged in `base_learners.py`:
-  * `SL.mean`, `SL.lm` -> `[match]` (DummyRegressor mean / OLS). High confidence.
-  * `SL.ranger` -> `[approx]`. `n_estimators=500` (ranger num.trees). `mtry` and
-    `min.node.size` left at sklearn defaults and marked `TO_VERIFY`.
-  * `SL.nnet` -> `[approx]`. `size=2` set; but nnet vs `MLPRegressor` differ in
-    implementation, so agreement is not expected. `maxit` marked `TO_VERIFY`.
-  * `SL.ksvm` -> `[approx]`. `C=1`; RBF `gamma` uses sklearn `'scale'` vs kernlab's
-    `sigest` median heuristic (`TO_VERIFY`).
-  * `SL.xgboost.hist` -> `[approx]`. `ntrees=1000`, `max_depth=4`, `shrinkage=0.1`,
-    `min_child_weight~=10`, `tree_method="hist"`. The hist override is certain; the
-    numeric defaults are my current reading and marked `TO_VERIFY`.
+### C3. `SL.mean`
+- **Label:** faithful.
+- **R source:** `SuperLearner/R/SL.mean.R:L3` (`weighted.mean(Y, obsWeights)`; the
+  weights are all 1, `SuperLearner.R:L101–103`).
+- **Python:** `DummyRegressor(strategy="mean")`.
+- **Why:** identical estimator.
+- **Test:** covered by every engine test.
+- **Validation:** V4.
 
-The `screen.glmnet` LASSO screener is approximated with `LassoCV`
-(`screeners.py`); `glmnet` and sklearn differ in path/standardisation, so the
-selected variable set can differ. This is part of what V4 measures.
+### C4. `SL.lm`: R's rule for aliased columns
+- **Label:** APPROX.
+- **R source:** `SuperLearner/R/SL.lm.R:L44` (`lm(Y ~ ., weights = obsWeights)`);
+  `r-source/src/library/stats/R/lm.R:L169` (`lm.wfit`, `tol = 1e-7`), `L733–739`
+  (`predict.lm` uses only the non-aliased columns).
+- **Python:** `RLinearModel`. With the intercept first, column j is kept iff
+  `|R_jj| >= 1e-7 * ||x_j||` in an unpivoted QR, i.e. its part orthogonal to the
+  earlier columns is not negligible. OLS is then fitted on the kept columns, and
+  prediction uses only those. With no columns left it fits the intercept only, as
+  `lm(Y ~ .)` does.
+- **Why:** scikit-learn's `LinearRegression` keeps aliased columns (minimum-norm
+  solution), which changes predictions when new data break a collinearity.
+  APPROX: dqrdc2's limited-pivoting arithmetic can differ at the threshold.
+- **Test:** `tests/test_learners.py::test_sl_lm_drops_exactly_collinear_column_like_r`,
+  `::test_sl_lm_with_no_columns_fits_intercept_only`.
+- **Validation:** V4, V7.
 
-**Bottom line:** the native backend is structurally correct and testable, but its
-*numerical* agreement with R/the paper is a hypothesis until V4. The rpy2 oracle
-(`r_superlearner.py`, UNTESTED in this sandbox — no R) plus
-`scripts/validate_oracle.py` exist to measure the gap on identical folds and report
-it as numbers. `validate_oracle.py` treats the `[match]` learners as a tolerance
-gate and reports the `[approx]` learners' divergence rather than assuming it away.
+### C5. `SL.ranger`
+- **Label:** APPROX.
+- **R source:** `SuperLearner/R/SL.ranger.R:L59–66`: `num.trees = 500`,
+  `mtry = floor(sqrt(ncol(X)))`, `min.node.size = 5` (gaussian), `replace = TRUE`,
+  `sample.fraction = 1`, `num.threads = 1`. `ranger/src/TreeRegression.cpp:L106`
+  (0.18.0; `<=` since 2014): a node with `n <= min.node.size` is not split.
+  `ranger/R/ranger.R:L117`: `min.bucket` default 1.
+- **Python:** `RandomForestRegressor(n_estimators=500,
+  max_features=max(1, floor(sqrt(p))), min_samples_split=6, min_samples_leaf=1,
+  bootstrap=True, max_samples=None, n_jobs=1)`, with p counted after screening.
+- **Why:** sklearn splits when `n >= min_samples_split`
+  (`sklearn/tree/_tree.pyx:L231`), so 6 reproduces ranger's threshold (owner decision
+  C2; brief F5 said 5, which is off by one). APPROX: sklearn bootstraps with sample
+  weights and counts distinct rows per node, while ranger counts draws including
+  duplicates. The trees and their random numbers are different implementations.
+- **Test:** `tests/test_learners.py::test_ranger_settings`.
+- **Validation:** V4, V7.
+
+### C6. `SL.nnet`
+- **Label:** APPROX. The weight limit is faithful.
+- **R source:** `SuperLearner/R/SL.nnet.R:L5, L8` (`size = 2, linout = TRUE,
+  trace = FALSE, maxit = 500`); `nnet/R/nnet.R:L78–79` (`rang = 0.7`, `decay = 0`,
+  `MaxNWts = 1000`, `abstol = 1e-4`, `reltol = 1e-8`; the default `maxit = 100` is
+  overridden); `L105–106` ("too many weights"); `L242–268` (a bias for every unit).
+- **Python:** `NnetLike`. It raises `LearnerFailure` when `2p + 5 > 1000` (p ≥ 498);
+  otherwise it fits `MLPRegressor(hidden_layer_sizes=(2,), activation="logistic",
+  solver="lbfgs", alpha=0.0, max_iter=500)` without input scaling.
+- **Why:** faithful failure point. APPROX: start weights (nnet draws U(−0.7, 0.7)) and
+  the optimiser's stopping rules differ, so the fitted networks differ.
+- **Test:** `tests/test_learners.py::test_nnet_weight_count_is_2p_plus_5`,
+  `::test_nnet_fails_at_498_columns_and_fits_at_497`,
+  `::test_nnet_uses_maxit_500_and_no_decay`.
+- **Validation:** V4, V7.
+
+### C7. `SL.ksvm`
+- **Label:** APPROX. The scaling rule and the sigma rule are faithful.
+- **R source:** `SuperLearner/R/SL.ksvm.R:L89–129` (C = 1, epsilon = 0.1,
+  rbfdot, kpar automatic, scaled = TRUE; the wrapper's `cache`/`tol`/`shrinking` are
+  not passed, and kernlab's own defaults `kernlab/R/ksvm.R:L61–63` apply);
+  `kernlab/R/ksvm.R:L106` (eps-svr), `L127–148` (scaling: all columns and y, or none
+  if any column is constant), `L153–156`, `sigest.R:L58–64` (sigma),
+  `L2645–2647, L2810–2811` (prediction scaling).
+- **Python:** `KsvmLike`. It standardises X and y (ddof = 1) unless any column is
+  constant (all values identical), estimates sigma with the `sigest` rule on the
+  (possibly scaled) X, fits `SVR(kernel="rbf", gamma=sigma, C=1, epsilon=0.1,
+  tol=1e-3, cache_size=40, shrinking=True)`, and unscales the predictions.
+- **Why:** faithful rules. APPROX: libsvm and kernlab are different solvers, and
+  `sigest` samples its row pairs with R's RNG.
+- **Test:** `tests/test_learners.py::test_ksvm_skips_all_scaling_when_a_column_is_constant`,
+  `::test_ksvm_scales_x_and_y_when_no_column_is_constant`,
+  `::test_sigest_matches_kernlab_formula`.
+- **Validation:** V4, V7.
+
+### C8. `SL.xgboost.hist`
+- **Label:** APPROX.
+- **R source:** `llm_paper/R/functions.R:L492–494` (`params = list(tree_method =
+  "hist")`); `SuperLearner/R/SL.xgboost.R:L43–46, L102, L106` (the branch for
+  xgboost < 3.0: `reg:squarederror`, `nrounds = 1000`, `max_depth = 4`,
+  `min_child_weight = 10`, `eta = 0.1`, `nthread = 1`). The base score comes from
+  xgboost v1.7.6 `include/xgboost/objective.h:L33` and
+  `src/objective/objective.cc:L34–38` (0.5 for squared error); the estimated
+  intercept since 2.0.0 is in xgboost `NEWS.md:L50–52` and v2.0.0
+  `src/objective/regression_obj.cu:L66`.
+- **Python:** `XGBRegressor(n_estimators=1000, max_depth=4, min_child_weight=10,
+  learning_rate=0.1, tree_method="hist", n_jobs=1, base_score=0.5,
+  objective="reg:squarederror")`.
+- **Why:** the installed xgboost 3.3.0 would estimate the base score from the labels,
+  while R xgboost 1.7.x uses 0.5, so it is set explicitly. APPROX: the paper's R
+  xgboost version is unknown (1.7.x is assumed), and histogram construction differs
+  across versions.
+- **Note:** SuperLearner added a branch for xgboost > 3.0 on 2025-12-14 (commit
+  `abebb56`, `SL.xgboost.R:L53–65`). That branch **does not pass `params`**, so under
+  R xgboost ≥ 3 the `tree_method = "hist"` override would be silently ignored. The R
+  oracle therefore needs pinned package versions, which is a Phase 3 item. R's xgboost
+  is deliberately not installed here yet (owner instruction).
+- **Test:** `tests/test_learners.py::test_xgboost_settings_and_base_score`.
+- **Validation:** V4, V7.
+
+### C9. `screen.glmnet`
+- **Label:** APPROX. The selection rule is faithful.
+- **R source:**
+  - `SuperLearner/R/screen.glmnet.R:L1–16`: alpha 1, minscreen 2, nfolds 10,
+    nlambda 100, deviance (MSE), `lambda.min`, and the fallback
+    `which.max(sumCoef >= minscreen)`.
+  - `glmnet/R/glmnet.R:L384` (defaults), `L393` (≥ 2 columns), `L581` + `fix.lam.R`.
+  - `elnet.R:L23` (constant y); `cvstats.R:L6`; `getOptcv.glmnet.R:L5–8`.
+  - glmnetpp `elnet_driver/standardize.hpp:L35, L73–76`, `elnet_driver/gaussian.hpp:L448`,
+    `elnet_path/base.hpp:L209–211, L262–272, L307–310`, `elnet_path/gaussian_base.hpp:L132–134`.
+  - `glmnet.control.R:L153–157`.
+- **Python:** `models/screeners.py::screen_glmnet`:
+  - standardise with the population SD and centre y;
+  - λmax = max|Xsᵀ(y−ȳ)|/n and 100 geometric values down to 1e-4·λmax (1e-2 if
+    n < p);
+  - `sklearn.linear_model.lasso_path` on that grid;
+  - glmnet's early stop (≥ 5 points, relative R² gain < 1e-5 or R² > 0.999) on the
+    full-data path, whose truncated grid is reused in the folds;
+  - `KFold(10, shuffle=True)`, pooled CV MSE, ties to the largest λ;
+  - fallback to the first λ with ≥ 2 non-zero coefficients. If there is none, it
+    takes the first (largest) λ, which usually selects **no** column, exactly as
+    `which.max` of an all-FALSE vector does;
+  - `ScreenFailure` when p < 2 or y is constant. The engine then keeps all columns.
+- **Why:** faithful selection rule. APPROX: convergence criteria differ, and R's CV
+  folds are random. `foldid` and `lambdas` arguments let the Task 2.2 oracle compare
+  on identical folds and grid.
+- **Test:** `tests/test_learners.py::test_screening_*`, `::test_lambda_grid_matches_glmnet_definition`,
+  `::test_glmnet_early_stop_rule`, `::test_screen_invariant_to_rescaling_a_column`,
+  `::test_screen_fallback_*`.
+- **Validation:** V4.
 
 ---
 

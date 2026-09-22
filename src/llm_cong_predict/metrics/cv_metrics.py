@@ -67,6 +67,13 @@ class CVSuperLearnerFit:
         element of the (fit, var) list).
     method:
         Meta-learner method name; defaults to ``method.NNLS`` as in the original.
+    cv_risk:
+        Per-fold inner-CV risk of each learner, shape ``(n_folds, n_learners)``; NaN
+        for a learner that failed in that fold's inner CV (R: ``cvRisk`` set to NA,
+        SuperLearner.R:L303–305). Optional.
+    failures:
+        Records of learner and screener failures caught as R's ``try()`` would catch
+        them (outer fold, inner fold, learner, stage, error). Optional.
     """
 
     Y: np.ndarray
@@ -78,6 +85,8 @@ class CVSuperLearnerFit:
     discrete_sl_predict: Optional[np.ndarray] = None
     outcome_var: Optional[str] = None
     method: str = "method.NNLS"
+    cv_risk: Optional[np.ndarray] = None
+    failures: Optional[list] = None
 
     @property
     def V(self) -> int:  # noqa: N802  (mirror R's `V`)
@@ -276,4 +285,6 @@ def _replace_sl_predict(fit: CVSuperLearnerFit, new_sl: np.ndarray) -> CVSuperLe
         discrete_sl_predict=fit.discrete_sl_predict,
         outcome_var=fit.outcome_var,
         method=fit.method,
+        cv_risk=fit.cv_risk,
+        failures=fit.failures,
     )

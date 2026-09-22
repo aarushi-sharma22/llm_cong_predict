@@ -67,10 +67,10 @@ def main() -> int:
     folds = make_folds(n, 10, seed=args.seed)  # SAME folds for both backends
 
     if args.library == "lm":
-        native = fit_cv_superlearner(X, y, lm_library(), outcome_var="y", seed=args.seed)
+        native = fit_cv_superlearner(X, y, lm_library(), outcome_var="y", seed=args.seed, folds=folds)
         r_which = "lm"
     else:
-        native = fit_cv_superlearner(X, y, superlearner_library(), outcome_var="y", seed=args.seed)
+        native = fit_cv_superlearner(X, y, superlearner_library(), outcome_var="y", seed=args.seed, folds=folds)
         r_which = "superlearner"
 
     print("Fitting R oracle (this calls CV.SuperLearner)...")

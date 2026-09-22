@@ -177,13 +177,9 @@ class LmConfig:
     learners: tuple[str, ...] = ("SL.mean", "SL.lm")
 
 
-# TO_VERIFY: the per-learner default hyperparameters differ between the R
-# SuperLearner wrappers and scikit-learn, and the paper relied on defaults. These
-# must be extracted from the SL.* wrapper source (SuperLearner package) before the
-# native backend can be claimed to match. We deliberately do NOT guess them here;
-# they are pinned during the model-layer phase and cross-checked with the rpy2
-# oracle. See docs/PORTING_NOTES.md ("Base-learner defaults").
-BASE_LEARNER_DEFAULTS_STATUS = "TO_VERIFY: extract from SuperLearner wrapper source"
+# Per-learner settings live in models/base_learners.py, where each one cites its
+# SuperLearner wrapper line (or package default) or is marked APPROX; see
+# docs/PORTING_NOTES.md section C and VALIDATION_CHECKLIST V4/V7.
 
 SUPERLEARNER = SuperLearnerConfig()
 LM = LmConfig()

@@ -17,6 +17,7 @@ dependencies = [
     "scikit-learn>=1.4",   # native base learners + CV
     "xgboost>=2.0",        # SL.xgboost equivalent
     "scipy>=1.11",         # nnls meta-learner, stats
+    "joblib>=1.3",         # optional parallelism over outer CV folds (n_jobs)
 ]
 
 [project.optional-dependencies]
