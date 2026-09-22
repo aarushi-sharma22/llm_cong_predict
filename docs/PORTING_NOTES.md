@@ -17,8 +17,8 @@ The stance:
   and away from external services.
 
 Entries use the format: ID, label, R source lines, what the Python does, why, the test, and the VALIDATION_CHECKLIST
-item. Older entries keep the status legend ✅ done · 🔦 flagged, decision pending real
-data · ⏳ not yet ported. Line numbers refer to the clones listed in
+item. Older entries keep the status legend done · flagged, decision pending real
+data · not yet ported. Line numbers refer to the clones listed in
 `docs/REFERENCE_SOURCES.md`.
 
 ---
@@ -110,7 +110,7 @@ reproduce broken behaviour, so each is called out with its handling.
   `::test_get_complete_ncds_requires_one_row_per_ncdsid`.
 - **Validation:** none.
 
-### A4. `create_essay_variables` parameter naming ✅
+### A4. `create_essay_variables` parameter naming — done
 Called with `gpt_embeddings` as the 4th argument, but the parameter is named
 `roberta_embeddings` and the body joins on it. The "gpt vs roberta" naming is
 inconsistent across the essay targets.
@@ -118,7 +118,7 @@ inconsistent across the essay targets.
 Handling: the embedding source is passed explicitly and named for what it is; the
 pipeline spec records which embedding feeds which target.
 
-### A5. `get_gpt_embeddings` / `get_gpt4_embeddings` are identical ✅
+### A5. `get_gpt_embeddings` / `get_gpt4_embeddings` are identical — done
 The two functions are byte-identical; both read the same RDS object. The GPT-3.5 vs
 GPT-4 distinction actually lives in `get_gpt_embeddings.R` (different `model=`
 strings, different output RDS files), not in these readers.
@@ -126,7 +126,7 @@ strings, different output RDS files), not in these readers.
 Handling: a single parametrised reader; the model choice is a parameter, matching
 where the real distinction lives.
 
-### A6. `create_data.R` will not run top-to-bottom 🔦
+### A6. `create_data.R` will not run top-to-bottom — flagged
 Contains at least: a dangling `dplyr::mutate` after a broken pipe (the
 `appendix_11_data` block starts a new statement with a `.` placeholder and no
 upstream), and several objects used before assignment
@@ -141,13 +141,13 @@ them. Four outputs are reconstructed and one (`appendix_D6_data`, which needs th
 written. D4 (essay text) and D7 (per-person BSAG values) are participant-level and
 become aggregate summaries (N3).
 
-### A7. Machine-specific / Windows-only paths ✅
+### A7. Machine-specific / Windows-only paths — done
 `C:/TreeTagger` (TreeTagger install), `C:/Users/usr/anaconda3/python.exe`
 (reticulate). Non-portable.
 
 Handling: all paths centralised in `config.py`; no absolute machine paths anywhere.
 
-### A8. Deprecated / fragile R idioms ✅ (informational)
+### A8. Deprecated / fragile R idioms — done (informational)
 `dplyr::as.tbl` (deprecated), `dplyr:::select` with three colons (line 201, reaches
 into the namespace internals). Signals the code was written across several R
 versions and not re-run cleanly end-to-end. No action beyond noting it.
@@ -156,17 +156,17 @@ versions and not re-run cleanly end-to-end. No action beyond noting it.
 
 ## B. Fidelity decisions in already-ported code
 
-### B1. CV metric fold-wise aggregation ✅
+### B1. CV metric fold-wise aggregation — done
 The original computes each risk *per outer fold* and reports mean/min/max across
 folds (not a single pooled risk). Reproduced exactly in `metrics/cv_metrics.py`.
 Verified against hand-computed values in `tests/test_cv_metrics.py`.
 
-### B2. `sd` uses n-1 (ddof=1) ✅
+### B2. `sd` uses n-1 (ddof=1) — done
 R's `sd` uses the sample (n-1) denominator; NumPy's `std` defaults to n (ddof=0).
 The winsorisation threshold uses `sd(abs(SL.predict))`, so `np.std(..., ddof=1)` is
 required for parity. Encoded and tested.
 
-### B3. Winsorisation formula quirk ✅ (documented, reproduced faithfully)
+### B3. Winsorisation formula quirk — done (documented, reproduced faithfully)
 The R clamp is
 `SL.predict[abs(SL.predict) > 10*sd(abs(SL.predict)) + mean(SL.predict)] <- mean(SL.predict)`.
 Two properties reproduced exactly: (i) the threshold mixes the SD of the *absolute*
@@ -432,7 +432,7 @@ and **V7** (learner settings).
 
 ## E. IO layer (`src/llm_cong_predict/io/`) — deviations & decisions
 
-### E1. `read_gene_data` raises instead of returning NULL ✅ (documented)
+### E1. `read_gene_data` raises instead of returning NULL — done (documented)
 The R body was an empty `#PLACEHOLDER` returning `NULL` silently. Called without a
 path, the Python port raises `NotImplementedError` with a clear message, so any use of
 gene data fails loudly rather than propagating a silent `None`. It reads
@@ -441,7 +441,7 @@ the optional polygenic score file when one exists, in the placeholder format of 
 passes the function itself, uncalled — which is handled at the pipeline layer, not
 here: without gene data the gene-dependent targets are skipped, L2 and M4.)
 
-### E2. Stata value labels carried via `df.attrs` ✅
+### E2. Stata value labels carried via `df.attrs` — done
 `haven`/`sjlabelled` attach `value -> label` maps to columns; pandas has no direct
 equivalent, so the readers carry `pyreadstat`'s `variable_value_labels` on
 `df.attrs['value_labels']`, and `io/labels.py` provides `as_factor` /
@@ -477,7 +477,7 @@ re-attached after transforms and should be read early in the cleaning chain.
 - **Validation:** on real data, check `attrs["combine_ncds_collisions"]`. Any entry
   means two NCDS files carry the same variable code.
 
-### E4. `read_camsis` does not lower-case column names ✅ (faithful)
+### E4. `read_camsis` does not lower-case column names — done (faithful)
 Matches the R (`haven::read_dta` only). The real CAMSIS files already use lower-case
 names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
 
@@ -575,7 +575,7 @@ reconstruction (A1, A2). The other five cleaning functions are ported.
   (AP8). `tests/test_oracle.py::test_pearson_factor_matches_psych_fa`.
 - **Validation:** V3.
 
-### F3. `create_aspirations` sex comparison reproduced faithfully, incl. its quirk ✅
+### F3. `create_aspirations` sex comparison reproduced faithfully, incl. its quirk — done
 The R computes `sex = as.character(as_factor(sex))` and then
 `ifelse(sex == 1, camsis_male, camsis_female)` — comparing a *character* ("Male"/
 "Female" or "1"/"2" depending on the file's labels) to the numeric literal `1`. If
@@ -584,7 +584,7 @@ respondent takes the female score. This is reproduced exactly (the male branch f
 only when the character sex equals the string "1"), and flagged here because it is a
 latent data-dependent quirk of the original to check against real data.
 
-### F4. `get_complete_ncds` gene argument made explicit ✅ (see A3)
+### F4. `get_complete_ncds` gene argument made explicit — done (see A3)
 The R definition takes 4 arguments but `_targets.R` passes 5, which is an error in R
 (A3, corrected). The port adds an explicit optional `ncds_gene`. With `None` it
 performs the joins of the 4-argument R.
@@ -657,7 +657,7 @@ performs the joins of the 4-argument R.
 
 ## G. Feature layer (`src/llm_cong_predict/features/`) — deviations & decisions
 
-### G1. GPT embeddings: RDS round-trip replaced; original reshaper is contradictory 🔦
+### G1. GPT embeddings: RDS round-trip replaced; original reshaper is contradictory — flagged
 The R reshaper `get_gpt_embeddings` does `readRDS(essays)` (argument = PATH to the
 raw OpenAI-response `.rds`) but then `bind_cols(essays, .)` (argument = essays data
 frame) — the same argument used two incompatible ways. `.rds` is also an R-only
@@ -767,7 +767,7 @@ the original contradiction both documented.
   `::test_calculate_readability_metrics_raises_external_boundary`.
 - **Validation:** V9.
 
-### G5. `create_essay_variables` — data-dependent filter, embedding arg renamed ✅
+### G5. `create_essay_variables` — data-dependent filter, embedding arg renamed — done
 The final `select_if` keeps only columns that are non-NA, finite, and non-constant,
 so the essay feature-matrix width depends on the data (matched, flagged). The 4th
 argument is named `embeddings` (the R named it `roberta_embeddings` but the pipeline
