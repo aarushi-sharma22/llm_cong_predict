@@ -140,6 +140,48 @@ def test_pre_commit_hook_blocks_commit(scratch_repo: Path):
     assert "export.tab" in result.stderr
 
 
+def test_checker_is_scoped_to_its_project_folder_when_nested(tmp_path: Path):
+    """In a host repository the project sits in a subfolder, and the checker covers
+    that subfolder only: files elsewhere in the host repository are not its business,
+    and its own findings are reported project-relative."""
+    host = tmp_path / "host"
+    host.mkdir()
+    _git(host, "init", "-q")
+    project = host / "NCDS"
+    project.mkdir()
+
+    _stage(host, "predictions.csv")  # at the host root: would be refused if it were ours
+    _stage(host, "NCDS/tests/fixtures/example.csv")
+    assert _run_checker(project).returncode == 0
+
+    _stage(host, "NCDS/data/raw/ncds.dta")
+    result = _run_checker(project)
+    assert result.returncode == 1
+    assert "data/raw/ncds.dta" in result.stderr  # project-relative, no NCDS/ prefix
+    assert "predictions.csv" not in result.stderr  # the host root file is untouched
+
+
+def test_hook_finds_the_checker_from_the_project_folder(tmp_path: Path):
+    """The hook resolves the checker from its own location, so it works from either
+    position; git runs it with the work-tree root as the working directory."""
+    host = tmp_path / "host"
+    (host / "NCDS" / "scripts" / "hooks").mkdir(parents=True)
+    _git(host, "init", "-q")
+    shutil.copy(CHECKER, host / "NCDS" / "scripts" / "check_no_restricted_data.py")
+    hook = host / "NCDS" / "scripts" / "hooks" / "pre-commit"
+    shutil.copy(HOOK, hook)
+    hook.chmod(0o755)
+    _git(host, "config", "core.hooksPath", "NCDS/scripts/hooks")
+
+    _stage(host, "NCDS/docs/notes.md")
+    assert _git(host, "commit", "-q", "-m", "clean").returncode == 0
+
+    _stage(host, "NCDS/data/raw/ncds.dta")
+    refused = _git(host, "commit", "-q", "-m", "restricted", check=False)
+    assert refused.returncode == 1
+    assert "data/raw/ncds.dta" in refused.stderr
+
+
 # ----------------------------------------------------------------- gitignore --
 
 @pytest.mark.parametrize(

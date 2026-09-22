@@ -103,11 +103,17 @@ export. Passing the guard is four mechanical checks, not a disclosure review.
 `.gitignore` is an allow-list for `data/`: only `data/variables.xlsx`,
 `data/occupation_aspiration_mapping.xlsx` and `data/camsis/*.dta` (public reference
 files) can be tracked. Because `git add -f` bypasses `.gitignore`, a checker also runs
-before every commit. Enable it once per clone:
+before every commit. Enable it once per clone, from this project's directory:
 
 ```bash
-git config core.hooksPath scripts/hooks
+git config core.hooksPath "$(git rev-parse --show-prefix)scripts/hooks"
 ```
+
+Both protect this project's folder, not the root of a repository that hosts it. When
+this project sits in a subfolder of another repository, the allow-list applies to
+paths under that subfolder and the checker examines only files inside it; the host
+repository's own files, and its root, are outside their scope and need their own
+rules.
 
 The hook runs `scripts/check_no_restricted_data.py`, which refuses staged data-like
 files, anything else under `data/`, CSV/TXT files outside `tests/` and `docs/`, and any

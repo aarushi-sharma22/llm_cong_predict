@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 """Refuse to commit restricted or participant-level data.
 
-This repository must never contain NCDS survey data, essays, derived essay features,
+This project must never contain NCDS survey data, essays, derived essay features,
 embeddings, polygenic scores or per-person outputs. Those live
-outside the repository, under ``$LCP_DATA_ROOT``. This checker is the last line of
+outside it, under ``$LCP_DATA_ROOT``. This checker is the last line of
 defence behind ``.gitignore``, because ``git add -f`` bypasses ignore rules.
+
+It covers its own project directory (the parent of ``scripts/``) and nothing else, so
+it behaves the same whether that directory is the repository root or a subfolder of a
+host repository. Paths are reported relative to the project directory.
 
 It checks the files staged for commit (default), or every tracked file (``--all``),
 and fails with one line per problem when any file:
@@ -27,7 +31,8 @@ Usage:
     python scripts/check_no_restricted_data.py --all    # all tracked files
 
 Run automatically before every commit by ``scripts/hooks/pre-commit`` once the hook
-path is enabled with ``git config core.hooksPath scripts/hooks``.
+path is enabled, from the project directory, with
+``git config core.hooksPath "$(git rev-parse --show-prefix)scripts/hooks"``.
 """
 
 from __future__ import annotations
@@ -35,7 +40,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 RESTRICTED_EXTENSIONS = frozenset(
     {".parquet", ".feather", ".npy", ".npz", ".pkl", ".joblib", ".rds", ".rdata",
@@ -81,9 +86,30 @@ def _git(args: list[str], cwd: str | None) -> bytes:
     return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True).stdout
 
 
-def _index_sizes(cwd: str | None) -> dict[str, int | None]:
+def project_and_prefix(project_dir: str | None) -> tuple[str, str]:
+    """``(project directory, its path inside the work tree)``.
+
+    The project directory is the parent of this script's folder. The prefix is empty
+    when the project is the repository root, and ``"<folder>/"`` when the project sits
+    in a subfolder of a host repository; git reports paths relative to the work-tree
+    root, so the prefix is what has to come off them.
+    """
+    project = Path(project_dir).resolve() if project_dir else Path(__file__).resolve().parents[1]
+    root = Path(_git(["rev-parse", "--show-toplevel"], str(project)).decode().strip()).resolve()
+    prefix = "" if project == root else project.relative_to(root).as_posix() + "/"
+    return str(project), prefix
+
+
+def _strip(paths: list[str], prefix: str) -> list[str]:
+    """Project-relative paths, dropping anything outside the project directory."""
+    if not prefix:
+        return paths
+    return [p[len(prefix):] for p in paths if p.startswith(prefix)]
+
+
+def _index_sizes(project: str, prefix: str) -> dict[str, int | None]:
     """Map every path in the index to the size of its staged blob (None for gitlinks)."""
-    entries = [e for e in _git(["ls-files", "-s", "-z"], cwd).split(b"\0") if e]
+    entries = [e for e in _git(["ls-files", "-s", "-z", "--", project], project).split(b"\0") if e]
     paths, objects = [], []
     for entry in entries:
         meta, path = entry.split(b"\t", 1)
@@ -95,29 +121,34 @@ def _index_sizes(cwd: str | None) -> dict[str, int | None]:
     if blobs:
         out = subprocess.run(
             ["git", "cat-file", "--batch-check=%(objectname) %(objectsize)"],
-            cwd=cwd, check=True, capture_output=True, input="\n".join(blobs).encode(),
+            cwd=project, check=True, capture_output=True, input="\n".join(blobs).encode(),
         ).stdout.decode().split()
         sizes = {out[i]: int(out[i + 1]) for i in range(0, len(out), 2)}
-    return {p: (sizes[o] if o is not None else None) for p, o in zip(paths, objects)}
+    stripped = _strip(paths, prefix)
+    keep = [o for p, o in zip(paths, objects) if not prefix or p.startswith(prefix)]
+    return {p: (sizes[o] if o is not None else None) for p, o in zip(stripped, keep)}
 
 
-def files_to_check(all_files: bool, cwd: str | None) -> list[str]:
+def files_to_check(all_files: bool, project: str, prefix: str) -> list[str]:
+    """Staged (or tracked) files inside the project directory, project-relative."""
     if all_files:
-        raw = _git(["ls-files", "-z"], cwd)
+        raw = _git(["ls-files", "-z", "--", project], project)
     else:
-        raw = _git(["diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"], cwd)
-    return [p.decode() for p in raw.split(b"\0") if p]
+        raw = _git(["diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z", "--", project],
+                   project)
+    return _strip([p.decode() for p in raw.split(b"\0") if p], prefix)
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--all", action="store_true", help="check every tracked file, not only staged ones")
-    ap.add_argument("--repo", default=None, help="repository to check (default: current directory)")
+    ap.add_argument("--repo", default=None, dest="project",
+                    help="project directory to check (default: the folder holding scripts/)")
     args = ap.parse_args(argv)
 
-    root = _git(["rev-parse", "--show-toplevel"], args.repo).decode().strip()
-    paths = files_to_check(args.all, root)
-    sizes = _index_sizes(root)
+    project, prefix = project_and_prefix(args.project)
+    paths = files_to_check(args.all, project, prefix)
+    sizes = _index_sizes(project, prefix)
 
     failures = [(p, why) for p in paths for why in problems_for(p, sizes.get(p))]
     scope = "tracked" if args.all else "staged"
@@ -128,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {p}: {why}", file=sys.stderr)
         print(
             "Restricted or participant-level data must stay under $LCP_DATA_ROOT, outside "
-            "the repository. Unstage the file(s) with "
+            "this project. Unstage the file(s) with "
             "'git restore --staged <path>'.",
             file=sys.stderr,
         )
