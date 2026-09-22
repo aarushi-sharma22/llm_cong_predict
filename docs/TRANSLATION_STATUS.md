@@ -1,84 +1,78 @@
-# Translation Status — every R object, honestly accounted for
+# Translation status
 
-This is the complete surface of the original R repo and exactly what has and has
-not been translated. Updated as work proceeds. No green-checkmark inflation: a row
-is only "DONE" if the Python exists AND has a test that checks behaviour (not just
-"it runs"). "STRUCTURAL" means ported and tested for mechanics but not numerically
-validated against R. "NOT STARTED" means the R has not been translated at all.
+Every R object in the original repository (`tobiaswolfram/llm_paper`, commit
+`b0cfe4c`) and its Python counterpart, as of the end of Phase 1. Each item has exactly
+one status:
 
-Legend: ✅ DONE · 🟡 STRUCTURAL (needs oracle/data to validate) · ⬜ NOT STARTED
+| Status | Meaning |
+|---|---|
+| **PORTED** | Python exists, follows the cited R lines, and has tests of its behaviour on synthetic data. Numbers on real data are not yet checked (see the VALIDATION_CHECKLIST item). |
+| **PORTED-APPROX** | As PORTED, but part of it can only approximate the R implementation. Each approximation is marked `# APPROX` and listed in the VALIDATION_CHECKLIST APPROX register. |
+| **INGESTION** | The R computes the values with an external tool; the port reads that tool's output instead of generating it. |
+| **BOUNDARY** | Not reimplemented; the Python raises and points to the ingestion path. |
+| **NOT STARTED** | No Python yet. The Phase 2 task that ports it is named. |
 
-## `R/functions.R` (798 lines, 27 defs)
+## `R/functions.R` (798 lines, 30 top-level functions; counted with grep)
 
-| R function (line) | Purpose | Python target | Status |
+| R function (line) | Python | Status | Notes |
 |---|---|---|---|
-| `get_cv_predictive_r2` (550) | fold-wise SL R² | `metrics/cv_metrics.py::cv_predictive_r2` | ✅ |
-| `get_cv_lm_r2` (751) | fold-wise lm R² | `metrics/cv_metrics.py::cv_lm_r2` | ✅ |
-| `get_cv_rmse` (602) | fold-wise RMSE | `metrics/cv_metrics.py::cv_rmse` | ✅ |
-| `get_cv_mad` (649) | fold-wise MAD | `metrics/cv_metrics.py::cv_mad` | ✅ |
-| `get_cv_superlearner_metrics` (696) | assemble SL metric row | `metrics/cv_metrics.py::superlearner_metrics` | ✅ |
-| `get_cv_lm_metrics` (725) | assemble lm metric row | `metrics/cv_metrics.py::lm_metrics` | ✅ |
-| `SL.xgboost.hist` (492) | xgboost hist variant | `models/base_learners.py::_make_xgboost_hist` | 🟡 |
-| `get_general_superlearner_cv_model` (496) | nested-CV SL fit | `models/native_superlearner.py` + `models/backend` | 🟡 |
-| `get_lm_cv_model` (526) | nested-CV lm fit | `models/native_superlearner.py` (lm_library) | 🟡 |
-| `read_datalist` (22) | read variables.xlsx | `io/readers.py::read_datalist` | 🟡 |
-| `read_essays` (26) | parse essay text files | `io/readers.py::read_essays` | 🟡 |
-| `read_gene_data` (34) | **empty stub in R** | `io/readers.py::read_gene_data` (raises, documented) | ✅ |
-| `read_camsis` (39) | read CAMSIS .dta | `io/readers.py::read_camsis` | 🟡 (runs on real shipped file) |
-| `read_occupation_aspiration_mapping` (43) | read mapping xlsx | `io/readers.py::read_occupation_aspiration_mapping` | 🟡 (runs on real shipped file) |
-| `read_ncds` (47) | read one NCDS .dta wave | `io/readers.py::read_ncds` | 🟡 |
-| `combine_ncds` (57) | full-join all waves | `io/readers.py::combine_ncds` | 🟡 |
-| `clean_ncds` (64) | **the big recode** (180 lines) | `cleaning/clean_ncds.py` | ⬜ DEFERRED: needs real variables.xlsx (option b) |
-| `create_aspirations` (244) | CAMSIS aspiration score | `cleaning/aspirations.py::create_aspirations` | 🟡 |
-| `create_factors` (272) | psych::fa factor scores | `cleaning/factors.py::create_factors` | 🟡 Pearson factor done; 3 polychoric factors DEFERRED (V3) |
-| `get_complete_ncds` (309) | join cleaned+factors+aspir+essay | `cleaning/assemble.py::get_complete_ncds` | 🟡 |
-| `create_essay_variables` (317) | assemble+filter essay features | `features/essay_variables.py::create_essay_variables` | 🟡 |
-| `find_essay_teacher_genetics_overlap` (330) | overlap subset | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | 🟡 |
-| `find_full_overlap` (348) | complete-case subset | `cleaning/assemble.py::find_full_overlap` | 🟡 |
-| `tokenize_essays` (356) | TreeTagger tokenization | `features/readability.py::tokenize_essays` | ⬜ EXTERNAL-TOOL BOUNDARY (raises) |
-| `calculate_readability_metrics` (369) | koRpus readability | `features/readability.py` (+ ingest path) | ⬜ EXTERNAL-TOOL BOUNDARY (raises) |
-| `get_spelling_error_metrics` (390) | LanguageTool spelling CSV | `features/salat.py::get_spelling_error_metrics` | 🟡 (ingestion) |
-| `get_salat_metrics` (419) | SALAT tool CSVs | `features/salat.py::get_salat_metrics` | 🟡 (ingestion) |
-| `get_roberta_embeddings` (446) | RoBERTa embeddings | `features/embeddings.py::roberta_embeddings` | 🟡 (runnable, not run here) |
-| `get_gpt_embeddings` (2) | reshape saved GPT embeddings | `features/embeddings.py::gpt_embeddings` | 🟡 (RDS→parquet, flagged) |
+| `get_gpt_embeddings` (2) | `features/embeddings.py::gpt_embeddings` | PORTED | Reads a saved embeddings file instead of the R's contradictory RDS reshaper (PORTING_NOTES G1). |
+| `get_gpt4_embeddings` (12) | `features/embeddings.py::gpt_embeddings` | PORTED | Identical to the above in the R (A5). |
+| `read_datalist` (22) | `io/readers.py::read_datalist` | PORTED | Reads the file as R's `read_excel` would, i.e. with row 0 as header. Reading it with assigned column names is Task 2.1 (A1). |
+| `read_essays` (26) | `io/readers.py::read_essays` | PORTED | Malformed files are handled differently from `tidyr::separate` (edge case, logged for Task 2.1 notes). |
+| `read_gene_data` (34) | `io/readers.py::read_gene_data` | PORTED | The R body is empty; the Python raises (E1). |
+| `read_camsis` (39) | `io/readers.py::read_camsis` | PORTED | Runs on the shipped file. |
+| `read_occupation_aspiration_mapping` (43) | `io/readers.py::read_occupation_aspiration_mapping` | PORTED | Runs on the shipped file. |
+| `read_ncds` (47) | `io/readers.py::read_ncds` | PORTED | Missing-code labels dropped as `set_na` does (F6). |
+| `combine_ncds` (57) | `io/readers.py::combine_ncds` | PORTED | plyr collision semantics (E3). |
+| `clean_ncds` (64) | — | NOT STARTED | Task 2.1. The published R cannot run (A1, A2); reconstruction planned. |
+| `create_aspirations` (244) | `cleaning/aspirations.py::create_aspirations` | PORTED | Sex-comparison quirk reproduced (F3). V5. |
+| `create_factors` (272) | `cleaning/factors.py::create_factors` | PORTED-APPROX | Pearson factor: scoring faithful, loadings APPROX (F2, AP8). The three polychoric factors raise until the R bridge (Task 2.2). V3. |
+| `get_complete_ncds` (309) | `cleaning/assemble.py::get_complete_ncds` | PORTED | The R call passes an unused 5th argument, which is an error in R; reconstruction (A3). |
+| `create_essay_variables` (317) | `features/essay_variables.py::create_essay_variables` | PORTED | Output width depends on the data (G5). V2. |
+| `find_essay_teacher_genetics_overlap` (330) | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | PORTED | haven integer codes (F5). Never called by the R pipeline. |
+| `find_full_overlap` (348) | `cleaning/assemble.py::find_full_overlap` | PORTED | |
+| `tokenize_essays` (356) | `features/readability.py::tokenize_essays` | BOUNDARY | TreeTagger. An R script is planned in Task 2.5. |
+| `calculate_readability_metrics` (369) | `features/readability.py` (+ `ingest_readability_metrics`) | BOUNDARY | koRpus. Task 2.5. |
+| `get_spelling_error_metrics` (390) | `features/salat.py::get_spelling_error_metrics` | INGESTION | LanguageTool output; the R's error cases are reproduced (G3). |
+| `get_salat_metrics` (419) | `features/salat.py::get_salat_metrics` | INGESTION | SALAT tools' output; natural joins (G3). |
+| `get_roberta_embeddings` (446) | `features/embeddings.py::roberta_embeddings` | PORTED | Batched; must run in its own process (G2). Not run on real weights here. |
+| `SL.xgboost.hist` (492) | `models/base_learners.py::_make_xgboost_hist` | PORTED-APPROX | C8, AP6. |
+| `get_general_superlearner_cv_model` (496) | `models/native_superlearner.py::fit_cv_superlearner` + `superlearner_library()` | PORTED-APPROX | Mechanics faithful (C1); learners and screener APPROX (C2–C9). The wrapper that selects columns, does `na.omit` and returns `(fit, var)` is Task 2.3. V4. |
+| `get_lm_cv_model` (526) | `models/native_superlearner.py::fit_cv_superlearner` + `lm_library()` | PORTED-APPROX | As above; SL.lm APPROX (C4). |
+| `get_cv_predictive_r2` (550) | `metrics/cv_metrics.py::cv_predictive_r2` | PORTED | B1. |
+| `get_cv_rmse` (602) | `metrics/cv_metrics.py::cv_rmse` | PORTED | |
+| `get_cv_mad` (649) | `metrics/cv_metrics.py::cv_mad` | PORTED | |
+| `get_cv_superlearner_metrics` (696) | `metrics/cv_metrics.py::superlearner_metrics` | PORTED | MSE and `se_mse` before the clamp (B4). |
+| `get_cv_lm_metrics` (725) | `metrics/cv_metrics.py::lm_metrics` | PORTED | MSE from `SL.lm_All` (B4). |
+| `get_cv_lm_r2` (751) | `metrics/cv_metrics.py::cv_lm_r2` | PORTED | |
 
-## `R/_targets.R` (504 lines, 177 targets)
-The DAG: data-load, essay, clean, and ~110 model/metric targets (mostly
-combinatorial). Python target: `pipeline/` (graph + declarative model spec) + `run.py`.
-Status: 🟡 STRUCTURE BUILT & TESTED (193 targets, wiring validates: acyclic, deps
-resolve, spec expands). Does NOT execute — needs real data + clean_ncds. Blocked-node
-analysis: 159/193 blocked by 4 stub roots (clean_ncds, tokenize/readability boundary,
-gene_data); 34 runnable once data + clean_ncds exist. Target names regularised vs the
-original's ad-hoc names (dependency graph faithful).
+## `_targets.R` (504 lines)
+
+| Part | Python | Status | Notes |
+|---|---|---|---|
+| Data, essay and cleaning targets (L41–174) | `pipeline/build.py` | PORTED (structure) | The dependency graph validates. Four stub roots block execution: `ncds_1_to_9_cleaned` (Task 2.1), `tokenized_essays` and `readability_metrics` (Task 2.5 boundary), `gene_data` (restricted). |
+| Variable lists (L120–159) | `pipeline/variable_lists.py` | PORTED | Checked against the inventory. |
+| 70 model targets, 416 fits (L178–385) | `pipeline/model_spec.py` | PORTED (structure) | Each target records method, outcome, predictors, sample, data preparation and scorer; `R_TO_PYTHON_TARGET` maps the names (I1, I2). |
+| 53 metric targets (L387–494) | `pipeline/model_spec.py` | PORTED (structure) | 63 metric targets in Python: the 53, plus the 10 targets scored only in `create_data.R`; the 7 mmg_lm targets have none (I1). |
+| Execution | — | NOT STARTED | Task 2.4 (execution layer and synthetic end-to-end run). |
+
+Computed with `python run.py`: the graph has 186 targets; 152 are blocked by the four
+stub roots.
 
 ## `R/create_data.R` (601 lines)
-Post-pipeline figure/appendix CSV generation (`fig_2..5_data.csv`,
-`appendix_D1..D12`). Has known bugs (PORTING_NOTES A6). Python target:
-`scripts/make_figures.py`. Status: ⬜ NOT STARTED.
+
+Figure and appendix tables (`fig_2..5_data.csv`, `appendix_D1..D12_data.csv`).
+Several lines cannot run as written (A6). **NOT STARTED**: Task 2.6 ports it into
+`src/llm_cong_predict/reporting/`. D4 (essay text) and D7 (per-person BSAG values) are
+participant-level and will be replaced by aggregate summaries.
 
 ## `R/get_gpt_embeddings.R` (52 lines)
-Standalone OpenAI embedding generation (ada-002 + text-embedding-3-large). Python
-target: `scripts/get_gpt_embeddings.py`. Status: 🟡 PORTED (runnable with key+essays, RDS→parquet deviation).
 
-## `R/run.R` (7 lines)
-`targets::tar_make()`. Python target: `run.py`. Status: 🟡 PORTED as validate+plan
-(cannot execute without real data + clean_ncds; prints the blocked-node report).
+`scripts/get_gpt_embeddings.py`. **PORTED**, but it refuses to run without a double
+opt-in, because it sends essays to an external API (H2).
 
----
+## `run.R` (7 lines)
 
-## Honest completion estimate
-By translated source lines: ~90% of `functions.R` (metrics + models + IO + cleaning
-except clean_ncds + the whole feature layer). clean_ncds (~180 lines) deferred
-(option b); tokenize_essays + calculate_readability are external-tool boundaries
-(TreeTagger/koRpus, raise not substitute). Of the other files: get_gpt_embeddings.R
-ported; _targets.R and create_data.R still 0%. The empty package folders (`io/`, `cleaning/`, `features/`, `pipeline/`) are
-placeholders for the ~75% not yet written.
-
-## What "validation deferred" means per item
-Anything touching restricted data (all `io/` readers, `clean_ncds`, `create_factors`,
-`create_aspirations`, essay features) will be translated from the R faithfully but
-CANNOT be run/validated until the real NCDS data (and ideally the author's correct
-`variables.xlsx` + derived features) arrive. Those get tested for mechanics on
-synthetic fixtures now; numerical validation is logged in
-`docs/VALIDATION_CHECKLIST.md` and happens later. We do NOT guess values where the R
-depends on data we don't have — we port the logic and mark the gap.
+`run.py`. **PORTED (structure)**: it builds and validates the graph and prints what
+blocks execution; it does not run the pipeline (Task 2.4).

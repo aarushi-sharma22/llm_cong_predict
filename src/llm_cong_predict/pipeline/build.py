@@ -7,7 +7,7 @@ targets from ``model_spec``. Each target carries a status flag:
   * BUILT — the underlying Python function is implemented (io/cleaning/features/
             models/metrics);
   * STUB  — deliberately not implemented, and the code raises:
-      - ``ncds_1_to_9_cleaned``  (clean_ncds, deferred — needs real variables.xlsx);
+      - ``ncds_1_to_9_cleaned``  (clean_ncds, Phase 2 Task 2.1; PORTING_NOTES A1, A2);
       - ``tokenized_essays`` / ``readability_metrics`` (TreeTagger/koRpus boundary);
       - ``gene_data`` (empty in original; reader raises).
 
@@ -33,7 +33,7 @@ _NCDS_WAVES.insert(5, "ncds_8")
 def _load_targets() -> list[Target]:
     t: list[Target] = [
         Target("ncds_essays", (), Status.BUILT, "read_essays"),
-        Target("mapping_df", (), Status.BUILT, "read_datalist (note: public variables.xlsx has wrong schema, A1)"),
+        Target("mapping_df", (), Status.BUILT, "read_datalist (header row missing in the public file; read with assigned names in Task 2.1, A1)"),
         Target("camsis_data", (), Status.BUILT, "read_camsis (runs on real shipped file)"),
         Target("occupation_aspiration_mapping", (), Status.BUILT, "read_occupation_aspiration_mapping (real file)"),
         Target("gene_data", (), Status.STUB, "read_gene_data raises (access-restricted; empty in original)"),
@@ -86,7 +86,7 @@ def _clean_targets() -> list[Target]:
     return [
         Target("ncds_1_to_9", tuple(_NCDS_WAVES), Status.BUILT, "combine_ncds (full outer join)"),
         Target("ncds_1_to_9_cleaned", ("ncds_1_to_9", "mapping_df"), Status.STUB,
-               "clean_ncds DEFERRED (option b): needs the real variables.xlsx. THE key blocker."),
+               "clean_ncds not yet ported (Phase 2, Task 2.1; reconstruction, PORTING_NOTES A1, A2). The key blocker."),
         Target("aspiration_data", ("ncds_1_to_9", "camsis_data", "occupation_aspiration_mapping"), Status.BUILT, "create_aspirations"),
         Target("factor_data", ("ncds_1_to_9_cleaned",), Status.BUILT,
                "create_factors (Pearson factor built; 3 polychoric factors deferred, V3)"),

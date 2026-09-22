@@ -35,7 +35,7 @@ def main() -> int:
 
     print(
         "\nBottom line: the graph is structurally sound, but it cannot run. The "
-        "single largest unblock is clean_ncds (needs the real variables.xlsx); after "
+        "single largest unblock is clean_ncds (Phase 2, Task 2.1); after "
         "that, real NCDS data is required to execute."
     )
     return 0

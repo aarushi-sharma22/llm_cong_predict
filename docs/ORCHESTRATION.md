@@ -1,8 +1,8 @@
 # Orchestration Design
 
 The original used the R `targets` package: a make-like DAG giving (a) dependency
-tracking, (b) skip-if-unchanged caching, (c) parallelism. This pipeline has ~110
-model fits, several of them expensive, so caching and parallelism are genuinely
+tracking, (b) skip-if-unchanged caching, (c) parallelism. This pipeline has 70
+model targets (416 fits), several of them expensive, so caching and parallelism are genuinely
 valuable — you should not re-run everything to regenerate one figure.
 
 This project provides **both** a lightweight Python runner (default) and an optional
@@ -14,9 +14,10 @@ Snakemake wrapper. The decision to have both is safe only because of one rule:
 > decide call-order over those functions. This prevents the two entry points from
 > drifting apart, which is the only real risk of maintaining both.
 
-Status: components are built first. The Python runner is added once components exist;
-the Snakefile is added last. Neither orchestrator is implemented yet at the time of
-writing — this note is the design they will follow.
+Status (end of Phase 1): the dependency graph and the declarative model spec exist
+(`pipeline/`) and validate, but nothing executes yet. The in-process runner is Phase 2,
+Task 2.4 (no caching). Caching and the Snakemake wrapper are Phase 3. This note is the
+design they follow.
 
 ---
 
@@ -47,7 +48,7 @@ def ncds_1_to_9_cleaned(ncds_1_to_9, mapping):
 ```
 
 ### 3. Declarative model spec (the key improvement over the original)
-The original hand-wrote ~110 near-identical `tar_target(...)` model calls, which is
+The original hand-wrote 70 near-identical `tar_target(...)` model calls, which is
 why `create_data.R` became 600 fragile lines. Here the model targets are **generated
 from a spec** instead of copy-pasted:
 
@@ -82,14 +83,14 @@ restart, and parallelism.
 
 ```
 rule clean_ncds:
-    input:  "cache/ncds_1_to_9.pkl", "data/schema/ncds_variable_mapping.yaml"
+    input:  "cache/ncds_1_to_9.pkl", "data/variables.xlsx"
     output: "cache/ncds_1_to_9_cleaned.pkl"
     script: "scripts/steps/clean_ncds.py"   # calls cleaning.clean_ncds()
 ```
 
 ### When to use which
 - **Reproducing a figure / running locally** -> Python runner. No extra install.
-- **Running the full ~110-fit pipeline on a cluster** -> Snakemake wrapper.
+- **Running all 416 fits on a cluster** -> Snakemake wrapper (Phase 3).
 
 ### Honest tradeoff
 Two entry points is a small ongoing maintenance tax and a drift risk. That risk is

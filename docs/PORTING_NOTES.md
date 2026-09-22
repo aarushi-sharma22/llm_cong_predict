@@ -1,11 +1,26 @@
 # Porting Notes
 
-Every deviation from the original R code (`tobiaswolfram/llm_paper`), and every
-non-obvious fidelity decision, is logged here. The stance agreed with the project
-owner: **fix bugs, but document every fix**. This file is the audit trail that
-distinguishes "a documented translation" from "a rewrite."
+Every deviation from the original R code (`tobiaswolfram/llm_paper`, commit
+`b0cfe4c`), and every non-obvious fidelity decision, is logged here. This is the
+audit trail that distinguishes a documented translation from a rewrite.
 
-Status legend: ✅ done · 🔦 flagged, decision pending real data · ⏳ not yet ported.
+The stance (brief Section 2.2, replacing the earlier "fix bugs" stance):
+- **Default: faithful.** The port reproduces what the R evidently did, including
+  quirks that change results.
+- **Reconstruction:** where the published R cannot have run (undefined objects, a
+  wrong call), the port implements the evident intent and says so here.
+- **Corrected variant (off by default):** a corrected behaviour exists only where the
+  brief asks for one, behind a keyword argument that defaults to `False`.
+- **APPROX:** where Python can only approximate the R, the gap is measured by an item
+  in `docs/VALIDATION_CHECKLIST.md`.
+- **Data-safety change:** changes made to keep restricted data out of the repository
+  and away from external services.
+
+Entries written or rewritten from Phase 1 on use the format of brief Section 7: ID,
+label, R source lines, what the Python does, why, the test, and the VALIDATION_CHECKLIST
+item. Older entries keep the status legend ✅ done · 🔦 flagged, decision pending real
+data · ⏳ not yet ported. Line numbers refer to the clones listed in
+`docs/REFERENCE_SOURCES.md`.
 
 ---
 
@@ -14,41 +29,73 @@ Status legend: ✅ done · 🔦 flagged, decision pending real data · ⏳ not y
 These are defects in the *public* R repo. A naive line-by-line port would faithfully
 reproduce broken behaviour, so each is called out with how we handle it.
 
-### A1. `variables.xlsx` schema mismatch 🔦 (highest impact)
-The whole `clean_ncds` recode keys on columns named `variable`, `sweep`,
-`respondent`, `new_varname`, `type`, and constructs
-`full_name = s{sweep}_{substr(respondent,1,2)}_{new_varname}`.
-**None of those column names exist in the shipped `data/variables.xlsx`.** The file
-has no header row, so R's `read_excel` silently promotes the first data row to
-column names, yielding columns like `health`, `mother`, `birthweight`, `N646`. The
-original readme itself notes the file contains variables "from previous work."
-Conclusion: the public file is not the file the code was written against.
+### A1. `variables.xlsx` is the right file with its header row missing (rewritten in Phase 1, Task 1.6)
+- **Label:** reconstruction. It replaces the earlier note, which was wrong.
+- **R source:** `llm_paper/_targets.R:L43` (`read_datalist("data/variables.xlsx")`);
+  `llm_paper/R/functions.R:L22–24` (`read_excel(path)`), `L75–78` (uses `variable`,
+  `sweep`, `respondent`, `new_varname`), `L103, L196, L201, L207, L212, L217` (uses
+  `type`).
+- **What is true** (brief F1, verified at Checkpoint A):
+  - The file has no header row, so `read_excel` makes row 0 the header and the
+    columns the R needs do not exist. The published R cannot have run on this exact
+    file.
+  - Read with `header=None` and assigned names by position (0 sweep, 1 type,
+    2 respondent, 3 question, 4 variable label, 5 new_varname, 6 variable), the rows
+    complete on columns 0, 1, 2, 5 and 6 are exactly 63, with no duplicated code.
+  - All 74 names of the form `s<sweep>_<co|te|pa|mo>_...` in `_targets.R` and
+    `functions.R` are either a `full_name` of the table or created by the R, with one
+    exception: `s2_co_total_ability`, which the R only removes.
+  - The earlier note said "the public file is not the file the code was written
+    against". That is wrong, and `clean_ncds` is not blocked on a different file.
+- **Python:** Task 2.1 reads the file with assigned names, keeps the 63 complete rows
+  and asserts 63 rows and no duplicate codes. No separate schema file (the planned
+  `data/schema/ncds_variable_mapping.yaml`) is needed, and none exists.
+- **Why:** the evident intent; the R cannot run otherwise.
+- **Test:** Task 2.1.
+- **Validation:** V1.
 
-Handling: reconstruct the required schema as a versioned, provenance-flagged
-artifact (`data/schema/ncds_variable_mapping.yaml`). The cleaning *logic* is ported
-faithfully; the *mapping table* is provisional until the author's real file arrives.
-See VALIDATION_CHECKLIST item V1.
+### A2. `clean_ncds` refers to four undefined blocks; reconstructed without them (rewritten in Phase 1, Task 1.6)
+- **Label:** reconstruction.
+- **R source:** `llm_paper/R/functions.R:L224–240`.
+  `plyr::join_all(list(teacher, parents, height, birthweight, bsag, behavior,
+  ability, aspirations, personality, motivation, parenting, highest_edu, sex, camsis))`
+  refers to `bsag`, `aspirations`, `parenting` and `camsis`, which are defined nowhere,
+  so R stops here. `L202` (`select(-s2_co_total_ability)`) also errors with this
+  table, because that name is not in it (A1).
+- **What the evident intent is** (brief F2, verified):
+  - The final `select` keeps only the columns of sex, birthweight, height, teacher,
+    parents, personality, behavior, ability, motivation and highest_edu, in that order
+    (`L228–239`), and every block comes from the same rows.
+  - So the output is one row per `ncdsid` with those columns. The undefined blocks
+    would not contribute any selected column.
+  - Nine teacher columns appear in two blocks: four ability ratings in `teacher` and
+    `ability`, and five behaviour items in `teacher` and `behavior`. `plyr::join_all`
+    keeps the first occurrence (E3), which is the teacher block's rank-coded version.
+    The select order is not the reason.
+- **Python:** Task 2.1 builds that frame without the undefined blocks, drops
+  `s2_co_total_ability` only when present, and reports for each collided column
+  whether the two versions are identical.
+- **Why:** the published R cannot run.
+- **Test:** Task 2.1.
+- **Validation:** V1, and the collision report on real data.
 
-### A2. Undefined objects inside `clean_ncds` 🔦
-The final `plyr::join_all(list(teacher, parents, height, birthweight, bsag,
-behavior, ability, aspirations, personality, motivation, parenting, highest_edu,
-sex, camsis), ...)` references `bsag`, `aspirations`, `parenting`, and `camsis` —
-none of which are defined anywhere in the function. In R this errors at runtime
-(or silently picks up global-env leakage). Likely dead code from an earlier version.
-
-Handling: determine from the paper's variable list whether these are real blocks
-(BSAG = Bristol Social Adjustment Guides is plausibly a real construct) or dead
-code, and either implement or drop with a note. Decision pending V1.
-
-### A3. `get_complete_ncds` arity mismatch ✅
-*Called* in `_targets.R` with 5 args
-(`ncds_1_2_3_cleaned, factor_data, aspiration_data, essay_data, gene_data`) but
-*defined* in `functions.R` with 4 (no gene argument). The gene arg is silently
-dropped by R. Given `read_gene_data` is an empty `#PLACEHOLDER` stub, gene data is
-absent regardless.
-
-Handling: Python signature makes the gene input explicit and optional; when absent,
-gene-dependent targets are skipped rather than silently no-op'd.
+### A3. `get_complete_ncds` is called with an argument it does not have (corrected in Phase 1, Task 1.6)
+- **Label:** reconstruction. It corrects the earlier note.
+- **R source:** `llm_paper/R/functions.R:L309` defines four arguments and no `...`.
+  `llm_paper/_targets.R:L169` calls it with five (`…, essay_data, gene_data`).
+- **What is true:** R does **not** drop the fifth argument silently, as the earlier
+  note said. A call with an unmatched argument and no `...` stops with "unused
+  argument (gene_data)". The published `ncds_complete` target therefore cannot have
+  run either. Also, `tar_target(gene_data, read_gene_data)` (`_targets.R:L93`) stores
+  the function itself, so `colnames(gene_data)` is `NULL` and `gene_variables` is empty
+  (`L132`).
+- **Python:** `cleaning/assemble.py::get_complete_ncds` takes an explicit optional
+  `ncds_gene`. With `None` it performs the three left joins of the four-argument R.
+  Gene-dependent targets are skipped when gene data is absent (Task 2.3).
+- **Why:** the evident intent: join the gene data when available.
+- **Test:** `tests/test_cleaning.py::test_get_complete_ncds_optional_gene_join`,
+  `::test_get_complete_ncds_left_joins`.
+- **Validation:** none.
 
 ### A4. `create_essay_variables` parameter naming ✅
 Called with `gpt_embeddings` as the 4th argument, but the parameter is named
@@ -74,10 +121,11 @@ upstream), and several objects used before assignment
 `cog_superlearner_social_lm` used without `tar_read`). Mixed `tar_read(...)` vs
 bare-symbol usage throughout.
 
-Handling: rebuilt as a clean figures module (`scripts/make_figures.py`) that
-reproduces the *intended* outputs (`fig_2..5_data.csv`, `appendix_D1..D12`). Each
-fixed line noted inline in that module. Decision on ambiguous blocks pending the
-model outputs being available.
+Handling: Task 2.6 ports the intended outputs into `src/llm_cong_predict/reporting/`
+(`fig_2..5_data.csv`, `appendix_D1..D12`), with each broken line logged there. The
+planned `scripts/make_figures.py` was never written. D4 (essay text) and D7
+(per-person BSAG values) are participant-level and become aggregate summaries
+(brief F9).
 
 ### A7. Machine-specific / Windows-only paths ✅
 `C:/TreeTagger` (TreeTagger install), `C:/Users/usr/anaconda3/python.exe`
@@ -407,21 +455,34 @@ re-attached after transforms and should be read early in the cleaning chain.
 Matches the R (`haven::read_dta` only). The real CAMSIS files already use lower-case
 names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
 
-### E5. `read_datalist` reads whatever the file contains ✅ (faithful)
-Thin `read_excel` wrapper. The schema mismatch (A1) is deliberately NOT fixed in the
-reader — it is a cleaning-layer concern where the provisional schema is
-reconstructed and flagged.
+### E5. `read_datalist` reads the file as `read_excel` would (until Task 2.1)
+Thin `read_excel` wrapper, faithful to `llm_paper/R/functions.R:L22–24`. Task 2.1
+changes it to read with assigned column names (reconstruction, A1).
+
+### E6. `read_essays`: malformed files differ from `tidyr::separate` (known, not changed)
+- **Label:** faithful for well-formed files; malformed files differ (not yet decided).
+- **R source:** `llm_paper/R/functions.R:L26–31`. `tidyr::separate` defaults to
+  `extra = "warn"`, which drops the pieces after a second delimiter, and
+  `fill = "warn"`, which turns missing pieces into NA.
+- **Python:** `io/readers.py::read_essays` splits at the first delimiter and keeps
+  the remainder (for example a second "  Words: " stays in `words`). When a delimiter
+  is missing it gives `""` or `None`, not NA.
+- **Why:** found in the Task 0 review, outside the brief's list. Well-formed essay
+  files (`ID: …`, one dashed line, text, one "  Words: n") parse identically. The
+  difference matters only for malformed files; raised with the owner at Checkpoint B.
+- **Test:** `tests/test_io.py::test_read_essays_parses_format` (well-formed only).
+- **Validation:** V2. On real essays, count files with extra or missing delimiters.
 
 ---
 
 ## F. Cleaning block (`src/llm_cong_predict/cleaning/`) — deviations & decisions
 
-Scope note: `clean_ncds` itself is **deferred** (option (b), user decision): a
-strictly-grounded schema (no guessing) would be only partial, so rather than build a
-half-known variable renamer that would likely be redone, `clean_ncds` waits for the
-author's real `variables.xlsx`. The other five cleaning functions are ported now.
+Scope note: `clean_ncds` was deferred in the first build (option (b)) on the belief
+that the public `variables.xlsx` was the wrong file. That belief was wrong (A1): the
+file is right and only lacks a header row. `clean_ncds` is ported in Phase 2,
+Task 2.1, as a reconstruction (A1, A2). The other five cleaning functions are ported.
 
-### F1. `create_factors` — polychoric factors DEFERRED, not guessed 🔦 (V3)
+### F1. `create_factors` — polychoric factors DEFERRED to the R bridge (Task 2.2), not guessed 🔦 (V3)
 Three of the four factors use `psych::fa(cor="poly")` (polychoric). A polychoric
 estimator matching R's `polycor`/`psych` is nontrivial, and substituting a Pearson
 correlation would change the numbers while appearing to work. So only the Pearson
@@ -460,8 +521,9 @@ only when the character sex equals the string "1"), and flagged here because it 
 latent data-dependent quirk of the original to check against real data.
 
 ### F4. `get_complete_ncds` gene argument made explicit ✅ (see A3)
-The R definition takes 4 args but is called with 5 (`gene_data`), silently dropped.
-The port adds an explicit optional `ncds_gene`; `None` reproduces the 4-arg R exactly.
+The R definition takes 4 arguments but `_targets.R` passes 5, which is an error in R
+(A3, corrected). The port adds an explicit optional `ncds_gene`. With `None` it
+performs the joins of the 4-argument R.
 
 ### F5. `find_essay_teacher_genetics_overlap`: haven integer codes, unlabelled values kept (rewritten in Phase 1, Task 1.5)
 - **Label:** faithful. Owner decision C9 and brief F8 item 3.
@@ -708,3 +770,59 @@ item, if any.
 - **Why:** brief F7.
 - **Test:** `tests/test_pipeline.py::test_cog_social_lm_uses_the_single_ability_factor`.
 - **Validation:** none.
+
+---
+
+## J. Corrections to the facts of the Phase 1–2 brief (Section 4)
+
+Found at Checkpoint A (`docs/PHASE_1_2_PLAN.md` A.4) and confirmed by the owner. The
+code follows the corrected version.
+
+### J1. F2: why the teacher version of the collided columns is kept
+The conclusion is right, the reason is not. `plyr::join_all` keeps the first
+occurrence of a duplicated column (`plyr/R/rbind-fill.r:L70–71, L80`). The teacher
+block comes first in the join list (`functions.R:L224`), so its rank-coded columns
+survive. The final `select` never sees duplicates. Also:
+- `one_of` warns about unknown names rather than dropping them silently
+  (`tidyselect/R/helpers.R:L124–127`), and keeps the table's order (`match_vars`).
+- The `add.non.labelled = FALSE` default of `to_character` is set in
+  `sjlabelled/R/as_character.R:L14`; `as_label.R:L269` is where unlabelled values
+  become NA.
+- `select(-s2_co_total_ability)` errors on every run with this table (A2).
+
+### J2. F4: CV risk of learners that fail only in the refit
+SuperLearner sets `cvRisk` to NA only for learners that failed in cross-validation
+(`SuperLearner/R/SuperLearner.R:L303–305`). A learner that fails only in the
+full-data refit keeps a number. The port copies this (owner decision C10; C1).
+
+### J3. F5: learner mappings
+- **ranger:** the sklearn value is `min_samples_split = 6`, not 5. ranger does not split
+  a node with `n <= min.node.size` (`ranger/src/TreeRegression.cpp:L106`) (owner
+  decision C2; C5).
+- **ksvm:** `cache`, `tol` and `shrinking` come from kernlab's defaults
+  (`kernlab/R/ksvm.R:L61–63`), not from the wrapper, which does not pass them. The
+  values are the same (C7).
+- **screen.glmnet:**
+  - the grid has 100 values in total, the largest lambda included;
+  - the CV error is the pooled (fold-size-weighted) MSE;
+  - ties go to the largest lambda;
+  - the full-data path stops early by glmnet's rule;
+  - if no lambda reaches two non-zero coefficients, `which.max` picks the largest
+    lambda, which usually selects no column (C9).
+- **xgboost:** confirmed. `base_score` is 0.5 in R xgboost 1.7.x for squared error
+  (v1.7.6 source), although that version's parameter documentation suggests otherwise
+  (C8).
+
+### J4. F8 item 4: `combine_ncds` collisions
+`plyr::join_all(type = "full")` does not return duplicated names, so `as_tibble` does
+not reject them and the Python must not raise. The later frame's values only fill rows
+the earlier frames did not have (owner decision C1; E3).
+
+### J5. F10: the aspiration mapping is many-to-one
+13 `occupation_1970` values are shared by several aspirations, so the mapping is
+many-to-one, not one-to-one. Each aspiration matches exactly one CAMSIS row, so the
+join in `create_aspirations` adds no rows (computed with pandas: 58 joined rows for
+58 aspirations). No code change.
+
+### J6. PORTING_NOTES A3 (earlier version of this file)
+An unmatched fifth argument is an error in R, not silently dropped (A3, rewritten).

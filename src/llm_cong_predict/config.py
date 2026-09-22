@@ -4,22 +4,20 @@ Every path and model parameter lives here so that nothing is hardcoded in the
 logic modules. This directly replaces the machine-specific paths in the original
 R code (e.g. ``C:/TreeTagger``, ``C:/Users/usr/anaconda3/python.exe``).
 
-Parameters are annotated by how confident we are in them:
-  * CERTAIN  -> read directly and unambiguously from the original source.
-  * TO_VERIFY -> must be checked against the SuperLearner wrapper source or the
-                 paper before we can claim numerical fidelity. Not guessed here.
+Every value meant to match the R cites its source line (``# R: llm_paper/...:L<n>``).
+Restricted data is never read from or written into the repository: see
+``LCP_DATA_ROOT`` below and docs/PORTING_NOTES.md section H.
 """
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 # --- Paths: public files inside the repository --------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
-SCHEMA_DIR = DATA_DIR / "schema"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 
 # Public reference files shipped with the original R repository. These are the only
@@ -27,11 +25,6 @@ OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 CAMSIS_FILE = DATA_DIR / "camsis" / "gb71co70.dta"  # R: llm_paper/_targets.R:L92 (the only CAMSIS file used)
 VARIABLES_XLSX = DATA_DIR / "variables.xlsx"  # R: llm_paper/_targets.R:L43
 OCCUPATION_ASPIRATION_XLSX = DATA_DIR / "occupation_aspiration_mapping.xlsx"  # R: llm_paper/_targets.R:L94
-
-# Reconstructed, provenance-flagged mapping (see data/schema/). This is our
-# stand-in for the correct variables.xlsx until the author provides the real one.
-VARIABLE_MAPPING_YAML = SCHEMA_DIR / "ncds_variable_mapping.yaml"
-ESSAY_FEATURE_SCHEMA_YAML = SCHEMA_DIR / "essay_feature_schema.yaml"
 
 # --- Paths: restricted data, outside the repository ---------------------------
 # Restricted inputs (NCDS sweeps, essays, derived essay features, polygenic scores)
@@ -143,15 +136,19 @@ def logs_dir() -> Path:
 # --- Model / CV parameters ---------------------------------------------------
 @dataclass(frozen=True)
 class SuperLearnerConfig:
-    # CERTAIN: from cvControl=list(V=10) / innerCvControl=list(list(V=5)).
+    # R: llm_paper/R/functions.R:L512 — cvControl = list(V = 10), innerCvControl = list(list(V = 5)).
     outer_folds: int = 10
     inner_folds: int = 5
-    # CERTAIN: from parallel::clusterSetRNGStream(cluster, 1).
+    # The base seed of the port's own random streams (models/seeds.py). 1 echoes
+    # parallel::clusterSetRNGStream(cluster, 1) (R: llm_paper/R/functions.R:L509), but
+    # that call seeds only the worker processes. CV.SuperLearner draws the outer folds
+    # in the master process (R pkg: SuperLearner/R/CV.SuperLearner.R:L19,
+    # CVFolds.R:L23), whose RNG state the published code does not set, so R's fold
+    # split cannot be recovered. The port therefore owns its folds (PORTING_NOTES C2).
     seed: int = 1
     family: str = "gaussian"
-    # CERTAIN: the SL.library list is written explicitly in
-    # get_general_superlearner_cv_model(). Each learner is paired with the
-    # screen.glmnet screener except SL.mean.
+    # R: llm_paper/R/functions.R:L514–519 — the SL.library; every learner except
+    # SL.mean is paired with the screen.glmnet screener.
     learners: tuple[str, ...] = (
         "SL.mean",
         "SL.ranger",
@@ -161,15 +158,15 @@ class SuperLearnerConfig:
         "SL.lm",
     )
     screener: str = "screen.glmnet"  # LASSO pre-screen, applied to all but SL.mean
-    # The meta-learner. SuperLearner's default is method.NNLS (non-negative least
-    # squares on the convex combination of learners). CERTAIN: no `method=` arg is
-    # passed, so the default applies.
+    # No `method =` is passed (R: llm_paper/R/functions.R:L511–520), so SuperLearner's
+    # default applies (R pkg: SuperLearner/R/CV.SuperLearner.R:L3, method.NNLS).
     meta_method: str = "method.NNLS"
 
 
 @dataclass(frozen=True)
 class LmConfig:
-    # get_lm_cv_model: SL.library = list("SL.mean", c("SL.lm")); same CV control.
+    # R: llm_paper/R/functions.R:L540–543 — get_lm_cv_model: same CV control,
+    # SL.library = list("SL.mean", c("SL.lm")).
     outer_folds: int = 10
     inner_folds: int = 5
     seed: int = 1

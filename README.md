@@ -6,10 +6,13 @@ Python replication of the analysis pipeline from:
 > to or Better than Genomics or Expert Assessment.* Communications Psychology.
 > https://www.nature.com/articles/s44271-025-00274-x
 
-A faithful Python port of the original R code
-(https://github.com/tobiaswolfram/llm_paper), restructured as a maintainable
-software project. Bugs in the original are fixed and **every deviation is logged**
-in [`docs/PORTING_NOTES.md`](docs/PORTING_NOTES.md).
+A Python port of the original R code (https://github.com/tobiaswolfram/llm_paper,
+commit `b0cfe4c`). By default it reproduces what the R evidently did, including its
+quirks. Where the published R cannot have run, the port implements the evident intent
+and logs a *reconstruction*. **Every deviation is logged** in
+[`docs/PORTING_NOTES.md`](docs/PORTING_NOTES.md) with its R source lines and the test
+that covers it. The progress of each R function is in
+[`docs/TRANSLATION_STATUS.md`](docs/TRANSLATION_STATUS.md).
 
 ## Reproducibility status (read this first)
 
@@ -20,8 +23,10 @@ access-restricted and are **not** included:
 - **Genetic / polygenic scores** — separate NCDS Data Access Committee application.
 - **Derived essay features** (embeddings, SALAT linguistic metrics, spelling) —
   confidential; shareable by the original author to UKDS-approved users, or
-  regenerable via external tools (OpenAI/HuggingFace, LanguageTool CLI, the SALAT
-  desktop tools).
+  regenerable locally (RoBERTa weights run on the local machine; the SALAT desktop
+  tools; a local LanguageTool). Sending essays to an external API (OpenAI, hosted
+  inference, the public LanguageTool API) is against this project's rules, see
+  *Data safety* below.
 
 Accordingly, the pipeline is developed and tested against **synthetic fixtures that
 match the real data schemas**. Reproducing the paper's *numbers* requires the real
@@ -29,19 +34,32 @@ data and completion of [`docs/VALIDATION_CHECKLIST.md`](docs/VALIDATION_CHECKLIS
 
 ## Model backends
 
-- **native** (default): scikit-learn / XGBoost stacking ensemble with nested CV.
-  Installs without R, so the artifact is usable by anyone.
-- **oracle** (optional, `pip install -e '.[oracle]'`): calls the original R
-  `SuperLearner` via `rpy2`. Used solely to validate the native backend's numbers
-  against the original on real data. Requires a working R install.
+- **native** (default): the Super Learner with nested CV in Python
+  (`models/native_superlearner.py`), with each SuperLearner wrapper's settings
+  reproduced and cited (`models/base_learners.py`). Installs without R. Where Python
+  can only approximate an R learner, the code says `# APPROX` and
+  `docs/VALIDATION_CHECKLIST.md` lists how the gap is measured.
+- **oracle** (optional, `pip install -e '.[oracle]'`): calls R's `SuperLearner`
+  through `rpy2` on the same folds, to measure the native backend's gap. Requires R
+  and the R packages listed in [`docs/REFERENCE_SOURCES.md`](docs/REFERENCE_SOURCES.md).
+
+The pipeline dependency graph (`pipeline/`) validates, but it does not execute yet.
+Execution on synthetic data comes in Phase 2 (`docs/PHASE_1_2_PLAN.md`).
 
 ## Install
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
-pytest
+pytest                       # the full suite, including tests marked slow
 ```
+
+Optional extras: `.[embeddings]` (torch, transformers, pyarrow: local RoBERTa
+embeddings), `.[oracle]` (rpy2), `.[external-api]` (the OpenAI client, used only by a
+script that refuses to run by default). On macOS, xgboost needs the OpenMP runtime
+(`brew install libomp`). torch bundles a different OpenMP runtime, and using torch and
+xgboost in one process crashes, so RoBERTa embeddings are generated in a separate
+process (`docs/PORTING_NOTES.md` G2).
 
 ## Data safety
 
@@ -81,14 +99,23 @@ any public release of this replication.
 
 ```
 src/llm_cong_predict/
-  config.py        # all paths + model params (no hardcoded machine paths)
-  io/              # readers for NCDS/CAMSIS/essays + metadata (replaces haven/readxl)
-  cleaning/        # clean_ncds, create_factors, create_aspirations
-  features/        # embeddings (native) + SALAT/readability CSV ingestion contracts
-  models/          # native + rpy2 SuperLearner backends (shared contract)
-  metrics/         # cv_metrics.py  <-- ported + tested
-  pipeline/        # DAG wiring (declarative model spec)
-scripts/           # get_gpt_embeddings.py, make_figures.py, setup_git.sh
-data/schema/       # versioned, provenance-flagged variable mapping + feature schema
-tests/             # golden-value + property tests on synthetic fixtures
+  config.py        # public file paths, LCP_DATA_ROOT, restricted file names, CV settings
+  io/              # readers (.dta, .xlsx, essays), value labels, dplyr-style joins
+  cleaning/        # create_aspirations, create_factors, assembly and overlap subsets
+  features/        # SALAT/spelling/readability ingestion, embeddings, essay variables
+  models/          # native Super Learner, base learners, screen.glmnet, rpy2 oracle
+  metrics/         # cross-validated metric rows (get_cv_superlearner/lm_metrics)
+  pipeline/        # dependency graph, variable lists, model specification
+scripts/
+  check_no_restricted_data.py   # refuses restricted data in commits (pre-commit hook)
+  hooks/pre-commit
+  extract_r_targets.py          # _targets.R -> docs/reference/r_targets_inventory.json
+  validate_oracle.py            # native vs R SuperLearner on the same folds (needs R)
+  get_gpt_embeddings.py         # provenance only; refuses to run by default
+data/              # public reference files only: variables.xlsx, occupation mapping, camsis/*.dta
+docs/              # porting notes, validation checklist, reference sources, plan, brief
+tests/             # unit tests on synthetic data; nothing real
 ```
+
+`reference/` (git-ignored) holds clones of the R sources the port cites; see
+[`docs/REFERENCE_SOURCES.md`](docs/REFERENCE_SOURCES.md).

@@ -38,9 +38,10 @@ def get_complete_ncds(
     ``ncdsid`` (the only common column across these frames).
 
     NOTE on the gene argument (PORTING_NOTES A3): the R *definition* takes 4 args
-    but ``_targets.R`` *calls* it with a 5th (``gene_data``), which R silently drops.
-    Here the gene frame is an explicit optional argument; when provided it is joined
-    on ``ncdsid`` too, when ``None`` the behaviour matches the 4-arg R exactly.
+    but ``_targets.R`` *calls* it with a 5th (``gene_data``), which is an error in R
+    ("unused argument"), so the published target cannot run. Reconstruction: the gene
+    frame is an explicit optional argument; when provided it is joined on ``ncdsid``
+    too, when ``None`` the joins are those of the 4-argument R.
     """
     frames = [ncds_cleaned, ncds_factors, ncds_aspirations, ncds_essay]
     if ncds_gene is not None:
