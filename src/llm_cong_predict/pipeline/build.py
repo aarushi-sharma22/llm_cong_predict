@@ -4,15 +4,17 @@ Registers the data-load, essay, and cleaning targets with their real dependency
 edges (verified against ``_targets.R``), then appends the generated model + metric
 targets from ``model_spec``. Each target carries a status flag:
 
-  * BUILT — the underlying Python function is implemented (io/cleaning/features/
-            models/metrics);
-  * STUB  — deliberately not implemented, and the code raises:
-      - ``tokenized_essays`` / ``readability_metrics`` (TreeTagger/koRpus boundary);
-      - ``gene_data`` (empty in original; reader raises).
+  * BUILT    — the underlying Python function is implemented (io/cleaning/features/
+               models/metrics). Tool outputs made outside Python (SALAT, LanguageTool,
+               koRpus readability, the RoBERTa step) are read from files;
+  * EXTERNAL — ``tokenized_essays``: TreeTagger tokenisation happens inside the koRpus
+               script r/readability.R, which writes the readability file;
+  * STUB     — not implemented (none at present).
 
-The point of this module is to make the WIRING explicit and checkable, and to let
-the blocked-node analysis show precisely what the stubs gate. It does not run
-(execution is Task 2.4).
+``gene_data`` is optional: without the polygenic score file it is absent (the R's
+``gene_data`` is a function, ``gene_variables`` NULL) and the gene-dependent models are
+skipped (PORTING_NOTES L2). pipeline/execute.py binds every target to the function it
+calls and runs the graph (Task 2.4).
 """
 
 from __future__ import annotations
@@ -35,7 +37,8 @@ def _load_targets() -> list[Target]:
         Target("mapping_df", (), Status.BUILT, "read_datalist (read with assigned column names, PORTING_NOTES A1)"),
         Target("camsis_data", (), Status.BUILT, "read_camsis (runs on real shipped file)"),
         Target("occupation_aspiration_mapping", (), Status.BUILT, "read_occupation_aspiration_mapping (real file)"),
-        Target("gene_data", (), Status.STUB, "read_gene_data raises (access-restricted; empty in original)"),
+        Target("gene_data", (), Status.BUILT,
+               "read_gene_data (optional placeholder CSV; absent -> gene targets skipped, PORTING_NOTES L2)"),
     ]
     for w in _NCDS_WAVES:
         t.append(Target(w, ("mapping_df",), Status.BUILT, "read_ncds"))
@@ -44,11 +47,14 @@ def _load_targets() -> list[Target]:
 
 def _essay_targets() -> list[Target]:
     return [
-        Target("tokenized_essays", ("ncds_essays",), Status.STUB, "tokenize_essays: TreeTagger external boundary"),
+        Target("tokenized_essays", ("ncds_essays",), Status.EXTERNAL,
+               "tokenize_essays: TreeTagger, run inside r/readability.R (Task 2.5)"),
         Target("spelling_errors", ("ncds_essays",), Status.BUILT, "get_spelling_error_metrics (ingestion; needs CSV)"),
-        Target("readability_metrics", ("ncds_essays", "tokenized_essays"), Status.STUB, "calculate_readability_metrics: koRpus external boundary"),
+        Target("readability_metrics", ("ncds_essays", "tokenized_essays"), Status.BUILT,
+               "ingest_readability_metrics: reads the koRpus output of r/readability.R"),
         Target("salat_metrics", ("ncds_essays",), Status.BUILT, "get_salat_metrics (ingestion; needs CSVs)"),
-        Target("roberta_embeddings", ("ncds_essays",), Status.BUILT, "roberta_embeddings (native; needs model+essays)"),
+        Target("roberta_embeddings", ("ncds_essays",), Status.BUILT,
+               "read_roberta_embeddings: the file written by the separate RoBERTa step (ORCHESTRATION)"),
         Target("gpt_embeddings", ("ncds_essays",), Status.BUILT, "gpt_embeddings reshaper (needs saved file)"),
         Target("gpt4_embeddings", ("ncds_essays",), Status.BUILT, "gpt_embeddings reshaper (gpt4 variant)"),
         Target("essay_data", ("salat_metrics", "readability_metrics", "spelling_errors", "gpt_embeddings"), Status.BUILT, "create_essay_variables"),
@@ -88,7 +94,7 @@ def _clean_targets() -> list[Target]:
                "clean_ncds (cleaning/clean_ncds.py; reconstruction, PORTING_NOTES A1, A2)"),
         Target("aspiration_data", ("ncds_1_to_9", "camsis_data", "occupation_aspiration_mapping"), Status.BUILT, "create_aspirations"),
         Target("factor_data", ("ncds_1_to_9_cleaned",), Status.BUILT,
-               "create_factors (Pearson factor built; 3 polychoric factors deferred, V3)"),
+               "create_factors (backend 'r': psych::fa for all four; 'native': Pearson factor only)"),
         Target("ncds_complete", ("ncds_1_to_9_cleaned", "factor_data", "aspiration_data", "essay_data", "gene_data"), Status.BUILT, "get_complete_ncds"),
         Target("ncds_complete_mmg", ("ncds_complete", "mmg_edu_variables"), Status.BUILT, "find_full_overlap"),
         Target("ncds_complete_mmg_cog", ("ncds_complete", "mmg_cog_variables"), Status.BUILT, "find_full_overlap"),

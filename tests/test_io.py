@@ -136,6 +136,27 @@ def test_read_gene_data_raises():
         read_gene_data()
 
 
+def test_read_gene_data_reads_the_placeholder_format(tmp_path):
+    """The optional polygenic score table (Task 2.4): ncdsid first, then numeric
+    scores, because the R takes them as colnames(gene_data)[-1]
+    (R: llm_paper/_targets.R:L132). The released files' format is a Phase 5/6 item."""
+    path = tmp_path / "pgs.csv"
+    pd.DataFrame({"ncdsid": ["SYN000001", "SYN000002"], "syn_pgs_1": [0.1, -0.3],
+                  "syn_pgs_2": [1.0, 2.0]}).to_csv(path, index=False)
+    frame = read_gene_data(str(path))
+    assert list(frame.columns) == ["ncdsid", "syn_pgs_1", "syn_pgs_2"]
+    assert frame["ncdsid"].tolist() == ["SYN000001", "SYN000002"]
+
+    other = tmp_path / "bad.csv"
+    pd.DataFrame({"id": ["SYN000001"], "syn_pgs_1": [0.1]}).to_csv(other, index=False)
+    with pytest.raises(ValueError, match="first column must be ncdsid"):
+        read_gene_data(str(other))
+    text = tmp_path / "text.csv"
+    pd.DataFrame({"ncdsid": ["SYN000001"], "syn_pgs_1": ["high"]}).to_csv(text, index=False)
+    with pytest.raises(ValueError, match="must be numeric"):
+        read_gene_data(str(text))
+
+
 # ------------------------------------------------------------- combine_ncds --
 
 def test_combine_ncds_full_outer_join():

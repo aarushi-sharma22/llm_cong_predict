@@ -43,8 +43,24 @@ data and completion of [`docs/VALIDATION_CHECKLIST.md`](docs/VALIDATION_CHECKLIS
   through `rpy2` on the same folds, to measure the native backend's gap. Requires R
   and the R packages listed in [`docs/REFERENCE_SOURCES.md`](docs/REFERENCE_SOURCES.md).
 
-The pipeline dependency graph (`pipeline/`) validates, but it does not execute yet.
-Execution on synthetic data comes in Phase 2 (`docs/PHASE_1_2_PLAN.md`).
+## Running the pipeline
+
+```bash
+python run.py                       # print the plan: what runs, what comes from elsewhere
+python run.py --run --n-jobs 8      # the paper configuration (10 outer, 5 inner folds)
+python run.py --run --config smoke  # the smoke configuration: synthetic data only
+python run.py --run --targets essay_lm_lm_metrics   # one target and its dependencies
+```
+
+A run reads the restricted inputs from `$LCP_DATA_ROOT` and writes the metric rows, the
+run log and the per-person predictions back under it. Three steps happen outside the
+pipeline and are read as files: the RoBERTa embeddings
+(`python -m llm_cong_predict.features.roberta_step`), the koRpus readability CSV
+(`r/readability.R`), and the SALAT and LanguageTool outputs. R is needed at run time for
+the three polychoric factor scores; see
+[`docs/ORCHESTRATION.md`](docs/ORCHESTRATION.md) for where R is used and what happens
+without it. The pipeline has so far run end to end only on synthetic data
+(`tests/fixtures/synthetic_ncds.py`).
 
 ## Install
 
@@ -107,7 +123,7 @@ src/llm_cong_predict/
   isolation.py     # torch and xgboost never share a process
   models/          # native Super Learner, base learners, screen.glmnet, rpy2 oracle
   metrics/         # cross-validated metric rows (get_cv_superlearner/lm_metrics)
-  pipeline/        # dependency graph, variable lists, model specification
+  pipeline/        # dependency graph, variable lists, model specification, the runner
 scripts/
   check_no_restricted_data.py   # refuses restricted data in commits (pre-commit hook)
   hooks/pre-commit
@@ -118,6 +134,7 @@ scripts/
 data/              # public reference files only: variables.xlsx, occupation mapping, camsis/*.dta
 docs/              # porting notes, validation checklist, reference sources, plan, brief
 tests/             # unit tests on synthetic data; nothing real
+  fixtures/synthetic_ncds.py    # the complete synthetic input set for an end-to-end run
 ```
 
 `reference/` (git-ignored) holds clones of the R sources the port cites; see

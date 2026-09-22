@@ -63,14 +63,26 @@ RESTRICTED_INPUTS: dict[str, str] = {
     "seance_3": "salat_metrics/essays_3_seance.csv",  # R: llm_paper/_targets.R:L111
     # GPT embeddings. The R saved raw API responses as data/embeddings_gpt35_raw.rds and
     # data/embeddings_gpt4_raw.rds (R: llm_paper/R/get_gpt_embeddings.R:L29, L50). The
-    # port stores them as files with an ncdsid column (PORTING_NOTES G1); names chosen
+    # port stores them as CSV files with an ncdsid column (PORTING_NOTES G1); names and
+    # format chosen by the port (CSV, so no Parquet library is needed).
+    "gpt35_embeddings": "embeddings/embeddings_gpt35.csv",
+    "gpt4_embeddings": "embeddings/embeddings_gpt4.csv",
+    # Readability indices computed outside Python (TreeTagger + koRpus, r/readability.R,
+    # Task 2.5), read by features/readability.py::ingest_readability_metrics. Name chosen
     # by the port.
-    "gpt35_embeddings": "embeddings/embeddings_gpt35.parquet",
-    "gpt4_embeddings": "embeddings/embeddings_gpt4.parquet",
+    "readability_metrics": "readability_metrics.csv",
+    # Polygenic scores, OPTIONAL. The R reader is an empty placeholder (R:
+    # llm_paper/R/functions.R:L34–36). Placeholder format chosen by the port: CSV with
+    # ncdsid first, then one numeric column per score (io/readers.py::read_gene_data).
+    # The released files' format is a Phase 5/6 item. When the file is absent, the
+    # gene-dependent targets are skipped (PORTING_NOTES L2).
+    "gene_data": "genetics/polygenic_scores.csv",
 }
 
-# Participant-level OUTPUT folders, always under $LCP_DATA_ROOT.
-PARTICIPANT_OUTPUT_DIRS = ("derived", "fits", "logs")
+# OUTPUT folders, always under $LCP_DATA_ROOT: participant-level outputs (derived,
+# fits, logs) and the aggregate metrics table, which stays there until it passes the
+# export guard (Task 2.7).
+PARTICIPANT_OUTPUT_DIRS = ("derived", "fits", "logs", "metrics")
 
 # Files written by separate pipeline steps into $LCP_DATA_ROOT/derived/ (names chosen by
 # the port). RoBERTa embeddings are generated in their own process (isolation.py).
@@ -146,6 +158,16 @@ def logs_dir() -> Path:
     return participant_output_dir("logs")
 
 
+def metrics_dir() -> Path:
+    return participant_output_dir("metrics")
+
+
+# Written ONLY by the synthetic-data generator (tests/fixtures/synthetic_ncds.py) at the
+# top of a synthetic $LCP_DATA_ROOT. The package never writes it. The runner refuses
+# the smoke configuration unless it is present (pipeline/execute.py).
+SYNTHETIC_MARKER_FILE = "SYNTHETIC_DATA_MARKER.json"
+
+
 # --- Factor scores -------------------------------------------------------------
 # "r": all four create_factors scores from R's psych::fa through rpy2, the reference
 # implementation (needs R + rpy2 + psych). "native": the Pearson factor in numpy; the
@@ -201,3 +223,37 @@ class LmConfig:
 
 SUPERLEARNER = SuperLearnerConfig()
 LM = LmConfig()
+
+
+# --- Run configurations (pipeline/execute.py) ----------------------------------
+@dataclass(frozen=True)
+class RunConfig:
+    """How the runner fits the models. ``n_jobs`` only spreads the model fits over
+    worker processes; the output does not depend on it."""
+
+    name: str
+    outer_folds: int
+    inner_folds: int
+    seed: int = SUPERLEARNER.seed
+    n_jobs: int = 1
+    factor_backend: str | None = None  # None: FACTOR_BACKEND
+    save_predictions: bool = True
+    # Written into every output of a run with this configuration (file-name prefix and
+    # a run_label column); empty for the paper configuration on real data.
+    label: str = ""
+    file_prefix: str = ""
+
+
+# The configuration of the paper: 10 outer and 5 inner folds, the 6-learner library
+# (R: llm_paper/R/functions.R:L512, L541).
+PAPER_RUN = RunConfig(name="paper", outer_folds=SUPERLEARNER.outer_folds, inner_folds=SUPERLEARNER.inner_folds)
+
+# SMOKE configuration: for checking the plumbing on synthetic data only. Fewer folds
+# (2 outer, 2 inner); same learners. NOT A REAL RUN: the runner refuses it unless
+# $LCP_DATA_ROOT holds SYNTHETIC_MARKER_FILE and every ID is synthetic, and every
+# output it writes carries the label below.
+SMOKE_RUN = RunConfig(
+    name="smoke", outer_folds=2, inner_folds=2,
+    label="SMOKE RUN on synthetic data: not results",
+    file_prefix="SMOKE_",
+)

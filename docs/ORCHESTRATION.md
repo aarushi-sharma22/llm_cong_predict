@@ -14,10 +14,9 @@ Snakemake wrapper. The decision to have both is safe only because of one rule:
 > decide call-order over those functions. This prevents the two entry points from
 > drifting apart, which is the only real risk of maintaining both.
 
-Status (end of Phase 1): the dependency graph and the declarative model spec exist
-(`pipeline/`) and validate, but nothing executes yet. The in-process runner is Phase 2,
-Task 2.4 (no caching). Caching and the Snakemake wrapper are Phase 3. This note is the
-design they follow.
+Status (Phase 2, Task 2.4): the graph, the declarative model spec and the in-process
+runner exist and run (`pipeline/execute.py`). There is no caching and no scheduler;
+both are Phase 3. This note is the design they follow.
 
 ---
 
@@ -51,6 +50,49 @@ and koRpus: its output file is an input of the graph.
 
 ---
 
+## Where R is used at run time, and where only in tests
+
+R is not optional for a full run. This is where it is needed (owner decision at
+Checkpoint C: keep `FACTOR_BACKEND = "r"` as the default).
+
+| Where | What needs R | Consequence if R is missing |
+|---|---|---|
+| **Run time** — `cleaning/factors.py::create_factors_r` (target `factor_data`) | R + rpy2 + `psych`. `psych::fa(1, cor = "poly")` computes the three polychoric factor scores; with `FACTOR_BACKEND = "native"` only the Pearson factor `s2_co_factor_ability` is computed (PORTING_NOTES F1). | The three factors are missing, so the fits that use them as an outcome or a predictor, and the samples whose variable list contains them (all three overlap samples), are reported as not run, with the reason (M4). The rest of the pipeline runs. |
+| **Run time, separate program** — `r/readability.R` (Task 2.5) | R + koRpus + TreeTagger. It tokenises the essays and writes the readability CSV the pipeline ingests (`config.RESTRICTED_INPUTS["readability_metrics"]`). It is run by hand, outside the pipeline, like the SALAT tools and LanguageTool. | `readability_metrics` cannot be built, so `essay_data` and everything downstream cannot run. |
+| **Tests only** — the oracle comparisons | R + rpy2 + `SuperLearner`, `psych`, `glmnet`, `nnls`. `tests/test_oracle.py` (psych parity, `screen.glmnet` vs `cv.glmnet`, `SL.mean`/`SL.lm` vs `CV.SuperLearner`), `tests/test_run.py::test_fit_model_r_backend_uses_the_same_folds`, `scripts/validate_oracle.py`, and `models/r_superlearner.py` (`fit_model(backend="r")`). | Those tests skip, each naming what is missing. Nothing else changes: the model backend used by the runner is the native one. |
+| **Tests only** — the end-to-end smoke run | The `"r"` factor backend, so that every scored target has a metric row. | `tests/test_execute.py::test_smoke_run_scores_every_scored_target` skips with that reason; the other end-to-end tests use the native backend. |
+
+Versions of R and every R package are recorded in docs/REFERENCE_SOURCES.md.
+
+---
+
+## The in-process runner (Task 2.4)
+
+`pipeline/execute.py` is the port of `tar_make()`:
+
+* `BINDINGS` maps every target of `pipeline/build.py` to the component function it
+  calls, with the `_targets.R` line it comes from. Bindings pass values and nothing
+  else — the thin-adapter rule above.
+* `run_pipeline(run_config, targets=None)` takes the dependency closure of the
+  requested targets, runs it in topological order, fits the models, scores them, and
+  writes the metric rows, the run log and the per-person predictions under
+  `$LCP_DATA_ROOT`.
+* Model fits are spread over `n_jobs` worker processes. The numbers do not depend on
+  `n_jobs`: every fold and every seed is fixed (PORTING_NOTES C2).
+* Targets that cannot run are reported with a reason, never dropped (M4).
+* Two configurations: `config.PAPER_RUN` (10 outer, 5 inner folds, 6 learners) and
+  `config.SMOKE_RUN`, which is refused unless the data root holds the synthetic marker
+  and every ID is synthetic, and which labels every output it writes (M2).
+
+```
+python run.py                                  # print the plan
+python run.py --run --n-jobs 8                 # the paper configuration
+python run.py --run --config smoke             # synthetic data only
+python run.py --run --targets essay_lm_lm_metrics
+```
+
+---
+
 ## Primary: lightweight Python module graph
 
 The design mirrors what `targets` gave us, in plain Python with no external tooling.
@@ -64,18 +106,20 @@ def create_factors(ncds_cleaned) -> pd.DataFrame: ...
 ```
 
 ### 2. A target registry + topological runner
-A registry maps target name -> (function, dependency names). A runner
-topologically sorts and executes, optionally caching each output to disk keyed by a
-hash of its inputs + the function source, so unchanged targets are skipped on re-run
-(the `targets` "skip if up to date" behaviour).
+`pipeline/build.py` holds the graph (target name -> dependency names) and
+`pipeline/execute.py` holds the registry (target name -> the function it calls) and the
+runner, which resolves dependencies and executes them in topological order:
 
 ```python
-@target(deps=["ncds_1_to_9", "mapping"])
-def ncds_1_to_9_cleaned(ncds_1_to_9, mapping):
-    return clean_ncds(ncds_1_to_9, mapping)
-
-# runner: build(target_name) -> resolves deps, runs, caches
+"ncds_1_to_9_cleaned": Binding(
+    clean_ncds,
+    lambda r: clean_ncds(r.value("ncds_1_to_9"), r.value("mapping_df")),
+    "llm_paper/_targets.R:L166"),
 ```
+
+Caching each output keyed by a hash of its inputs and the function source — the
+`targets` "skip if up to date" behaviour — is **Phase 3**. Today every requested target
+is recomputed.
 
 ### 3. Declarative model spec (the key improvement over the original)
 The original hand-wrote 70 near-identical `tar_target(...)` model calls, which is

@@ -1,19 +1,18 @@
 """Generic dependency-graph machinery for the pipeline.
 
-This is the STRUCTURE only. It resolves target dependencies, detects cycles,
-produces a topological execution order, and — the part that matters for an honest
-status — computes which targets are *blocked* because some dependency is not yet
-implemented (a "stub"). It does not execute anything: execution needs the real
-NCDS data (or the synthetic set of Task 2.4).
+This is the STRUCTURE: it resolves target dependencies, detects cycles, produces a
+topological order, and computes which targets are *blocked* because some dependency
+is not implemented (a "stub"). Execution is in pipeline/execute.py (Task 2.4).
 
-A ``Target`` is just a name, its dependency names, and a status flag:
-  * BUILT — the underlying function is implemented and would run given inputs;
-  * STUB  — not implemented / raises (the readability external-tool
-            boundary, the gene-data reader).
+A ``Target`` is a name, its dependency names, and a status flag:
+  * BUILT    — the underlying function is implemented and runs given its inputs;
+  * EXTERNAL — produced outside this pipeline by another program, whose output a
+               downstream target reads (tokenisation happens inside the koRpus
+               script r/readability.R); it has no Python value and blocks nothing;
+  * STUB     — not implemented / raises.
 
 "Blocked" is transitive: a target is blocked if it is a STUB or if any of its
-dependencies is blocked. So one STUB deep in the graph blocks everything downstream
-— as with the readability boundary.
+dependencies is blocked. So one STUB deep in the graph blocks everything downstream.
 """
 
 from __future__ import annotations
@@ -24,6 +23,7 @@ from enum import Enum
 
 class Status(Enum):
     BUILT = "built"
+    EXTERNAL = "external"
     STUB = "stub"
 
 
@@ -125,12 +125,8 @@ class Pipeline:
         return sorted(n for n, t in self._t.items() if t.status is Status.STUB)
 
     def runnable_frontier(self) -> list[str]:
-        """Targets that are BUILT and NOT blocked — i.e. would run given real data.
-
-        Note: "would run given real data" is not "runs now" — the sandbox has no real
-        NCDS data, so even these do not execute here. This is the set that becomes
-        executable the moment the real inputs are in place.
-        """
+        """Targets that are BUILT and NOT blocked, i.e. that run given their inputs
+        (pipeline/execute.py; synthetic inputs in tests, real ones in Phase 4)."""
         b = self.blocked()
         return sorted(n for n, t in self._t.items() if t.status is Status.BUILT and n not in b)
 
@@ -144,9 +140,9 @@ class Pipeline:
             f"targets: {len(self._t)}   (topological order resolves, graph is acyclic)",
             f"stub roots (not implemented): {len(roots)} -> {roots}",
             f"blocked (stub or downstream of one): {len(b)} / {len(self._t)}",
-            f"runnable once real data exist: {len(frontier)}",
+            f"external (produced by another program): {sorted(n for n, t in self._t.items() if t.status is Status.EXTERNAL)}",
+            f"runnable given their inputs: {len(frontier)}",
             "",
-            "This pipeline does NOT execute here yet (Task 2.4). The numbers above describe",
-            "the WIRING, not a run.",
+            "The numbers above describe the WIRING. pipeline/execute.py runs it.",
         ]
         return "\n".join(lines)

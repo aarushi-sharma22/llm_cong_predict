@@ -1,9 +1,8 @@
 """Tests for the pipeline scaffolding.
 
 These verify the WIRING is sound: dependencies resolve, the graph is acyclic, the
-model spec expands deterministically, and the blocked-node analysis correctly
-identifies clean_ncds (and the other stubs) as blocking the downstream. They do NOT
-test execution — the pipeline cannot run without real data + clean_ncds.
+model spec expands deterministically, the variable lists follow the R, and nothing is
+blocked. Running the graph is tested in tests/test_execute.py (Task 2.4).
 """
 
 from __future__ import annotations
@@ -13,6 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from llm_cong_predict.pipeline.build import build_pipeline
@@ -113,25 +113,19 @@ def test_full_pipeline_validates():
     pipe.topo_order()               # acyclic
 
 
-def test_clean_ncds_is_built_and_the_readability_stub_blocks_the_models():
-    """Task 2.1 removed clean_ncds' STUB status (brief Task 2.1). The model half is
-    still blocked, now through the readability boundary (essay_data needs
-    readability_metrics) until Task 2.5 / 2.4 provide it. Replaces a test that asserted
-    the STUB status of clean_ncds."""
+def test_nothing_is_blocked_and_tokenisation_is_the_only_external_target():
+    """Task 2.4 runs the graph (pipeline/execute.py), so no target is a STUB any more:
+    readability is ingested from the koRpus output (as SALAT and spelling are), and
+    gene data is optional. Only tokenisation is EXTERNAL: TreeTagger runs inside
+    r/readability.R (Task 2.5), and it blocks nothing. Replaces two tests that asserted
+    the three stub roots of Tasks 2.1–2.3."""
     pipe = build_pipeline()
+    assert pipe.stub_roots() == []
+    assert pipe.blocked() == {}
+    external = {n for n in pipe.names() if pipe.get(n).status is Status.EXTERNAL}
+    assert external == {"tokenized_essays"}
     assert pipe.get("ncds_1_to_9_cleaned").status is Status.BUILT
-    blocked = pipe.blocked()
-    assert "essay_superlearner_overlap" in blocked
-    assert "ncds_1_to_9_cleaned" not in blocked["essay_superlearner_overlap"]
-    assert "readability_metrics" in blocked["essay_superlearner_overlap"]
-
-
-def test_stub_roots_are_exactly_the_three_expected():
-    """After Task 2.1 the stub roots are gene_data (restricted, empty in the R) and the
-    readability boundary (tokenize_essays / calculate_readability_metrics, Task 2.5).
-    Previously four, including clean_ncds."""
-    pipe = build_pipeline()
-    assert set(pipe.stub_roots()) == {"gene_data", "readability_metrics", "tokenized_essays"}
+    assert pipe.get("readability_metrics").status is Status.BUILT
 
 
 def test_readers_are_in_the_runnable_frontier():
@@ -141,11 +135,13 @@ def test_readers_are_in_the_runnable_frontier():
     assert "ncds_essays" in frontier
     assert "camsis_data" in frontier
     assert "ncds_1_2_3" in frontier
-    # clean_ncds (Task 2.1) is now runnable; ncds_complete still waits for essay_data,
-    # which needs the readability boundary
+    # after Task 2.4 the whole graph runs given its inputs (tokenized_essays is
+    # EXTERNAL, so it is not in the frontier and blocks nothing)
     assert "ncds_1_to_9_cleaned" in frontier
     assert "factor_data" in frontier
-    assert "ncds_complete" not in frontier
+    assert "ncds_complete" in frontier
+    assert "essay_superlearner_overlap_metrics" in frontier
+    assert "tokenized_essays" not in frontier
 
 
 # ------------------------------------------- inventory of the R model targets --
@@ -201,6 +197,36 @@ def test_variable_lists_match_the_r_constants():
             assert list(CONSTANT_LISTS[name]) == entry["members"], name
         elif entry["kind"] == "data-dependent":
             assert name in DATA_DEPENDENT_LISTS, name
+
+
+def test_data_dependent_variable_lists_follow_the_r_including_its_two_quirks():
+    """R: llm_paper/_targets.R:L133–138. The lists are read off the frames in the
+    column order of essay_data. Two of them drop more than the id column, which the
+    port reproduces (PORTING_NOTES M3):
+      * readability (L135) drops ``[-c(1:2)]``, but ``filename`` is not a column of
+        essay_data, so ncdsid AND the first readability index are dropped;
+      * the GPT frame (L137) has ``id``, not ``ncdsid``, so ``[-1]`` drops the first
+        embedding column.
+    """
+    from llm_cong_predict.pipeline import variable_lists as vl
+
+    essay_data = pd.DataFrame(columns=["ncdsid", "taaled_1", "read_1", "read_2", "read_3",
+                                       "spell_1", "spell_2", "embedding_1", "embedding_2"])
+    salat = pd.DataFrame(columns=["ncdsid", "taaled_1", "dropped_by_select_if"])
+    readability = pd.DataFrame(columns=["filename", "ncdsid", "read_1", "read_2", "read_3"])
+    spelling = pd.DataFrame(columns=["ncdsid", "spell_1", "spell_2"])
+    gpt = pd.DataFrame(columns=["id", "embedding_1", "embedding_2"])
+
+    assert vl.essay_variables(essay_data) == list(essay_data.columns[1:])
+    assert vl.columns_kept_in_essay_data(salat, essay_data, 1) == ["taaled_1"]
+    assert vl.columns_kept_in_essay_data(readability, essay_data, 2) == ["read_2", "read_3"]
+    assert vl.columns_kept_in_essay_data(spelling, essay_data, 1) == ["spell_1", "spell_2"]
+    assert vl.columns_kept_in_essay_data(gpt, essay_data, 1) == ["embedding_2"]
+    assert vl.gpt4_embeddings_variables(gpt) == ["embedding_1", "embedding_2"]  # L138: colnames()[-1]
+    assert vl.gene_variables(None) == []  # gene data absent (L132; PORTING_NOTES L2)
+    assert vl.composite_list("mmg_cog_variables", {"gene_variables": ["g1"], "essay_variables": ["e1"],
+                                                   "teacher_variables": ["t1"]}) == [
+        "g1", "e1", "t1", "s2_co_factor_ability"]
 
 
 def test_embedding_models_depend_on_their_embedding_targets():

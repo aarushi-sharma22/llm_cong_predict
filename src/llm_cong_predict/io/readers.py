@@ -140,22 +140,36 @@ def read_ncds(file: str, varlist: list[str]) -> pd.DataFrame:
     return set_na_range(df, -99, -1)
 
 
-def read_gene_data(path: str | None = None):
-    """Port of ``read_gene_data`` — an empty ``#PLACEHOLDER`` in the original.
+def read_gene_data(path: str | None = None) -> pd.DataFrame:
+    """Port of ``read_gene_data`` — an empty ``#PLACEHOLDER`` in the original
+    (R: llm_paper/R/functions.R:L34–36).
 
-    DEVIATION FROM R (documented in PORTING_NOTES A2/D): the R body was empty and
-    returned ``NULL`` silently. We raise instead, so that any attempt to use gene
-    data fails loudly and clearly rather than propagating a silent ``None`` into the
-    pipeline. NCDS genetic data / polygenic scores are access-restricted and are not
-    part of this repository.
+    Without a path it raises, rather than returning a silent ``None`` (PORTING_NOTES
+    E1). With a path it reads the port's PLACEHOLDER format: a CSV whose first column
+    is ``ncdsid`` and whose other columns are numeric scores. The R takes the scores as
+    ``colnames(gene_data)[-1]`` (``_targets.R:L132``), so the ID must come first. The
+    format of the released polygenic index files is a Phase 5/6 item; this reader is
+    replaced then. The pipeline calls it only when the file exists
+    (``config.RESTRICTED_INPUTS["gene_data"]``); otherwise gene data is absent.
     """
-    raise NotImplementedError(
-        "NCDS genetic data / polygenic scores are access-restricted and not included "
-        "in this repository (the original `read_gene_data` was an empty placeholder "
-        "returning NULL). To run the genetic models, obtain the data via the NCDS "
-        "Data Access Committee and implement this reader; otherwise run the "
-        "non-genetic subset of the pipeline. See docs/PORTING_NOTES.md."
-    )
+    if path is None:
+        raise NotImplementedError(
+            "NCDS genetic data / polygenic scores are access-restricted and not included "
+            "in this repository (the original `read_gene_data` was an empty placeholder "
+            "returning NULL). Place the scores at $LCP_DATA_ROOT/"
+            "genetics/polygenic_scores.csv (config.RESTRICTED_INPUTS['gene_data']) or run "
+            "without them: the gene-dependent models are then skipped. See "
+            "docs/PORTING_NOTES.md (E1, L2)."
+        )
+    df = pd.read_csv(path, dtype={"ncdsid": str})
+    if list(df.columns[:1]) != ["ncdsid"]:
+        raise ValueError("gene data: the first column must be ncdsid (the R drops it with colnames()[-1])")
+    bad = [c for c in df.columns[1:] if not pd.api.types.is_numeric_dtype(df[c])]
+    if bad:
+        raise ValueError(f"gene data: score columns must be numeric, got {bad}")
+    if df["ncdsid"].duplicated().any():
+        raise ValueError("gene data: ncdsid is not unique")
+    return df
 
 
 ESSAY_ID_SEPARATOR = "\n----------------------\n"  # R: llm_paper/R/functions.R:L28

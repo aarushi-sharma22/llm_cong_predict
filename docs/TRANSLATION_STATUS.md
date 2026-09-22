@@ -20,7 +20,7 @@ one status:
 | `get_gpt4_embeddings` (12) | `features/embeddings.py::gpt_embeddings` | PORTED | Identical to the above in the R (A5). |
 | `read_datalist` (22) | `io/readers.py::read_datalist` | PORTED | Reads the file with assigned column names: 63 rows (reconstruction, A1). |
 | `read_essays` (26) | `io/readers.py::read_essays` | PORTED | Reads like `readtext`, splits like `tidyr::separate`, including malformed files (E6). |
-| `read_gene_data` (34) | `io/readers.py::read_gene_data` | PORTED | The R body is empty; the Python raises (E1). |
+| `read_gene_data` (34) | `io/readers.py::read_gene_data` | PORTED | The R body is empty; without a path the Python raises (E1). Since Task 2.4 it reads the optional polygenic score file, in the port's placeholder format (M5). |
 | `read_camsis` (39) | `io/readers.py::read_camsis` | PORTED | Runs on the shipped file. |
 | `read_occupation_aspiration_mapping` (43) | `io/readers.py::read_occupation_aspiration_mapping` | PORTED | Runs on the shipped file. |
 | `read_ncds` (47) | `io/readers.py::read_ncds` | PORTED | Missing-code labels dropped as `set_na` does (F6). |
@@ -32,8 +32,8 @@ one status:
 | `create_essay_variables` (317) | `features/essay_variables.py::create_essay_variables` | PORTED | Output width depends on the data (G5). V2. |
 | `find_essay_teacher_genetics_overlap` (330) | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | PORTED | haven integer codes (F5). Never called by the R pipeline. |
 | `find_full_overlap` (348) | `cleaning/assemble.py::find_full_overlap` | PORTED | |
-| `tokenize_essays` (356) | `features/readability.py::tokenize_essays` | BOUNDARY | TreeTagger. An R script is planned in Task 2.5. |
-| `calculate_readability_metrics` (369) | `features/readability.py` (+ `ingest_readability_metrics`) | BOUNDARY | koRpus. Task 2.5. |
+| `tokenize_essays` (356) | `features/readability.py::tokenize_essays` | BOUNDARY | TreeTagger; the function raises. Tokenisation happens inside `r/readability.R` (Task 2.5), so the pipeline target is EXTERNAL. |
+| `calculate_readability_metrics` (369) | `features/readability.py::ingest_readability_metrics` | INGESTION | koRpus; the generating function raises and `r/readability.R` (Task 2.5) writes the CSV the pipeline reads (`config.RESTRICTED_INPUTS["readability_metrics"]`). |
 | `get_spelling_error_metrics` (390) | `features/salat.py::get_spelling_error_metrics` | INGESTION | LanguageTool output; the R's error cases are reproduced (G3). |
 | `get_salat_metrics` (419) | `features/salat.py::get_salat_metrics` | INGESTION | SALAT tools' output; natural joins (G3). |
 | `get_roberta_embeddings` (446) | `features/embeddings.py::roberta_embeddings`, `features/roberta_step.py` | PORTED | Batched; a separate step in its own process (G2, ORCHESTRATION). Not run on real weights here. |
@@ -51,14 +51,14 @@ one status:
 
 | Part | Python | Status | Notes |
 |---|---|---|---|
-| Data, essay and cleaning targets (L41–174) | `pipeline/build.py` | PORTED (structure) | The dependency graph validates. Three stub roots block execution: `tokenized_essays` and `readability_metrics` (Task 2.5 boundary), `gene_data` (restricted). |
-| Variable lists (L120–159) | `pipeline/variable_lists.py` | PORTED | Checked against the inventory. |
+| Data, essay and cleaning targets (L41–174) | `pipeline/build.py`, `pipeline/execute.py` | PORTED | The graph validates and runs. No stub roots remain: `tokenized_essays` is EXTERNAL (r/readability.R), readability is ingested, gene data is optional (M1, M4, M5). |
+| Variable lists (L120–159) | `pipeline/variable_lists.py` | PORTED | Checked against the inventory; the data-dependent ones follow the R, its two dropped-column quirks included (M3). |
 | 70 model targets, 416 fits (L178–385) | `pipeline/model_spec.py` | PORTED (structure) | Each target records method, outcome, predictors, sample, data preparation and scorer; `R_TO_PYTHON_TARGET` maps the names (I1, I2). |
 | 53 metric targets (L387–494) | `pipeline/model_spec.py` | PORTED (structure) | 63 metric targets in Python: the 53, plus the 10 targets scored only in `create_data.R`; the 7 mmg_lm targets have none (I1). |
-| Execution | — | NOT STARTED | Task 2.4 (execution layer and synthetic end-to-end run). |
+| Execution | `pipeline/execute.py` | PORTED | Bindings for every target, dependency order, model fits over worker processes, metric rows, run log (M1). Exercised end to end on synthetic data (M6). |
 
-Computed with `python run.py`: the graph has 186 targets; 150 are blocked by the three
-stub roots.
+Computed with `python run.py`: the graph has 186 targets, none blocked; 185 run given
+their inputs and one (`tokenized_essays`) is produced by another program.
 
 ## `R/create_data.R` (601 lines)
 
@@ -74,5 +74,5 @@ opt-in, because it sends essays to an external API (H2).
 
 ## `run.R` (7 lines)
 
-`run.py`. **PORTED (structure)**: it builds and validates the graph and prints what
-blocks execution; it does not run the pipeline (Task 2.4).
+`run.py`. **PORTED**: `python run.py` prints the plan; `python run.py --run
+[--config smoke] [--targets ...]` runs the graph through `pipeline/execute.py` (M1).

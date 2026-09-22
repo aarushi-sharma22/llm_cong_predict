@@ -84,3 +84,55 @@ COMPOSITE_LISTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "all_vars": (("teacher_variables", "gene_variables", "essay_variables", "cog_noncog_variables",
                   "social_outcomes", "confounder_variables"), ()),
 }
+
+
+# --- computing the data-dependent lists (used by pipeline/execute.py) -------------
+
+def one_of(columns, names) -> list[str]:
+    """``dplyr::select(frame, dplyr::one_of(names))`` on a frame with ``columns``: the
+    names that exist, in the order of ``names``; unknown names are dropped with a
+    warning. R pkg: tidyselect/R/helpers.R:L109–130 (``one_of``: warns on unknown
+    columns, then ``match_vars(keep, .vars)``) and helpers-pattern.R:L198–206
+    (``match(needle, haystack)`` without the NAs, so the result follows ``names``)
+    (tidyselect 1.2.1)."""
+    present = set(columns)
+    return [n for n in dict.fromkeys(names) if n in present]
+
+
+def gene_variables(gene_data) -> list[str]:
+    """R: llm_paper/_targets.R:L132 — ``colnames(gene_data)[-1]``. Without gene data the
+    R's ``gene_data`` is the function ``read_gene_data`` and ``colnames()`` of it is
+    NULL, so the list is empty (checked in R 4.6.1; PORTING_NOTES L2)."""
+    return [] if gene_data is None else list(gene_data.columns[1:])
+
+
+def essay_variables(essay_data) -> list[str]:
+    """R: llm_paper/_targets.R:L133 — ``colnames(essay_data)[-1]`` (drops ncdsid)."""
+    return list(essay_data.columns[1:])
+
+
+def columns_kept_in_essay_data(frame, essay_data, drop_first: int) -> list[str]:
+    """``colnames(frame %>% select(one_of(colnames(essay_data))))[-(1:drop_first)]``.
+
+    R: llm_paper/_targets.R:L134 (salat, ``[-1]``), L135 (readability, ``[-c(1:2)]``),
+    L136 (spelling, ``[-1]``), L137 (GPT, ``[-1]``). The selected names follow the
+    column order of ``essay_data``, whose first column is ``ncdsid``; the first
+    ``drop_first`` names are then removed, whatever they are. Reproduced as written:
+      * readability: ``filename`` is not a column of ``essay_data`` (create_essay_variables
+        drops it), so ``[-c(1:2)]`` removes ``ncdsid`` AND the first readability index;
+      * GPT: the embeddings frame has ``id``, not ``ncdsid``, so ``[-1]`` removes the
+        first embedding column.
+    (PORTING_NOTES M3.)
+    """
+    return one_of(frame.columns, essay_data.columns)[drop_first:]
+
+
+def gpt4_embeddings_variables(gpt4_embeddings) -> list[str]:
+    """R: llm_paper/_targets.R:L138 — ``colnames(gpt4_embeddings)[-1]`` (drops id)."""
+    return list(gpt4_embeddings.columns[1:])
+
+
+def composite_list(name: str, lists: dict[str, list[str]]) -> list[str]:
+    """R's ``c(...)`` of the member lists plus the literal columns (COMPOSITE_LISTS)."""
+    members, extra = COMPOSITE_LISTS[name]
+    return [c for m in members for c in lists[m]] + list(extra)

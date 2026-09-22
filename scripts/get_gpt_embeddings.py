@@ -18,8 +18,9 @@ Faithful to the original:
     ("GPT 4", R: llm_paper/R/get_gpt_embeddings.R:L43).
 
 DEVIATION (PORTING_NOTES G1): the R saved raw API responses as ``.rds``. This script
-saves a Parquet file with an ``ncdsid`` column plus ``embedding_*`` columns, the shape
-``features.embeddings.gpt_embeddings`` reads. Essays are read from and embeddings
+saves a CSV with an ``ncdsid`` column plus ``embedding_*`` columns, the shape
+``features.embeddings.gpt_embeddings`` reads (CSV, so that reading the embeddings needs
+no Parquet library). Essays are read from and embeddings
 written to ``$LCP_DATA_ROOT`` (``config.RESTRICTED_INPUTS``), never the repository.
 
 Requires the separate extra:  pip install -e '.[external-api]'  (openai)
@@ -107,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Generating {key} embeddings ({model}) for {len(essays)} essays...")
         emb = generate(essays, model, api_key)
-        emb.to_parquet(out_path, index=False)
+        emb.to_csv(out_path, index=False)
         print(f"  wrote {out_path}  ({emb.shape[1]-1} dims)")
     return 0
 

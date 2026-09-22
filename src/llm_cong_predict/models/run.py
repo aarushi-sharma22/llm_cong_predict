@@ -117,15 +117,18 @@ def fit_model(
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9_.]+$")
 
 
-def save_predictions(fit: CVSuperLearnerFit, target: str) -> Path:
+def save_predictions(fit: CVSuperLearnerFit, target: str, prefix: str = "", label: str = "") -> Path:
     """Write the per-person cross-validated predictions of ``fit`` to
-    ``$LCP_DATA_ROOT/fits/<target>__<outcome>.csv`` and return the path.
+    ``$LCP_DATA_ROOT/fits/<prefix><target>__<outcome>.csv`` and return the path.
 
     Participant-level output: there is deliberately no way to choose another location
     (brief Section 2.3). Columns: ``ncdsid`` (if known), ``fold`` (1-based outer fold),
-    ``Y``, ``SL.predict`` and one column per library learner.
+    ``Y``, ``SL.predict`` and one column per library learner. A non-empty ``label``
+    (the smoke configuration's, config.SMOKE_RUN) is added as a first column
+    ``run_label``, and ``prefix`` starts the file name, so such a file cannot be taken
+    for a real result.
     """
-    for part in (target, str(fit.outcome_var)):
+    for part in (target, str(fit.outcome_var)) + ((prefix,) if prefix else ()):
         if not _SAFE_NAME.match(part):
             raise ValueError(f"unsafe name for a file: {part!r}")
     fold = np.empty(len(fit.Y), dtype=int)
@@ -136,6 +139,8 @@ def save_predictions(fit: CVSuperLearnerFit, target: str) -> Path:
         table[name] = fit.library_predict[:, j]
     if fit.ids is not None:
         table.insert(0, "ncdsid", fit.ids)
-    path = config.fits_dir() / f"{target}__{fit.outcome_var}.csv"
+    if label:
+        table.insert(0, "run_label", label)
+    path = config.fits_dir() / f"{prefix}{target}__{fit.outcome_var}.csv"
     table.to_csv(path, index=False)
     return path

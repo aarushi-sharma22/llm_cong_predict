@@ -114,8 +114,9 @@ def gpt_embeddings(path: str, id_frame: pd.DataFrame | None = None) -> pd.DataFr
     RDS saved by ``get_gpt_embeddings.R``) but then ``bind_cols(essays, .)`` (treating
     the same argument as the essays data frame). ``.rds`` is also an R-only binary
     format. We therefore replace the RDS round-trip with a Python-native embeddings
-    file produced by ``scripts/get_gpt_embeddings.py`` (a Parquet with an ``ncdsid``
-    column plus ``embedding_*`` columns), and return the reshaper's INTENDED output:
+    file produced by ``scripts/get_gpt_embeddings.py`` (a CSV with an ``ncdsid``
+    column plus ``embedding_*`` columns; Parquet is read too, if pyarrow is installed),
+    and return the reshaper's INTENDED output:
     a frame ``id`` + embedding columns.
 
     Parameters

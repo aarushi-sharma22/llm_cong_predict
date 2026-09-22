@@ -438,11 +438,13 @@ and **V7** (learner settings).
 ## E. IO layer (`src/llm_cong_predict/io/`) — deviations & decisions
 
 ### E1. `read_gene_data` raises instead of returning NULL ✅ (documented)
-The R body was an empty `#PLACEHOLDER` returning `NULL` silently. The Python port
-raises `NotImplementedError` with a clear message, so any use of gene data fails
-loudly rather than propagating a silent `None`. (Note: `_targets.R` also mis-wires
-this target — `tar_target(gene_data, read_gene_data)` passes the function itself,
-uncalled — which is handled at the pipeline layer, not here.)
+The R body was an empty `#PLACEHOLDER` returning `NULL` silently. Called without a
+path, the Python port raises `NotImplementedError` with a clear message, so any use of
+gene data fails loudly rather than propagating a silent `None`. Since Task 2.4 it reads
+the optional polygenic score file when one exists, in the placeholder format of M5.
+(Note: `_targets.R` also mis-wires this target — `tar_target(gene_data, read_gene_data)`
+passes the function itself, uncalled — which is handled at the pipeline layer, not
+here: without gene data the gene-dependent targets are skipped, L2 and M4.)
 
 ### E2. Stata value labels carried via `df.attrs` ✅
 `haven`/`sjlabelled` attach `value -> label` maps to columns; pandas has no direct
@@ -1035,3 +1037,131 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
 - **Test:** `tests/test_run.py::test_as_numeric_gives_level_positions_and_logical_codes`,
   `::test_data_prep_steps_from_the_spec`.
 - **Validation:** none.
+
+---
+
+## M. Execution layer and synthetic data (Phase 2, Task 2.4)
+
+### M1. The runner: every target bound to the function it calls
+- **Label:** faithful (it is the port of `tar_make()`).
+- **R source:** `llm_paper/run.R:L1–7` (`tar_make()`), `llm_paper/_targets.R:L41–502`
+  (every target), `tar_option_set(error = "workspace")` (L35): a target that errors
+  stops the pipeline.
+- **Python:** `pipeline/execute.py`. `BINDINGS` maps each target of
+  `pipeline/build.py` to the component function it calls, with the `_targets.R` line;
+  the model and metric targets are bound generically from `pipeline/model_spec.py`.
+  `run_pipeline(run_config, targets=None)` takes the dependency closure of the
+  requested targets, runs it in topological order, fits the models and scores them.
+  - An error inside a target propagates, as in R.
+  - The fits of all requested model targets are independent, so they are spread over
+    `n_jobs` worker processes (joblib). The R parallelises the outer folds of one fit
+    (`parallel::makeCluster(10)`, `functions.R:L506`); either way the port's numbers do
+    not depend on `n_jobs` (every fold and seed is fixed, C2).
+  - No caching and no scheduler: Phase 3 (docs/ORCHESTRATION.md).
+  - Outputs, all under `$LCP_DATA_ROOT`: `metrics/<prefix>metrics.csv` (one row per
+    scored fit), `logs/<prefix>run_log.json`, `fits/` (per-person predictions, L3).
+- **Why:** brief Task 2.4.
+- **Test:** `tests/test_execute.py::test_every_target_is_bound_to_the_function_it_calls`,
+  `::test_smoke_run_scores_every_scored_target` (slow),
+  `::test_paper_configuration_runs_on_one_target` (slow),
+  `::test_results_do_not_depend_on_n_jobs`.
+- **Validation:** V8.
+
+### M2. The smoke configuration cannot be used for a real run
+- **Label:** data-safety change (not in the R).
+- **Python:** `config.SMOKE_RUN` (2 outer and 2 inner folds, the same 6 learners) is
+  refused unless `$LCP_DATA_ROOT` holds `config.SYNTHETIC_MARKER_FILE`, which only
+  `tests/fixtures/synthetic_ncds.py` writes, AND every `ncdsid`/`id` the run reads
+  matches `SYN000001`, so copying the marker into a real data root does not help.
+  Every output of such a run is labelled: the file names start with `SMOKE_`, and the
+  metric rows, the prediction files and the run log carry
+  "SMOKE RUN on synthetic data: not results". The paper configuration on a synthetic
+  root is labelled too (`SYNTHETIC_`).
+- **Why:** brief Task 2.4 ("make it impossible to use for a real run").
+- **Test:** `tests/test_execute.py::test_smoke_configuration_is_refused_without_the_synthetic_marker`,
+  `::test_smoke_configuration_is_refused_when_an_id_is_not_synthetic`,
+  `::test_every_smoke_output_is_labelled`.
+- **Validation:** none.
+
+### M3. The data-dependent variable lists, including two quirks of the R
+- **Label:** faithful, quirks included.
+- **R source:** `llm_paper/_targets.R:L132–138`; tidyselect 1.2.1 `R/helpers.R:L109–130`
+  (`one_of` warns about unknown columns) and `R/helpers-pattern.R:L198–206`
+  (`match(needle, haystack)`, so the selection follows the order of the names given).
+- **Python:** `pipeline/variable_lists.py::one_of`, `essay_variables`,
+  `columns_kept_in_essay_data`, `gpt4_embeddings_variables`, `gene_variables`,
+  `composite_list`. Each list is `colnames(<frame> %>% select(one_of(colnames(essay_data))))`
+  with the first elements dropped, so the names come in `essay_data`'s column order.
+  Two of them drop a real variable, which the port reproduces:
+  - `readability_metrics_variables` (L135) drops `[-c(1:2)]`. `filename` is not a
+    column of `essay_data` (`create_essay_variables` drops it, `functions.R:L323`), so
+    the two dropped names are `ncdsid` and THE FIRST READABILITY INDEX.
+  - `gpt_embeddings_variables` (L137) drops `[-1]` from a frame whose first column is
+    `id`, not `ncdsid` (`one_of` merely warns about `ncdsid`), so THE FIRST GPT
+    EMBEDDING dimension is dropped.
+  Both change which predictors a model gets. They are reproduced, not corrected
+  (the stance: keep the R's quirks by default); the loss is one column out of many.
+- **Why:** brief F7 and Task 2.4.
+- **Test:** `tests/test_pipeline.py::test_data_dependent_variable_lists_follow_the_r_including_its_two_quirks`.
+- **Validation:** V8 (which names are affected depends on the real tool output).
+
+### M4. Targets that are not run are reported, never dropped
+- **Label:** reconstruction (the R has no such case, because it cannot run).
+- **Python:** `pipeline/execute.py`. Two reasons, each recorded per target (and per
+  outcome where it is per outcome) in `RunResult.not_run` and in the run log:
+  - gene data absent: the gene-dependent targets are skipped (L2), and every metric
+    row from a sample the R defines with `gene_variables` (`ncds_complete_mmg`,
+    `ncds_complete_mmg_cog`, `ncds_complete_all_overlap`) carries
+    `sample_note = "built without gene data, not comparable to the paper"` (owner
+    decision at Checkpoint C, so the warning stays with the numbers wherever the
+    table goes);
+  - a factor the backend does not compute (`FACTOR_BACKEND = "native"`, F1): the fits
+    whose outcome is that factor, the targets that use it as a predictor and the
+    samples whose variable list contains it are not run, each with the reason.
+- **Why:** owner decisions at Checkpoint C.
+- **Test:** `tests/test_execute.py::test_gene_targets_are_skipped_and_gene_defined_samples_are_marked`,
+  `::test_native_factor_backend_reports_the_polychoric_outcomes_as_not_run`.
+- **Validation:** none.
+
+### M5. `read_gene_data`: an optional placeholder format
+- **Label:** reconstruction.
+- **R source:** `llm_paper/R/functions.R:L34–36` (empty body), `_targets.R:L93, L132`.
+- **Python:** `io/readers.py::read_gene_data(path)` reads a CSV whose first column is
+  `ncdsid` and whose other columns are numeric scores, because the R takes the scores
+  as `colnames(gene_data)[-1]`. Without a path it still raises (E1). The pipeline
+  reads the file only when it exists; otherwise gene data is absent (M4). The format
+  of the released polygenic index files is a Phase 5/6 item and will replace this.
+- **Why:** brief Task 2.4 ("an optional synthetic polygenic score table").
+- **Test:** `tests/test_io.py::test_read_gene_data_reads_the_placeholder_format`.
+- **Validation:** V8.
+
+### M6. The synthetic input set
+- **Label:** test data (not a port of anything).
+- **Python:** `tests/fixtures/synthetic_ncds.py::write_synthetic_inputs(root, seed)`
+  writes every restricted input, the RoBERTa derived file and the marker. IDs are
+  `SYN000001...`, every value is drawn from a seeded `numpy` generator using made-up
+  latent traits, and relations are planted so that some models have a clearly positive
+  R² (measured in the end-to-end test: teacher ratings predict the cognitive outcomes).
+  Taken from public files: the NCDS codes and their table, and the `aspiration_n2771`
+  strings used as the labels of `n2771`. **Made up, because the real ones are not known
+  here:** the value-label texts (apart from the missing-value strings), the column names
+  of the SALAT, readability, embedding and polygenic files, the number of embedding
+  dimensions (GPT 16/24; RoBERTa is 768, fixed by `_targets.R:L139`), which file each
+  code sits in, and the placement of `nwords` (the predictor of `text_length`,
+  `_targets.R:L261`) in the TAALED and TAALES files — where it also serves as the metric
+  shared by two tools that brief F8 asks for.
+- **Test:** `tests/test_execute.py::test_synthetic_inputs_are_deterministic_given_the_seed`,
+  `::test_every_code_of_the_variable_table_is_in_exactly_one_ncds_file`,
+  `::test_value_labels_include_missing_strings_negative_codes_and_the_aspiration_labels`,
+  `::test_essays_salat_and_spelling_are_in_the_format_the_readers_parse`.
+- **Validation:** V8.
+
+### M7. GPT embedding files are CSV
+- **Label:** deviation (a port-chosen file format; see G1).
+- **Python:** `config.RESTRICTED_INPUTS["gpt35_embeddings"]`/`["gpt4_embeddings"]` are
+  `.csv`, and `scripts/get_gpt_embeddings.py` writes CSV. Reading them therefore needs
+  no Parquet library (pyarrow is not installed). `features/embeddings.py::gpt_embeddings`
+  still reads `.parquet` when pyarrow is present.
+- **Why:** the R's format (`.rds`) is R-only (G1); the port picks the format, and CSV
+  keeps the dependency list smaller.
+- **Test:** covered by the end-to-end run (the synthetic set writes these files).
