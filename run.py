@@ -2,10 +2,10 @@
 """Pipeline runner — the port of ``run.R`` (``targets::tar_make()``).
 
 IMPORTANT: unlike ``tar_make()``, this does NOT execute the pipeline. Execution
-requires the real, access-restricted NCDS data AND the deferred ``clean_ncds``.
+requires the real, access-restricted NCDS data (or the synthetic set of Task 2.4).
 What it does instead is BUILD and VALIDATE the dependency graph and print an honest
 plan: the topological order length, the stub (unimplemented) roots, how many targets
-are blocked by them, and the frontier that would run once real data + clean_ncds are
+are blocked by them, and the frontier that would run once real data are
 in place.
 
 Run:  python run.py
@@ -35,8 +35,8 @@ def main() -> int:
 
     print(
         "\nBottom line: the graph is structurally sound, but it cannot run. The "
-        "single largest unblock is clean_ncds (Phase 2, Task 2.1); after "
-        "that, real NCDS data is required to execute."
+        "remaining stubs are the readability boundary (koRpus, Task 2.5) and the "
+        "restricted gene data; execution itself is Task 2.4."
     )
     return 0
 

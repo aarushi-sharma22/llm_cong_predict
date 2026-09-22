@@ -4,16 +4,16 @@ This is the STRUCTURE only. It resolves target dependencies, detects cycles,
 produces a topological execution order, and — the part that matters for an honest
 status — computes which targets are *blocked* because some dependency is not yet
 implemented (a "stub"). It does not execute anything: execution needs the real
-NCDS data and the deferred ``clean_ncds``, neither of which exists here.
+NCDS data (or the synthetic set of Task 2.4).
 
 A ``Target`` is just a name, its dependency names, and a status flag:
   * BUILT — the underlying function is implemented and would run given inputs;
-  * STUB  — not implemented / raises (``clean_ncds``, the readability external-tool
+  * STUB  — not implemented / raises (the readability external-tool
             boundary, the gene-data reader).
 
 "Blocked" is transitive: a target is blocked if it is a STUB or if any of its
 dependencies is blocked. So one STUB deep in the graph blocks everything downstream
-— which is exactly the situation with ``clean_ncds``.
+— as with the readability boundary.
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ class Pipeline:
 
         Note: "would run given real data" is not "runs now" — the sandbox has no real
         NCDS data, so even these do not execute here. This is the set that becomes
-        executable the moment ``clean_ncds`` and the real inputs are in place.
+        executable the moment the real inputs are in place.
         """
         b = self.blocked()
         return sorted(n for n, t in self._t.items() if t.status is Status.BUILT and n not in b)
@@ -144,9 +144,9 @@ class Pipeline:
             f"targets: {len(self._t)}   (topological order resolves, graph is acyclic)",
             f"stub roots (not implemented): {len(roots)} -> {roots}",
             f"blocked (stub or downstream of one): {len(b)} / {len(self._t)}",
-            f"runnable once real data + clean_ncds exist: {len(frontier)}",
+            f"runnable once real data exist: {len(frontier)}",
             "",
-            "This pipeline does NOT execute here: it requires the real NCDS data and the",
-            "deferred clean_ncds. The numbers above describe the WIRING, not a run.",
+            "This pipeline does NOT execute here yet (Task 2.4). The numbers above describe",
+            "the WIRING, not a run.",
         ]
         return "\n".join(lines)

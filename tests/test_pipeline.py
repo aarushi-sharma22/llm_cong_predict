@@ -113,20 +113,25 @@ def test_full_pipeline_validates():
     pipe.topo_order()               # acyclic
 
 
-def test_clean_ncds_is_a_stub_and_blocks_the_model_half():
+def test_clean_ncds_is_built_and_the_readability_stub_blocks_the_models():
+    """Task 2.1 removed clean_ncds' STUB status (brief Task 2.1). The model half is
+    still blocked, now through the readability boundary (essay_data needs
+    readability_metrics) until Task 2.5 / 2.4 provide it. Replaces a test that asserted
+    the STUB status of clean_ncds."""
     pipe = build_pipeline()
-    assert pipe.get("ncds_1_to_9_cleaned").status is Status.STUB
+    assert pipe.get("ncds_1_to_9_cleaned").status is Status.BUILT
     blocked = pipe.blocked()
-    # a representative model target is blocked, and clean_ncds is among its causes
     assert "essay_superlearner_overlap" in blocked
-    assert "ncds_1_to_9_cleaned" in blocked["essay_superlearner_overlap"]
+    assert "ncds_1_to_9_cleaned" not in blocked["essay_superlearner_overlap"]
+    assert "readability_metrics" in blocked["essay_superlearner_overlap"]
 
 
-def test_stub_roots_are_exactly_the_four_expected():
+def test_stub_roots_are_exactly_the_three_expected():
+    """After Task 2.1 the stub roots are gene_data (restricted, empty in the R) and the
+    readability boundary (tokenize_essays / calculate_readability_metrics, Task 2.5).
+    Previously four, including clean_ncds."""
     pipe = build_pipeline()
-    assert set(pipe.stub_roots()) == {
-        "gene_data", "ncds_1_to_9_cleaned", "readability_metrics", "tokenized_essays",
-    }
+    assert set(pipe.stub_roots()) == {"gene_data", "readability_metrics", "tokenized_essays"}
 
 
 def test_readers_are_in_the_runnable_frontier():
@@ -136,8 +141,10 @@ def test_readers_are_in_the_runnable_frontier():
     assert "ncds_essays" in frontier
     assert "camsis_data" in frontier
     assert "ncds_1_2_3" in frontier
-    # clean_ncds and anything downstream of it must NOT be in the frontier
-    assert "ncds_1_to_9_cleaned" not in frontier
+    # clean_ncds (Task 2.1) is now runnable; ncds_complete still waits for essay_data,
+    # which needs the readability boundary
+    assert "ncds_1_to_9_cleaned" in frontier
+    assert "factor_data" in frontier
     assert "ncds_complete" not in frontier
 
 

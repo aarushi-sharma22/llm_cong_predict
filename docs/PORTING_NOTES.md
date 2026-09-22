@@ -47,11 +47,15 @@ reproduce broken behaviour, so each is called out with how we handle it.
     exception: `s2_co_total_ability`, which the R only removes.
   - The earlier note said "the public file is not the file the code was written
     against". That is wrong, and `clean_ncds` is not blocked on a different file.
-- **Python:** Task 2.1 reads the file with assigned names, keeps the 63 complete rows
-  and asserts 63 rows and no duplicate codes. No separate schema file (the planned
-  `data/schema/ncds_variable_mapping.yaml`) is needed, and none exists.
+- **Python:** `io/readers.py::read_datalist` reads the file with `header=None`, names
+  columns 0–6, drops the empty columns 7 onwards, keeps the rows complete on the five
+  columns the R uses, and asserts 63 rows and no duplicate codes. No separate schema
+  file (the planned `data/schema/ncds_variable_mapping.yaml`) is needed, and none
+  exists.
 - **Why:** the evident intent; the R cannot run otherwise.
-- **Test:** Task 2.1.
+- **Test:** `tests/test_clean_ncds.py::test_read_datalist_gives_63_named_rows`,
+  `::test_all_74_r_names_resolve` (names from `docs/reference/r_variable_names.json`,
+  written by `scripts/extract_r_targets.py`); `tests/test_io.py::test_read_datalist_real_file_returns_frame`.
 - **Validation:** V1.
 
 ### A2. `clean_ncds` refers to four undefined blocks; reconstructed without them (rewritten in Phase 1, Task 1.6)
@@ -72,11 +76,14 @@ reproduce broken behaviour, so each is called out with how we handle it.
     `ability`, and five behaviour items in `teacher` and `behavior`. `plyr::join_all`
     keeps the first occurrence (E3), which is the teacher block's rank-coded version.
     The select order is not the reason.
-- **Python:** Task 2.1 builds that frame without the undefined blocks, drops
-  `s2_co_total_ability` only when present, and reports for each collided column
-  whether the two versions are identical.
+- **Python:** `cleaning/clean_ncds.py::clean_ncds` (F7) builds that frame without the
+  undefined blocks, drops `s2_co_total_ability` only when present, and reports for each
+  collided column whether the two versions are identical
+  (`attrs["clean_ncds_collisions"]`).
 - **Why:** the published R cannot run.
-- **Test:** Task 2.1.
+- **Test:** `tests/test_clean_ncds.py::test_one_row_per_ncdsid_and_column_order`,
+  `::test_s2_co_total_ability_absent_is_handled`,
+  `::test_collision_check_reports_identical_and_different`.
 - **Validation:** V1, and the collision report on real data.
 
 ### A3. `get_complete_ncds` is called with an argument it does not have (corrected in Phase 1, Task 1.6)
@@ -462,9 +469,8 @@ re-attached after transforms and should be read early in the cleaning chain.
 Matches the R (`haven::read_dta` only). The real CAMSIS files already use lower-case
 names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
 
-### E5. `read_datalist` reads the file as `read_excel` would (until Task 2.1)
-Thin `read_excel` wrapper, faithful to `llm_paper/R/functions.R:L22–24`. Task 2.1
-changes it to read with assigned column names (reconstruction, A1).
+### E5. `read_datalist` reads `variables.xlsx` with assigned column names (Task 2.1)
+Reconstruction. See A1.
 
 ### E6. `read_essays` reads like `readtext` and splits like `tidyr::separate` (Checkpoint B decision)
 - **Label:** faithful.
@@ -491,6 +497,19 @@ changes it to read with assigned column names (reconstruction, A1).
   `::test_check_essay_format_prints_only_counts`.
 - **Validation:** V2. Run `scripts/check_essay_format.py` on the real essays.
 
+
+### E7. `to_character` follows sjlabelled (Task 2.1)
+- **Label:** faithful.
+- **R source:** `sjlabelled/R/as_character.R:L10–15, L33–38`, `as_label.R:L229–269`
+  (1.2.0): `add.non.labelled = FALSE`.
+- **Python:** `io/labels.py::to_character`. In a column with value labels, a labelled
+  value becomes its label and an unlabelled value becomes NA. A column without labels
+  gives `as.character(x)`. The earlier version returned the raw value as text for
+  unlabelled values. That never changed which values `clean_ncds` blanks, but it was
+  not the R's result.
+- **Why:** faithful; used by `clean_ncds` step 2.
+- **Test:** `tests/test_clean_ncds.py::test_missing_strings_apply_only_through_labels`.
+- **Validation:** V1.
 ---
 
 ## F. Cleaning block (`src/llm_cong_predict/cleaning/`) — deviations & decisions
@@ -579,6 +598,35 @@ performs the joins of the 4-argument R.
 - **Why:** faithful level sets for every later `as_factor`.
 - **Test:** `tests/test_io.py::test_read_ncds_drops_labels_of_recoded_missing_codes`.
 - **Validation:** none.
+
+### F7. `clean_ncds` (Phase 2, Task 2.1)
+- **Label:** faithful per step. The whole function is a reconstruction (A1, A2).
+- **R source:** `llm_paper/R/functions.R:L64–242`. Each step is cited in
+  `cleaning/clean_ncds.py`.
+- **Python:** `cleaning/clean_ncds.py`:
+  - `full_name` with R's printing of the sweep (L75–78).
+  - The verbatim missing-label list applied through labels only, after which every
+    value label is dropped (L80–90).
+  - `one_of` selection in table order; absent codes are logged and kept in
+    `attrs["clean_ncds_absent_codes"]` (L91–95).
+  - Year/month recode (L97–98).
+  - nssec closed ranges (L104–115).
+  - Parent education as ordered categoricals (L116–129).
+  - `s3_pa_edu` from pmin/pmax, as a categorical whose categories are the sorted
+    observed values, so `as.numeric` gives the level position (L130–145).
+  - Sex as nullable boolean (L150–152).
+  - Height and birthweight (L156–162).
+  - Teacher block as rank codes among observed values (L166–191).
+  - The type blocks (L195–217).
+  - Assembly with plyr first-occurrence semantics, in the select order (L224–240).
+  - A column the R selects by NAME (sex, height, birthweight, the 21 teacher columns,
+    the parents' age-left columns) raises `MissingColumnError` when absent, as dplyr
+    stops there.
+  - `ncdsid` must be unique.
+- **Why:** brief F2.
+- **Test:** `tests/test_clean_ncds.py` (14 tests: the ten the brief lists, plus the
+  table, the parent-education bounds, sex, absent codes).
+- **Validation:** V1 (absent codes, collision report on real data).
 
 ---
 

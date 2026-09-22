@@ -185,20 +185,20 @@ def observed_rank_codes(values: pd.Series) -> np.ndarray:
 
 
 def to_character(df: pd.DataFrame, col: str) -> pd.Series:
-    """Port of ``sjlabelled::to_character(df[[col]])``: label text as a string.
+    """Port of ``sjlabelled::to_character(df[[col]])``.
 
-    Used in ``clean_ncds`` to test membership against a set of "Dont know" /
-    "Inapplicable" strings. Labelled values become their label; unlabelled values
-    fall back to their string form (they simply won't match the missing-string set).
+    R pkg: sjlabelled/R/as_character.R:L10–15, L33–38 and as_label.R:L229–269 (1.2.0):
+    ``add.non.labelled = FALSE`` by default, so in a column WITH value labels a
+    labelled value becomes its label text and an unlabelled value becomes NA
+    (``factor(x, levels = unique(labels))``). A column without value labels is returned
+    as ``as.character(x)``. Missing stays missing.
     """
     labels = get_value_labels(df).get(col, {})
     series = df[col]
     if not labels:
-        return series.astype("string")
-    mapped = series.map(labels)
-    # Fall back to the raw value's string form where no label exists.
-    fallback = series.astype("string")
-    return mapped.astype("string").fillna(fallback)
+        return series.map(lambda v: (r_number_string(v) if isinstance(v, (int, float, np.number)) else str(v))
+                          if pd.notna(v) else pd.NA).astype("string")
+    return series.map(lambda v: labels.get(v, pd.NA) if pd.notna(v) else pd.NA).astype("string")
 
 
 def merge_value_labels(frames: list[pd.DataFrame]) -> dict[str, dict]:

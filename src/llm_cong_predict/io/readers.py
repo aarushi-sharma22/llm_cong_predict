@@ -38,17 +38,35 @@ def _lower_map(d: dict | None) -> dict:
     return {str(k).lower(): v for k, v in (d or {}).items()}
 
 
-def read_datalist(path: str) -> pd.DataFrame:
-    """Port of ``read_datalist``: ``read_excel(path)``.
+# Column meanings of variables.xlsx, by position (brief F1; fixed by how clean_ncds uses
+# them, R: llm_paper/R/functions.R:L75–78, L103, L196, L201, L207, L212, L217).
+DATALIST_COLUMNS = ("sweep", "type", "respondent", "question", "label", "new_varname", "variable")
+DATALIST_REQUIRED = ("sweep", "type", "respondent", "new_varname", "variable")
+DATALIST_ROWS = 63  # computed from the public file at Checkpoint A (PORTING_NOTES A1)
 
-    Thin wrapper reading the variable-metadata workbook. IMPORTANT: as in R, the
-    first row becomes the header. The public ``variables.xlsx`` does NOT contain the
-    columns the cleaning layer expects (``variable``/``sweep``/``respondent``/
-    ``new_varname``/``type``) — see PORTING_NOTES A1. This reader faithfully returns
-    whatever the file contains; the schema reconstruction is handled in the cleaning
-    layer, not here.
+
+def read_datalist(path: str) -> pd.DataFrame:
+    """Port of ``read_datalist`` (R: llm_paper/R/functions.R:L22–24), a reconstruction.
+
+    The R calls ``read_excel(path)``, which makes the file's first row the header. The
+    public ``variables.xlsx`` has no header row, so the columns ``clean_ncds`` needs
+    would not exist and the published R cannot run (PORTING_NOTES A1). The evident
+    intent is reproduced: the file is read without a header, columns 0–6 are named
+    ``sweep, type, respondent, question, label, new_varname, variable`` (brief F1),
+    columns 7 onwards (empty, apart from one cell of spaces) are dropped, and the rows
+    complete on the five columns the R uses are kept. The result must have exactly 63
+    rows and no duplicated ``variable`` code.
     """
-    return pd.read_excel(path)
+    raw = pd.read_excel(path, header=None)
+    df = raw.iloc[:, : len(DATALIST_COLUMNS)].copy()
+    df.columns = list(DATALIST_COLUMNS)
+    df = df.dropna(subset=list(DATALIST_REQUIRED)).reset_index(drop=True)
+    if len(df) != DATALIST_ROWS:
+        raise ValueError(f"variables.xlsx: expected {DATALIST_ROWS} complete rows, found {len(df)}")
+    dup = df["variable"].str.lower().duplicated()
+    if dup.any():
+        raise ValueError(f"variables.xlsx: duplicated codes {sorted(df.loc[dup, 'variable'])}")
+    return df
 
 
 def read_occupation_aspiration_mapping(path: str) -> pd.DataFrame:

@@ -1,7 +1,7 @@
 # Translation status
 
 Every R object in the original repository (`tobiaswolfram/llm_paper`, commit
-`b0cfe4c`) and its Python counterpart, as of the end of Phase 1. Each item has exactly
+`b0cfe4c`) and its Python counterpart, as of Phase 2 (updated per task). Each item has exactly
 one status:
 
 | Status | Meaning |
@@ -18,14 +18,14 @@ one status:
 |---|---|---|---|
 | `get_gpt_embeddings` (2) | `features/embeddings.py::gpt_embeddings` | PORTED | Reads a saved embeddings file instead of the R's contradictory RDS reshaper (PORTING_NOTES G1). |
 | `get_gpt4_embeddings` (12) | `features/embeddings.py::gpt_embeddings` | PORTED | Identical to the above in the R (A5). |
-| `read_datalist` (22) | `io/readers.py::read_datalist` | PORTED | Reads the file as R's `read_excel` would, i.e. with row 0 as header. Reading it with assigned column names is Task 2.1 (A1). |
+| `read_datalist` (22) | `io/readers.py::read_datalist` | PORTED | Reads the file with assigned column names: 63 rows (reconstruction, A1). |
 | `read_essays` (26) | `io/readers.py::read_essays` | PORTED | Reads like `readtext`, splits like `tidyr::separate`, including malformed files (E6). |
 | `read_gene_data` (34) | `io/readers.py::read_gene_data` | PORTED | The R body is empty; the Python raises (E1). |
 | `read_camsis` (39) | `io/readers.py::read_camsis` | PORTED | Runs on the shipped file. |
 | `read_occupation_aspiration_mapping` (43) | `io/readers.py::read_occupation_aspiration_mapping` | PORTED | Runs on the shipped file. |
 | `read_ncds` (47) | `io/readers.py::read_ncds` | PORTED | Missing-code labels dropped as `set_na` does (F6). |
 | `combine_ncds` (57) | `io/readers.py::combine_ncds` | PORTED | plyr collision semantics (E3). |
-| `clean_ncds` (64) | — | NOT STARTED | Task 2.1. The published R cannot run (A1, A2); reconstruction planned. |
+| `clean_ncds` (64) | `cleaning/clean_ncds.py::clean_ncds` | PORTED | Reconstruction of a function that cannot run as published (A1, A2, F7). V1. |
 | `create_aspirations` (244) | `cleaning/aspirations.py::create_aspirations` | PORTED | Sex-comparison quirk reproduced (F3). V5. |
 | `create_factors` (272) | `cleaning/factors.py::create_factors` | PORTED-APPROX | Pearson factor: scoring faithful, loadings APPROX (F2, AP8). The three polychoric factors raise until the R bridge (Task 2.2). V3. |
 | `get_complete_ncds` (309) | `cleaning/assemble.py::get_complete_ncds` | PORTED | Natural joins with the keys checked; the R call passes an unused 5th argument, which is an error in R; reconstruction (A3). |
@@ -51,13 +51,13 @@ one status:
 
 | Part | Python | Status | Notes |
 |---|---|---|---|
-| Data, essay and cleaning targets (L41–174) | `pipeline/build.py` | PORTED (structure) | The dependency graph validates. Four stub roots block execution: `ncds_1_to_9_cleaned` (Task 2.1), `tokenized_essays` and `readability_metrics` (Task 2.5 boundary), `gene_data` (restricted). |
+| Data, essay and cleaning targets (L41–174) | `pipeline/build.py` | PORTED (structure) | The dependency graph validates. Three stub roots block execution: `tokenized_essays` and `readability_metrics` (Task 2.5 boundary), `gene_data` (restricted). |
 | Variable lists (L120–159) | `pipeline/variable_lists.py` | PORTED | Checked against the inventory. |
 | 70 model targets, 416 fits (L178–385) | `pipeline/model_spec.py` | PORTED (structure) | Each target records method, outcome, predictors, sample, data preparation and scorer; `R_TO_PYTHON_TARGET` maps the names (I1, I2). |
 | 53 metric targets (L387–494) | `pipeline/model_spec.py` | PORTED (structure) | 63 metric targets in Python: the 53, plus the 10 targets scored only in `create_data.R`; the 7 mmg_lm targets have none (I1). |
 | Execution | — | NOT STARTED | Task 2.4 (execution layer and synthetic end-to-end run). |
 
-Computed with `python run.py`: the graph has 186 targets; 152 are blocked by the four
+Computed with `python run.py`: the graph has 186 targets; 150 are blocked by the three
 stub roots.
 
 ## `R/create_data.R` (601 lines)
