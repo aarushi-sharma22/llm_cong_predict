@@ -6,26 +6,11 @@ Python replication of the analysis pipeline from:
 > to or Better than Genomics or Expert Assessment.* Communications Psychology.
 > https://www.nature.com/articles/s44271-025-00274-x
 
-A faithful Python port of the original R code
+A  Python port of the original R code
 (https://github.com/tobiaswolfram/llm_paper), restructured as a maintainable
 software project. Bugs in the original are fixed and **every deviation is logged**
 in [`docs/PORTING_NOTES.md`](docs/PORTING_NOTES.md).
 
-## Reproducibility status (read this first)
-
-This is a code artifact, not a one-click reproduction. The original inputs are
-access-restricted and are **not** included:
-
-- **NCDS phenotypic + essay data** — via UK Data Service registration.
-- **Genetic / polygenic scores** — separate NCDS Data Access Committee application.
-- **Derived essay features** (embeddings, SALAT linguistic metrics, spelling) —
-  confidential; shareable by the original author to UKDS-approved users, or
-  regenerable via external tools (OpenAI/HuggingFace, LanguageTool CLI, the SALAT
-  desktop tools).
-
-Accordingly, the pipeline is developed and tested against **synthetic fixtures that
-match the real data schemas**. Reproducing the paper's *numbers* requires the real
-data and completion of [`docs/VALIDATION_CHECKLIST.md`](docs/VALIDATION_CHECKLIST.md).
 
 ## Model backends
 
