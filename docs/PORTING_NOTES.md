@@ -547,3 +547,53 @@ item, if any.
 - **Test:** `tests/test_data_safety.py::test_checker_*`,
   `::test_pre_commit_hook_blocks_commit`, `::test_gitignore_*`.
 - **Validation:** none.
+
+---
+
+## I. Model specification (Phase 1, Task 1.4)
+
+### I1. Every model target records its method, outcome, predictors, sample, data preparation and scorer
+- **Label:** faithful.
+- **R source:** `llm_paper/_targets.R:L178–385` (model targets), `L387–494` (metric
+  targets); `llm_paper/R/create_data.R:L98, L163–170, L181, L344, L347` (scoring of
+  targets that have no metric target in `_targets.R`).
+- **Python:**
+  - `scripts/extract_r_targets.py` parses both files and writes
+    `docs/reference/r_targets_inventory.json` (70 model targets, 416 fits, 53 metric
+    targets). The output was checked by hand against the R files.
+  - `pipeline/model_spec.py` generates the same 70 targets from 13 families. Each
+    `ModelTargetSpec` records method, outcome (and the `pattern` it iterates over),
+    predictors, sample, data preparation and scorer.
+  - `pipeline/variable_lists.py` holds the constant variable lists verbatim.
+  - `R_TO_PYTHON_TARGET` maps every R name to its Python name. The names are
+    regularised as `<feature set>_<method><suffix>`, for example `essay_lm` →
+    `essay_lm_lm` and `salat_metrics_superlearner` → `salat_metrics_superlearner_text`.
+- **Scorers (brief F7):** `lm` only for the seven `*_lm` targets (`L452–464`).
+  `superlearner` for every other scored target, including the three `*_social_lm` lm
+  fits (`L489–494`), `text_length` and the seven text components (create_data.R), and
+  the two `*_social_lm_overlap` targets (create_data.R). **`none`** for the seven
+  `*_superlearner_mmg_lm` targets (`L323–343`), which neither file scores (owner
+  decision C6). They are fitted but get no metric target.
+- **Data preparation (brief F7):** `pedu` → `as.numeric(s3_pa_edu)` (`L208, L368`);
+  `sociological` → `as.numeric` on all seven sociological variables (`L258, L374`);
+  RoBERTa → inner join of `roberta_embeddings` on `ncdsid = id` (`L227`); GPT-4 → drop
+  columns starting with `embedding`, then inner join `gpt4_embeddings` (`L230`). The
+  joined tables are graph dependencies of their model targets.
+- **Why:** brief Task 1.4 and F7.
+- **Test:** `tests/test_pipeline.py::test_every_r_model_target_maps_to_one_python_target_with_the_same_definition`,
+  `::test_expanding_over_outcomes_gives_416_fits`, `::test_variable_lists_match_the_r_constants`,
+  `::test_embedding_models_depend_on_their_embedding_targets`,
+  `::test_extractor_reproduces_the_committed_inventory`,
+  `::test_model_spec_expands_deterministically`.
+- **Validation:** none (structure only).
+
+### I2. `cog_superlearner_social_lm` and `…_overlap` use one predictor
+- **Label:** faithful. This fixes a port bug.
+- **R source:** `llm_paper/_targets.R:L377, L382`: the predictor is
+  `"s2_co_factor_ability"`, not `cog_variables`.
+- **Python:** the `_social_lm` and `_social_lm_overlap` families override the `cog`
+  feature set with the literal column. The previous port used all seven
+  `cog_variables`.
+- **Why:** brief F7.
+- **Test:** `tests/test_pipeline.py::test_cog_social_lm_uses_the_single_ability_factor`.
+- **Validation:** none.

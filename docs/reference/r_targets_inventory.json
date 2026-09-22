@@ -1,0 +1,6853 @@
+{
+  "source": {
+    "repository": "https://github.com/tobiaswolfram/llm_paper",
+    "commit": "b0cfe4ceba0c29fcc6121aa7ff49c761b8127285",
+    "files": [
+      "_targets.R",
+      "R/create_data.R"
+    ]
+  },
+  "generated_by": "scripts/extract_r_targets.py",
+  "variable_lists": {
+    "teacher_variables": {
+      "line": 120,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s2_te_general_knowledge"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_number_work"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_use_of_books"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_oral_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_poor_hand_control"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_squirmy"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_poor_coordination"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_hardly_ever_still"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_poor_speech"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_inconsequential_behavior"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_miscellneous_symptoms"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_anxiety_adults"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_anxiety_children"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_hostility_children"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_writing_off_adults"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_misc"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_hostility_adults"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_restlessness"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_unforthcomingness"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_depression"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_te_withdrawal"
+        }
+      ],
+      "members": [
+        "s2_te_general_knowledge",
+        "s2_te_number_work",
+        "s2_te_use_of_books",
+        "s2_te_oral_ability",
+        "s2_te_poor_hand_control",
+        "s2_te_squirmy",
+        "s2_te_poor_coordination",
+        "s2_te_hardly_ever_still",
+        "s2_te_poor_speech",
+        "s2_te_inconsequential_behavior",
+        "s2_te_miscellneous_symptoms",
+        "s2_te_anxiety_adults",
+        "s2_te_anxiety_children",
+        "s2_te_hostility_children",
+        "s2_te_writing_off_adults",
+        "s2_te_misc",
+        "s2_te_hostility_adults",
+        "s2_te_restlessness",
+        "s2_te_unforthcomingness",
+        "s2_te_depression",
+        "s2_te_withdrawal"
+      ]
+    },
+    "sociological_variables": {
+      "line": 131,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s0_co_male"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_pa_father_edu"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_pa_mother_edu"
+        },
+        {
+          "kind": "literal",
+          "value": "s0_mo_class_mother_husband"
+        },
+        {
+          "kind": "literal",
+          "value": "s0_mo_persons_per_room"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_pa_nssec_father"
+        },
+        {
+          "kind": "literal",
+          "value": "s0_mo_class_mother_father"
+        }
+      ],
+      "members": [
+        "s0_co_male",
+        "s3_pa_father_edu",
+        "s3_pa_mother_edu",
+        "s0_mo_class_mother_husband",
+        "s0_mo_persons_per_room",
+        "s2_pa_nssec_father",
+        "s0_mo_class_mother_father"
+      ]
+    },
+    "gene_variables": {
+      "line": 132,
+      "kind": "data-dependent",
+      "expression": "colnames(gene_data)[-1]",
+      "members": null
+    },
+    "essay_variables": {
+      "line": 133,
+      "kind": "data-dependent",
+      "expression": "colnames(essay_data)[-1]",
+      "members": null
+    },
+    "salat_metrics_variables": {
+      "line": 134,
+      "kind": "data-dependent",
+      "expression": "colnames(salat_metrics %>% dplyr::select(dplyr::one_of(colnames(essay_data))))[-1]",
+      "members": null
+    },
+    "readability_metrics_variables": {
+      "line": 135,
+      "kind": "data-dependent",
+      "expression": "colnames(readability_metrics %>% dplyr::select(dplyr::one_of(colnames(essay_data))))[-c(1:2)]",
+      "members": null
+    },
+    "spelling_errors_variables": {
+      "line": 136,
+      "kind": "data-dependent",
+      "expression": "colnames(spelling_errors %>% dplyr::select(dplyr::one_of(colnames(essay_data))))[-1]",
+      "members": null
+    },
+    "gpt_embeddings_variables": {
+      "line": 137,
+      "kind": "data-dependent",
+      "expression": "colnames(gpt_embeddings %>% dplyr::select(dplyr::one_of(colnames(essay_data))))[-1]",
+      "members": null
+    },
+    "gpt4_embeddings_variables": {
+      "line": 138,
+      "kind": "data-dependent",
+      "expression": "colnames(gpt4_embeddings)[-1]",
+      "members": null
+    },
+    "roberta_embeddings_variables": {
+      "line": 139,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "roberta_dim_1"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_2"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_3"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_4"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_5"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_6"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_7"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_8"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_9"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_10"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_11"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_12"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_13"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_14"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_15"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_16"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_17"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_18"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_19"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_20"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_21"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_22"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_23"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_24"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_25"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_26"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_27"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_28"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_29"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_30"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_31"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_32"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_33"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_34"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_35"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_36"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_37"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_38"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_39"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_40"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_41"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_42"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_43"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_44"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_45"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_46"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_47"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_48"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_49"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_50"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_51"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_52"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_53"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_54"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_55"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_56"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_57"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_58"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_59"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_60"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_61"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_62"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_63"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_64"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_65"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_66"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_67"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_68"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_69"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_70"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_71"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_72"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_73"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_74"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_75"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_76"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_77"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_78"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_79"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_80"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_81"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_82"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_83"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_84"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_85"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_86"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_87"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_88"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_89"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_90"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_91"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_92"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_93"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_94"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_95"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_96"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_97"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_98"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_99"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_100"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_101"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_102"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_103"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_104"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_105"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_106"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_107"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_108"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_109"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_110"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_111"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_112"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_113"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_114"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_115"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_116"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_117"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_118"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_119"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_120"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_121"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_122"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_123"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_124"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_125"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_126"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_127"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_128"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_129"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_130"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_131"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_132"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_133"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_134"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_135"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_136"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_137"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_138"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_139"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_140"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_141"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_142"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_143"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_144"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_145"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_146"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_147"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_148"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_149"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_150"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_151"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_152"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_153"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_154"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_155"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_156"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_157"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_158"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_159"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_160"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_161"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_162"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_163"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_164"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_165"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_166"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_167"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_168"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_169"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_170"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_171"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_172"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_173"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_174"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_175"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_176"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_177"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_178"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_179"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_180"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_181"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_182"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_183"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_184"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_185"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_186"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_187"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_188"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_189"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_190"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_191"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_192"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_193"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_194"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_195"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_196"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_197"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_198"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_199"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_200"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_201"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_202"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_203"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_204"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_205"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_206"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_207"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_208"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_209"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_210"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_211"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_212"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_213"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_214"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_215"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_216"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_217"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_218"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_219"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_220"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_221"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_222"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_223"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_224"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_225"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_226"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_227"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_228"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_229"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_230"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_231"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_232"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_233"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_234"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_235"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_236"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_237"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_238"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_239"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_240"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_241"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_242"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_243"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_244"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_245"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_246"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_247"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_248"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_249"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_250"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_251"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_252"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_253"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_254"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_255"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_256"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_257"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_258"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_259"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_260"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_261"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_262"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_263"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_264"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_265"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_266"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_267"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_268"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_269"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_270"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_271"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_272"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_273"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_274"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_275"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_276"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_277"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_278"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_279"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_280"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_281"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_282"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_283"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_284"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_285"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_286"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_287"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_288"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_289"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_290"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_291"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_292"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_293"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_294"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_295"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_296"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_297"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_298"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_299"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_300"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_301"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_302"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_303"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_304"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_305"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_306"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_307"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_308"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_309"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_310"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_311"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_312"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_313"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_314"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_315"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_316"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_317"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_318"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_319"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_320"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_321"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_322"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_323"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_324"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_325"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_326"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_327"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_328"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_329"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_330"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_331"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_332"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_333"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_334"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_335"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_336"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_337"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_338"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_339"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_340"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_341"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_342"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_343"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_344"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_345"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_346"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_347"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_348"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_349"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_350"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_351"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_352"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_353"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_354"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_355"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_356"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_357"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_358"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_359"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_360"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_361"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_362"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_363"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_364"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_365"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_366"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_367"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_368"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_369"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_370"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_371"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_372"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_373"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_374"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_375"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_376"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_377"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_378"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_379"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_380"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_381"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_382"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_383"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_384"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_385"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_386"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_387"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_388"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_389"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_390"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_391"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_392"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_393"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_394"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_395"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_396"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_397"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_398"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_399"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_400"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_401"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_402"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_403"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_404"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_405"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_406"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_407"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_408"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_409"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_410"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_411"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_412"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_413"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_414"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_415"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_416"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_417"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_418"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_419"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_420"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_421"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_422"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_423"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_424"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_425"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_426"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_427"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_428"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_429"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_430"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_431"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_432"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_433"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_434"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_435"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_436"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_437"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_438"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_439"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_440"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_441"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_442"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_443"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_444"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_445"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_446"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_447"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_448"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_449"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_450"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_451"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_452"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_453"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_454"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_455"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_456"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_457"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_458"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_459"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_460"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_461"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_462"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_463"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_464"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_465"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_466"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_467"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_468"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_469"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_470"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_471"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_472"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_473"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_474"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_475"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_476"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_477"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_478"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_479"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_480"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_481"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_482"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_483"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_484"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_485"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_486"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_487"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_488"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_489"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_490"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_491"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_492"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_493"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_494"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_495"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_496"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_497"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_498"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_499"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_500"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_501"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_502"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_503"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_504"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_505"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_506"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_507"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_508"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_509"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_510"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_511"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_512"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_513"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_514"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_515"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_516"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_517"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_518"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_519"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_520"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_521"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_522"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_523"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_524"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_525"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_526"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_527"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_528"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_529"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_530"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_531"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_532"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_533"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_534"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_535"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_536"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_537"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_538"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_539"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_540"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_541"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_542"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_543"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_544"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_545"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_546"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_547"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_548"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_549"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_550"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_551"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_552"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_553"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_554"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_555"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_556"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_557"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_558"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_559"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_560"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_561"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_562"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_563"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_564"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_565"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_566"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_567"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_568"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_569"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_570"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_571"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_572"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_573"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_574"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_575"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_576"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_577"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_578"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_579"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_580"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_581"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_582"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_583"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_584"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_585"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_586"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_587"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_588"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_589"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_590"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_591"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_592"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_593"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_594"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_595"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_596"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_597"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_598"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_599"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_600"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_601"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_602"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_603"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_604"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_605"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_606"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_607"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_608"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_609"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_610"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_611"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_612"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_613"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_614"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_615"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_616"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_617"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_618"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_619"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_620"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_621"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_622"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_623"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_624"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_625"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_626"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_627"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_628"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_629"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_630"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_631"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_632"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_633"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_634"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_635"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_636"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_637"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_638"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_639"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_640"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_641"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_642"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_643"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_644"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_645"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_646"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_647"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_648"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_649"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_650"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_651"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_652"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_653"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_654"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_655"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_656"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_657"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_658"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_659"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_660"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_661"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_662"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_663"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_664"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_665"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_666"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_667"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_668"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_669"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_670"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_671"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_672"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_673"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_674"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_675"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_676"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_677"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_678"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_679"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_680"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_681"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_682"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_683"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_684"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_685"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_686"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_687"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_688"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_689"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_690"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_691"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_692"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_693"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_694"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_695"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_696"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_697"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_698"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_699"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_700"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_701"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_702"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_703"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_704"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_705"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_706"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_707"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_708"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_709"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_710"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_711"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_712"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_713"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_714"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_715"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_716"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_717"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_718"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_719"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_720"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_721"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_722"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_723"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_724"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_725"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_726"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_727"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_728"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_729"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_730"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_731"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_732"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_733"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_734"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_735"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_736"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_737"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_738"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_739"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_740"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_741"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_742"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_743"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_744"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_745"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_746"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_747"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_748"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_749"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_750"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_751"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_752"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_753"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_754"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_755"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_756"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_757"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_758"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_759"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_760"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_761"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_762"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_763"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_764"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_765"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_766"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_767"
+        },
+        {
+          "kind": "literal",
+          "value": "roberta_dim_768"
+        }
+      ],
+      "members": [
+        "roberta_dim_1",
+        "roberta_dim_2",
+        "roberta_dim_3",
+        "roberta_dim_4",
+        "roberta_dim_5",
+        "roberta_dim_6",
+        "roberta_dim_7",
+        "roberta_dim_8",
+        "roberta_dim_9",
+        "roberta_dim_10",
+        "roberta_dim_11",
+        "roberta_dim_12",
+        "roberta_dim_13",
+        "roberta_dim_14",
+        "roberta_dim_15",
+        "roberta_dim_16",
+        "roberta_dim_17",
+        "roberta_dim_18",
+        "roberta_dim_19",
+        "roberta_dim_20",
+        "roberta_dim_21",
+        "roberta_dim_22",
+        "roberta_dim_23",
+        "roberta_dim_24",
+        "roberta_dim_25",
+        "roberta_dim_26",
+        "roberta_dim_27",
+        "roberta_dim_28",
+        "roberta_dim_29",
+        "roberta_dim_30",
+        "roberta_dim_31",
+        "roberta_dim_32",
+        "roberta_dim_33",
+        "roberta_dim_34",
+        "roberta_dim_35",
+        "roberta_dim_36",
+        "roberta_dim_37",
+        "roberta_dim_38",
+        "roberta_dim_39",
+        "roberta_dim_40",
+        "roberta_dim_41",
+        "roberta_dim_42",
+        "roberta_dim_43",
+        "roberta_dim_44",
+        "roberta_dim_45",
+        "roberta_dim_46",
+        "roberta_dim_47",
+        "roberta_dim_48",
+        "roberta_dim_49",
+        "roberta_dim_50",
+        "roberta_dim_51",
+        "roberta_dim_52",
+        "roberta_dim_53",
+        "roberta_dim_54",
+        "roberta_dim_55",
+        "roberta_dim_56",
+        "roberta_dim_57",
+        "roberta_dim_58",
+        "roberta_dim_59",
+        "roberta_dim_60",
+        "roberta_dim_61",
+        "roberta_dim_62",
+        "roberta_dim_63",
+        "roberta_dim_64",
+        "roberta_dim_65",
+        "roberta_dim_66",
+        "roberta_dim_67",
+        "roberta_dim_68",
+        "roberta_dim_69",
+        "roberta_dim_70",
+        "roberta_dim_71",
+        "roberta_dim_72",
+        "roberta_dim_73",
+        "roberta_dim_74",
+        "roberta_dim_75",
+        "roberta_dim_76",
+        "roberta_dim_77",
+        "roberta_dim_78",
+        "roberta_dim_79",
+        "roberta_dim_80",
+        "roberta_dim_81",
+        "roberta_dim_82",
+        "roberta_dim_83",
+        "roberta_dim_84",
+        "roberta_dim_85",
+        "roberta_dim_86",
+        "roberta_dim_87",
+        "roberta_dim_88",
+        "roberta_dim_89",
+        "roberta_dim_90",
+        "roberta_dim_91",
+        "roberta_dim_92",
+        "roberta_dim_93",
+        "roberta_dim_94",
+        "roberta_dim_95",
+        "roberta_dim_96",
+        "roberta_dim_97",
+        "roberta_dim_98",
+        "roberta_dim_99",
+        "roberta_dim_100",
+        "roberta_dim_101",
+        "roberta_dim_102",
+        "roberta_dim_103",
+        "roberta_dim_104",
+        "roberta_dim_105",
+        "roberta_dim_106",
+        "roberta_dim_107",
+        "roberta_dim_108",
+        "roberta_dim_109",
+        "roberta_dim_110",
+        "roberta_dim_111",
+        "roberta_dim_112",
+        "roberta_dim_113",
+        "roberta_dim_114",
+        "roberta_dim_115",
+        "roberta_dim_116",
+        "roberta_dim_117",
+        "roberta_dim_118",
+        "roberta_dim_119",
+        "roberta_dim_120",
+        "roberta_dim_121",
+        "roberta_dim_122",
+        "roberta_dim_123",
+        "roberta_dim_124",
+        "roberta_dim_125",
+        "roberta_dim_126",
+        "roberta_dim_127",
+        "roberta_dim_128",
+        "roberta_dim_129",
+        "roberta_dim_130",
+        "roberta_dim_131",
+        "roberta_dim_132",
+        "roberta_dim_133",
+        "roberta_dim_134",
+        "roberta_dim_135",
+        "roberta_dim_136",
+        "roberta_dim_137",
+        "roberta_dim_138",
+        "roberta_dim_139",
+        "roberta_dim_140",
+        "roberta_dim_141",
+        "roberta_dim_142",
+        "roberta_dim_143",
+        "roberta_dim_144",
+        "roberta_dim_145",
+        "roberta_dim_146",
+        "roberta_dim_147",
+        "roberta_dim_148",
+        "roberta_dim_149",
+        "roberta_dim_150",
+        "roberta_dim_151",
+        "roberta_dim_152",
+        "roberta_dim_153",
+        "roberta_dim_154",
+        "roberta_dim_155",
+        "roberta_dim_156",
+        "roberta_dim_157",
+        "roberta_dim_158",
+        "roberta_dim_159",
+        "roberta_dim_160",
+        "roberta_dim_161",
+        "roberta_dim_162",
+        "roberta_dim_163",
+        "roberta_dim_164",
+        "roberta_dim_165",
+        "roberta_dim_166",
+        "roberta_dim_167",
+        "roberta_dim_168",
+        "roberta_dim_169",
+        "roberta_dim_170",
+        "roberta_dim_171",
+        "roberta_dim_172",
+        "roberta_dim_173",
+        "roberta_dim_174",
+        "roberta_dim_175",
+        "roberta_dim_176",
+        "roberta_dim_177",
+        "roberta_dim_178",
+        "roberta_dim_179",
+        "roberta_dim_180",
+        "roberta_dim_181",
+        "roberta_dim_182",
+        "roberta_dim_183",
+        "roberta_dim_184",
+        "roberta_dim_185",
+        "roberta_dim_186",
+        "roberta_dim_187",
+        "roberta_dim_188",
+        "roberta_dim_189",
+        "roberta_dim_190",
+        "roberta_dim_191",
+        "roberta_dim_192",
+        "roberta_dim_193",
+        "roberta_dim_194",
+        "roberta_dim_195",
+        "roberta_dim_196",
+        "roberta_dim_197",
+        "roberta_dim_198",
+        "roberta_dim_199",
+        "roberta_dim_200",
+        "roberta_dim_201",
+        "roberta_dim_202",
+        "roberta_dim_203",
+        "roberta_dim_204",
+        "roberta_dim_205",
+        "roberta_dim_206",
+        "roberta_dim_207",
+        "roberta_dim_208",
+        "roberta_dim_209",
+        "roberta_dim_210",
+        "roberta_dim_211",
+        "roberta_dim_212",
+        "roberta_dim_213",
+        "roberta_dim_214",
+        "roberta_dim_215",
+        "roberta_dim_216",
+        "roberta_dim_217",
+        "roberta_dim_218",
+        "roberta_dim_219",
+        "roberta_dim_220",
+        "roberta_dim_221",
+        "roberta_dim_222",
+        "roberta_dim_223",
+        "roberta_dim_224",
+        "roberta_dim_225",
+        "roberta_dim_226",
+        "roberta_dim_227",
+        "roberta_dim_228",
+        "roberta_dim_229",
+        "roberta_dim_230",
+        "roberta_dim_231",
+        "roberta_dim_232",
+        "roberta_dim_233",
+        "roberta_dim_234",
+        "roberta_dim_235",
+        "roberta_dim_236",
+        "roberta_dim_237",
+        "roberta_dim_238",
+        "roberta_dim_239",
+        "roberta_dim_240",
+        "roberta_dim_241",
+        "roberta_dim_242",
+        "roberta_dim_243",
+        "roberta_dim_244",
+        "roberta_dim_245",
+        "roberta_dim_246",
+        "roberta_dim_247",
+        "roberta_dim_248",
+        "roberta_dim_249",
+        "roberta_dim_250",
+        "roberta_dim_251",
+        "roberta_dim_252",
+        "roberta_dim_253",
+        "roberta_dim_254",
+        "roberta_dim_255",
+        "roberta_dim_256",
+        "roberta_dim_257",
+        "roberta_dim_258",
+        "roberta_dim_259",
+        "roberta_dim_260",
+        "roberta_dim_261",
+        "roberta_dim_262",
+        "roberta_dim_263",
+        "roberta_dim_264",
+        "roberta_dim_265",
+        "roberta_dim_266",
+        "roberta_dim_267",
+        "roberta_dim_268",
+        "roberta_dim_269",
+        "roberta_dim_270",
+        "roberta_dim_271",
+        "roberta_dim_272",
+        "roberta_dim_273",
+        "roberta_dim_274",
+        "roberta_dim_275",
+        "roberta_dim_276",
+        "roberta_dim_277",
+        "roberta_dim_278",
+        "roberta_dim_279",
+        "roberta_dim_280",
+        "roberta_dim_281",
+        "roberta_dim_282",
+        "roberta_dim_283",
+        "roberta_dim_284",
+        "roberta_dim_285",
+        "roberta_dim_286",
+        "roberta_dim_287",
+        "roberta_dim_288",
+        "roberta_dim_289",
+        "roberta_dim_290",
+        "roberta_dim_291",
+        "roberta_dim_292",
+        "roberta_dim_293",
+        "roberta_dim_294",
+        "roberta_dim_295",
+        "roberta_dim_296",
+        "roberta_dim_297",
+        "roberta_dim_298",
+        "roberta_dim_299",
+        "roberta_dim_300",
+        "roberta_dim_301",
+        "roberta_dim_302",
+        "roberta_dim_303",
+        "roberta_dim_304",
+        "roberta_dim_305",
+        "roberta_dim_306",
+        "roberta_dim_307",
+        "roberta_dim_308",
+        "roberta_dim_309",
+        "roberta_dim_310",
+        "roberta_dim_311",
+        "roberta_dim_312",
+        "roberta_dim_313",
+        "roberta_dim_314",
+        "roberta_dim_315",
+        "roberta_dim_316",
+        "roberta_dim_317",
+        "roberta_dim_318",
+        "roberta_dim_319",
+        "roberta_dim_320",
+        "roberta_dim_321",
+        "roberta_dim_322",
+        "roberta_dim_323",
+        "roberta_dim_324",
+        "roberta_dim_325",
+        "roberta_dim_326",
+        "roberta_dim_327",
+        "roberta_dim_328",
+        "roberta_dim_329",
+        "roberta_dim_330",
+        "roberta_dim_331",
+        "roberta_dim_332",
+        "roberta_dim_333",
+        "roberta_dim_334",
+        "roberta_dim_335",
+        "roberta_dim_336",
+        "roberta_dim_337",
+        "roberta_dim_338",
+        "roberta_dim_339",
+        "roberta_dim_340",
+        "roberta_dim_341",
+        "roberta_dim_342",
+        "roberta_dim_343",
+        "roberta_dim_344",
+        "roberta_dim_345",
+        "roberta_dim_346",
+        "roberta_dim_347",
+        "roberta_dim_348",
+        "roberta_dim_349",
+        "roberta_dim_350",
+        "roberta_dim_351",
+        "roberta_dim_352",
+        "roberta_dim_353",
+        "roberta_dim_354",
+        "roberta_dim_355",
+        "roberta_dim_356",
+        "roberta_dim_357",
+        "roberta_dim_358",
+        "roberta_dim_359",
+        "roberta_dim_360",
+        "roberta_dim_361",
+        "roberta_dim_362",
+        "roberta_dim_363",
+        "roberta_dim_364",
+        "roberta_dim_365",
+        "roberta_dim_366",
+        "roberta_dim_367",
+        "roberta_dim_368",
+        "roberta_dim_369",
+        "roberta_dim_370",
+        "roberta_dim_371",
+        "roberta_dim_372",
+        "roberta_dim_373",
+        "roberta_dim_374",
+        "roberta_dim_375",
+        "roberta_dim_376",
+        "roberta_dim_377",
+        "roberta_dim_378",
+        "roberta_dim_379",
+        "roberta_dim_380",
+        "roberta_dim_381",
+        "roberta_dim_382",
+        "roberta_dim_383",
+        "roberta_dim_384",
+        "roberta_dim_385",
+        "roberta_dim_386",
+        "roberta_dim_387",
+        "roberta_dim_388",
+        "roberta_dim_389",
+        "roberta_dim_390",
+        "roberta_dim_391",
+        "roberta_dim_392",
+        "roberta_dim_393",
+        "roberta_dim_394",
+        "roberta_dim_395",
+        "roberta_dim_396",
+        "roberta_dim_397",
+        "roberta_dim_398",
+        "roberta_dim_399",
+        "roberta_dim_400",
+        "roberta_dim_401",
+        "roberta_dim_402",
+        "roberta_dim_403",
+        "roberta_dim_404",
+        "roberta_dim_405",
+        "roberta_dim_406",
+        "roberta_dim_407",
+        "roberta_dim_408",
+        "roberta_dim_409",
+        "roberta_dim_410",
+        "roberta_dim_411",
+        "roberta_dim_412",
+        "roberta_dim_413",
+        "roberta_dim_414",
+        "roberta_dim_415",
+        "roberta_dim_416",
+        "roberta_dim_417",
+        "roberta_dim_418",
+        "roberta_dim_419",
+        "roberta_dim_420",
+        "roberta_dim_421",
+        "roberta_dim_422",
+        "roberta_dim_423",
+        "roberta_dim_424",
+        "roberta_dim_425",
+        "roberta_dim_426",
+        "roberta_dim_427",
+        "roberta_dim_428",
+        "roberta_dim_429",
+        "roberta_dim_430",
+        "roberta_dim_431",
+        "roberta_dim_432",
+        "roberta_dim_433",
+        "roberta_dim_434",
+        "roberta_dim_435",
+        "roberta_dim_436",
+        "roberta_dim_437",
+        "roberta_dim_438",
+        "roberta_dim_439",
+        "roberta_dim_440",
+        "roberta_dim_441",
+        "roberta_dim_442",
+        "roberta_dim_443",
+        "roberta_dim_444",
+        "roberta_dim_445",
+        "roberta_dim_446",
+        "roberta_dim_447",
+        "roberta_dim_448",
+        "roberta_dim_449",
+        "roberta_dim_450",
+        "roberta_dim_451",
+        "roberta_dim_452",
+        "roberta_dim_453",
+        "roberta_dim_454",
+        "roberta_dim_455",
+        "roberta_dim_456",
+        "roberta_dim_457",
+        "roberta_dim_458",
+        "roberta_dim_459",
+        "roberta_dim_460",
+        "roberta_dim_461",
+        "roberta_dim_462",
+        "roberta_dim_463",
+        "roberta_dim_464",
+        "roberta_dim_465",
+        "roberta_dim_466",
+        "roberta_dim_467",
+        "roberta_dim_468",
+        "roberta_dim_469",
+        "roberta_dim_470",
+        "roberta_dim_471",
+        "roberta_dim_472",
+        "roberta_dim_473",
+        "roberta_dim_474",
+        "roberta_dim_475",
+        "roberta_dim_476",
+        "roberta_dim_477",
+        "roberta_dim_478",
+        "roberta_dim_479",
+        "roberta_dim_480",
+        "roberta_dim_481",
+        "roberta_dim_482",
+        "roberta_dim_483",
+        "roberta_dim_484",
+        "roberta_dim_485",
+        "roberta_dim_486",
+        "roberta_dim_487",
+        "roberta_dim_488",
+        "roberta_dim_489",
+        "roberta_dim_490",
+        "roberta_dim_491",
+        "roberta_dim_492",
+        "roberta_dim_493",
+        "roberta_dim_494",
+        "roberta_dim_495",
+        "roberta_dim_496",
+        "roberta_dim_497",
+        "roberta_dim_498",
+        "roberta_dim_499",
+        "roberta_dim_500",
+        "roberta_dim_501",
+        "roberta_dim_502",
+        "roberta_dim_503",
+        "roberta_dim_504",
+        "roberta_dim_505",
+        "roberta_dim_506",
+        "roberta_dim_507",
+        "roberta_dim_508",
+        "roberta_dim_509",
+        "roberta_dim_510",
+        "roberta_dim_511",
+        "roberta_dim_512",
+        "roberta_dim_513",
+        "roberta_dim_514",
+        "roberta_dim_515",
+        "roberta_dim_516",
+        "roberta_dim_517",
+        "roberta_dim_518",
+        "roberta_dim_519",
+        "roberta_dim_520",
+        "roberta_dim_521",
+        "roberta_dim_522",
+        "roberta_dim_523",
+        "roberta_dim_524",
+        "roberta_dim_525",
+        "roberta_dim_526",
+        "roberta_dim_527",
+        "roberta_dim_528",
+        "roberta_dim_529",
+        "roberta_dim_530",
+        "roberta_dim_531",
+        "roberta_dim_532",
+        "roberta_dim_533",
+        "roberta_dim_534",
+        "roberta_dim_535",
+        "roberta_dim_536",
+        "roberta_dim_537",
+        "roberta_dim_538",
+        "roberta_dim_539",
+        "roberta_dim_540",
+        "roberta_dim_541",
+        "roberta_dim_542",
+        "roberta_dim_543",
+        "roberta_dim_544",
+        "roberta_dim_545",
+        "roberta_dim_546",
+        "roberta_dim_547",
+        "roberta_dim_548",
+        "roberta_dim_549",
+        "roberta_dim_550",
+        "roberta_dim_551",
+        "roberta_dim_552",
+        "roberta_dim_553",
+        "roberta_dim_554",
+        "roberta_dim_555",
+        "roberta_dim_556",
+        "roberta_dim_557",
+        "roberta_dim_558",
+        "roberta_dim_559",
+        "roberta_dim_560",
+        "roberta_dim_561",
+        "roberta_dim_562",
+        "roberta_dim_563",
+        "roberta_dim_564",
+        "roberta_dim_565",
+        "roberta_dim_566",
+        "roberta_dim_567",
+        "roberta_dim_568",
+        "roberta_dim_569",
+        "roberta_dim_570",
+        "roberta_dim_571",
+        "roberta_dim_572",
+        "roberta_dim_573",
+        "roberta_dim_574",
+        "roberta_dim_575",
+        "roberta_dim_576",
+        "roberta_dim_577",
+        "roberta_dim_578",
+        "roberta_dim_579",
+        "roberta_dim_580",
+        "roberta_dim_581",
+        "roberta_dim_582",
+        "roberta_dim_583",
+        "roberta_dim_584",
+        "roberta_dim_585",
+        "roberta_dim_586",
+        "roberta_dim_587",
+        "roberta_dim_588",
+        "roberta_dim_589",
+        "roberta_dim_590",
+        "roberta_dim_591",
+        "roberta_dim_592",
+        "roberta_dim_593",
+        "roberta_dim_594",
+        "roberta_dim_595",
+        "roberta_dim_596",
+        "roberta_dim_597",
+        "roberta_dim_598",
+        "roberta_dim_599",
+        "roberta_dim_600",
+        "roberta_dim_601",
+        "roberta_dim_602",
+        "roberta_dim_603",
+        "roberta_dim_604",
+        "roberta_dim_605",
+        "roberta_dim_606",
+        "roberta_dim_607",
+        "roberta_dim_608",
+        "roberta_dim_609",
+        "roberta_dim_610",
+        "roberta_dim_611",
+        "roberta_dim_612",
+        "roberta_dim_613",
+        "roberta_dim_614",
+        "roberta_dim_615",
+        "roberta_dim_616",
+        "roberta_dim_617",
+        "roberta_dim_618",
+        "roberta_dim_619",
+        "roberta_dim_620",
+        "roberta_dim_621",
+        "roberta_dim_622",
+        "roberta_dim_623",
+        "roberta_dim_624",
+        "roberta_dim_625",
+        "roberta_dim_626",
+        "roberta_dim_627",
+        "roberta_dim_628",
+        "roberta_dim_629",
+        "roberta_dim_630",
+        "roberta_dim_631",
+        "roberta_dim_632",
+        "roberta_dim_633",
+        "roberta_dim_634",
+        "roberta_dim_635",
+        "roberta_dim_636",
+        "roberta_dim_637",
+        "roberta_dim_638",
+        "roberta_dim_639",
+        "roberta_dim_640",
+        "roberta_dim_641",
+        "roberta_dim_642",
+        "roberta_dim_643",
+        "roberta_dim_644",
+        "roberta_dim_645",
+        "roberta_dim_646",
+        "roberta_dim_647",
+        "roberta_dim_648",
+        "roberta_dim_649",
+        "roberta_dim_650",
+        "roberta_dim_651",
+        "roberta_dim_652",
+        "roberta_dim_653",
+        "roberta_dim_654",
+        "roberta_dim_655",
+        "roberta_dim_656",
+        "roberta_dim_657",
+        "roberta_dim_658",
+        "roberta_dim_659",
+        "roberta_dim_660",
+        "roberta_dim_661",
+        "roberta_dim_662",
+        "roberta_dim_663",
+        "roberta_dim_664",
+        "roberta_dim_665",
+        "roberta_dim_666",
+        "roberta_dim_667",
+        "roberta_dim_668",
+        "roberta_dim_669",
+        "roberta_dim_670",
+        "roberta_dim_671",
+        "roberta_dim_672",
+        "roberta_dim_673",
+        "roberta_dim_674",
+        "roberta_dim_675",
+        "roberta_dim_676",
+        "roberta_dim_677",
+        "roberta_dim_678",
+        "roberta_dim_679",
+        "roberta_dim_680",
+        "roberta_dim_681",
+        "roberta_dim_682",
+        "roberta_dim_683",
+        "roberta_dim_684",
+        "roberta_dim_685",
+        "roberta_dim_686",
+        "roberta_dim_687",
+        "roberta_dim_688",
+        "roberta_dim_689",
+        "roberta_dim_690",
+        "roberta_dim_691",
+        "roberta_dim_692",
+        "roberta_dim_693",
+        "roberta_dim_694",
+        "roberta_dim_695",
+        "roberta_dim_696",
+        "roberta_dim_697",
+        "roberta_dim_698",
+        "roberta_dim_699",
+        "roberta_dim_700",
+        "roberta_dim_701",
+        "roberta_dim_702",
+        "roberta_dim_703",
+        "roberta_dim_704",
+        "roberta_dim_705",
+        "roberta_dim_706",
+        "roberta_dim_707",
+        "roberta_dim_708",
+        "roberta_dim_709",
+        "roberta_dim_710",
+        "roberta_dim_711",
+        "roberta_dim_712",
+        "roberta_dim_713",
+        "roberta_dim_714",
+        "roberta_dim_715",
+        "roberta_dim_716",
+        "roberta_dim_717",
+        "roberta_dim_718",
+        "roberta_dim_719",
+        "roberta_dim_720",
+        "roberta_dim_721",
+        "roberta_dim_722",
+        "roberta_dim_723",
+        "roberta_dim_724",
+        "roberta_dim_725",
+        "roberta_dim_726",
+        "roberta_dim_727",
+        "roberta_dim_728",
+        "roberta_dim_729",
+        "roberta_dim_730",
+        "roberta_dim_731",
+        "roberta_dim_732",
+        "roberta_dim_733",
+        "roberta_dim_734",
+        "roberta_dim_735",
+        "roberta_dim_736",
+        "roberta_dim_737",
+        "roberta_dim_738",
+        "roberta_dim_739",
+        "roberta_dim_740",
+        "roberta_dim_741",
+        "roberta_dim_742",
+        "roberta_dim_743",
+        "roberta_dim_744",
+        "roberta_dim_745",
+        "roberta_dim_746",
+        "roberta_dim_747",
+        "roberta_dim_748",
+        "roberta_dim_749",
+        "roberta_dim_750",
+        "roberta_dim_751",
+        "roberta_dim_752",
+        "roberta_dim_753",
+        "roberta_dim_754",
+        "roberta_dim_755",
+        "roberta_dim_756",
+        "roberta_dim_757",
+        "roberta_dim_758",
+        "roberta_dim_759",
+        "roberta_dim_760",
+        "roberta_dim_761",
+        "roberta_dim_762",
+        "roberta_dim_763",
+        "roberta_dim_764",
+        "roberta_dim_765",
+        "roberta_dim_766",
+        "roberta_dim_767",
+        "roberta_dim_768"
+      ]
+    },
+    "mmg_variables": {
+      "line": 140,
+      "kind": "composite",
+      "items": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "members": null
+    },
+    "mmg_edu_variables": {
+      "line": 141,
+      "kind": "composite",
+      "items": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "literal",
+          "value": "s5_co_highest_edu"
+        }
+      ],
+      "members": null
+    },
+    "mmg_cog_variables": {
+      "line": 142,
+      "kind": "composite",
+      "items": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_co_factor_ability"
+        }
+      ],
+      "members": null
+    },
+    "cog_variables": {
+      "line": 143,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s2_co_factor_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_co_verbal_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_co_nonverbal_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_co_reading_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s2_co_mathematics_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_co_reading_ability"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_co_mathematics_ability"
+        }
+      ],
+      "members": [
+        "s2_co_factor_ability",
+        "s2_co_verbal_ability",
+        "s2_co_nonverbal_ability",
+        "s2_co_reading_ability",
+        "s2_co_mathematics_ability",
+        "s3_co_reading_ability",
+        "s3_co_mathematics_ability"
+      ]
+    },
+    "noncog_variables": {
+      "line": 147,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s2_co_aspiration_camsis"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_co_factor_scholastic_motivation"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_te_factor_externalizing"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_te_factor_internalizing"
+        }
+      ],
+      "members": [
+        "s2_co_aspiration_camsis",
+        "s3_co_factor_scholastic_motivation",
+        "s3_te_factor_externalizing",
+        "s3_te_factor_internalizing"
+      ]
+    },
+    "cog_noncog_variables": {
+      "line": 150,
+      "kind": "composite",
+      "items": [
+        {
+          "kind": "list",
+          "value": "cog_variables"
+        },
+        {
+          "kind": "list",
+          "value": "noncog_variables"
+        }
+      ],
+      "members": [
+        "s2_co_factor_ability",
+        "s2_co_verbal_ability",
+        "s2_co_nonverbal_ability",
+        "s2_co_reading_ability",
+        "s2_co_mathematics_ability",
+        "s3_co_reading_ability",
+        "s3_co_mathematics_ability",
+        "s2_co_aspiration_camsis",
+        "s3_co_factor_scholastic_motivation",
+        "s3_te_factor_externalizing",
+        "s3_te_factor_internalizing"
+      ]
+    },
+    "bfi_variables": {
+      "line": 151,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s8_co_extraversion"
+        },
+        {
+          "kind": "literal",
+          "value": "s8_co_agreeableness"
+        },
+        {
+          "kind": "literal",
+          "value": "s8_co_conscientiousness"
+        },
+        {
+          "kind": "literal",
+          "value": "s8_co_neuroticism"
+        },
+        {
+          "kind": "literal",
+          "value": "s8_co_openness"
+        }
+      ],
+      "members": [
+        "s8_co_extraversion",
+        "s8_co_agreeableness",
+        "s8_co_conscientiousness",
+        "s8_co_neuroticism",
+        "s8_co_openness"
+      ]
+    },
+    "confounder_variables": {
+      "line": 154,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s3_pa_edu"
+        },
+        {
+          "kind": "literal",
+          "value": "s3_co_height"
+        },
+        {
+          "kind": "literal",
+          "value": "s0_co_male"
+        },
+        {
+          "kind": "literal",
+          "value": "s0_mo_birthweight"
+        }
+      ],
+      "members": [
+        "s3_pa_edu",
+        "s3_co_height",
+        "s0_co_male",
+        "s0_mo_birthweight"
+      ]
+    },
+    "social_outcomes": {
+      "line": 155,
+      "kind": "literal",
+      "items": [
+        {
+          "kind": "literal",
+          "value": "s5_co_highest_edu"
+        }
+      ],
+      "members": [
+        "s5_co_highest_edu"
+      ]
+    },
+    "all_vars": {
+      "line": 156,
+      "kind": "composite",
+      "items": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "cog_noncog_variables"
+        },
+        {
+          "kind": "list",
+          "value": "social_outcomes"
+        },
+        {
+          "kind": "list",
+          "value": "confounder_variables"
+        }
+      ],
+      "members": null
+    },
+    "all_outcomes": {
+      "line": 159,
+      "kind": "composite",
+      "items": [
+        {
+          "kind": "list",
+          "value": "cog_noncog_variables"
+        },
+        {
+          "kind": "list",
+          "value": "social_outcomes"
+        }
+      ],
+      "members": [
+        "s2_co_factor_ability",
+        "s2_co_verbal_ability",
+        "s2_co_nonverbal_ability",
+        "s2_co_reading_ability",
+        "s2_co_mathematics_ability",
+        "s3_co_reading_ability",
+        "s3_co_mathematics_ability",
+        "s2_co_aspiration_camsis",
+        "s3_co_factor_scholastic_motivation",
+        "s3_te_factor_externalizing",
+        "s3_te_factor_internalizing",
+        "s5_co_highest_edu"
+      ]
+    }
+  },
+  "model_targets": [
+    {
+      "r_name": "essay_superlearner_overlap",
+      "line": 178,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 387,
+          "scorer": "superlearner",
+          "metric_target": "essay_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "gene_superlearner_overlap",
+      "line": 181,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 389,
+          "scorer": "superlearner",
+          "metric_target": "gene_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_superlearner_overlap",
+      "line": 184,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 391,
+          "scorer": "superlearner",
+          "metric_target": "teacher_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_genes_superlearner_overlap",
+      "line": 187,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 393,
+          "scorer": "superlearner",
+          "metric_target": "essay_genes_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_teacher_superlearner_overlap",
+      "line": 190,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 395,
+          "scorer": "superlearner",
+          "metric_target": "essay_teacher_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_genes_superlearner_overlap",
+      "line": 193,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 397,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_overlap",
+      "line": 196,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 399,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_essay_superlearner_overlap_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "cog_superlearner_social_overlap",
+      "line": 200,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "cog_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 467,
+          "scorer": "superlearner",
+          "metric_target": "cog_superlearner_social_overlap_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "noncog_superlearner_social_overlap",
+      "line": 202,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "noncog_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 469,
+          "scorer": "superlearner",
+          "metric_target": "noncog_superlearner_social_overlap_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "birthweight_superlearner_social_overlap",
+      "line": 204,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s0_mo_birthweight"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 471,
+          "scorer": "superlearner",
+          "metric_target": "birthweight_superlearner_social_overlap_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "height_superlearner_social_overlap",
+      "line": 206,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s3_co_height"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 473,
+          "scorer": "superlearner",
+          "metric_target": "height_superlearner_social_overlap_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "pedu_superlearner_social_overlap",
+      "line": 208,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s3_pa_edu"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [
+        {
+          "op": "as_numeric",
+          "columns": [
+            "s3_pa_edu"
+          ]
+        }
+      ],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 475,
+          "scorer": "superlearner",
+          "metric_target": "pedu_superlearner_social_overlap_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "salat_metrics_superlearner",
+      "line": 211,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "salat_metrics_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 164,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "readability_metrics_superlearner",
+      "line": 214,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "readability_metrics_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 165,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "spelling_errors_superlearner",
+      "line": 217,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "spelling_errors_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 166,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "spelling_salat_readability_superlearner",
+      "line": 220,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "salat_metrics_variables"
+        },
+        {
+          "kind": "list",
+          "value": "readability_metrics_variables"
+        },
+        {
+          "kind": "list",
+          "value": "spelling_errors_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 167,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "gpt_embeddings_superlearner",
+      "line": 223,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gpt_embeddings_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 168,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "roberta_embeddings_superlearner",
+      "line": 226,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "roberta_embeddings_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [
+        {
+          "op": "inner_join",
+          "table": "roberta_embeddings",
+          "by": {
+            "ncdsid": "id"
+          }
+        }
+      ],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 169,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "gpt4_embeddings_superlearner",
+      "line": 229,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gpt4_embeddings_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [
+        {
+          "op": "drop_columns_starting_with",
+          "prefix": "embedding"
+        },
+        {
+          "op": "inner_join",
+          "table": "gpt4_embeddings",
+          "by": {
+            "ncdsid": "id"
+          }
+        }
+      ],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 170,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_superlearner",
+      "line": 234,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 434,
+          "scorer": "superlearner",
+          "metric_target": "essay_superlearner_metrics"
+        },
+        {
+          "file": "R/create_data.R",
+          "line": 181,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "gene_superlearner",
+      "line": 237,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 436,
+          "scorer": "superlearner",
+          "metric_target": "gene_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_superlearner",
+      "line": 240,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 438,
+          "scorer": "superlearner",
+          "metric_target": "teacher_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_genes_superlearner",
+      "line": 243,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 440,
+          "scorer": "superlearner",
+          "metric_target": "essay_genes_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_teacher_superlearner",
+      "line": 246,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 442,
+          "scorer": "superlearner",
+          "metric_target": "essay_teacher_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_genes_superlearner",
+      "line": 249,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 444,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner",
+      "line": 252,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 446,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_essay_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "sociological_superlearner",
+      "line": 256,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "sociological_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [
+        {
+          "op": "as_numeric",
+          "columns_from": "sociological_variables"
+        }
+      ],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 449,
+          "scorer": "superlearner",
+          "metric_target": "sociological_superlearner_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "text_length",
+      "line": 261,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "nwords"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 163,
+          "scorer": "superlearner",
+          "form": "tar_read(model) %>% purrr::map_dfr(scorer)"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_lm",
+      "line": 265,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 452,
+          "scorer": "lm",
+          "metric_target": "essay_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "gene_lm",
+      "line": 268,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 454,
+          "scorer": "lm",
+          "metric_target": "gene_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_lm",
+      "line": 271,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 456,
+          "scorer": "lm",
+          "metric_target": "teacher_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_genes_lm",
+      "line": 274,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 458,
+          "scorer": "lm",
+          "metric_target": "essay_genes_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_teacher_lm",
+      "line": 277,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 460,
+          "scorer": "lm",
+          "metric_target": "essay_teacher_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_genes_lm",
+      "line": 280,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 462,
+          "scorer": "lm",
+          "metric_target": "teacher_genes_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "teacher_genes_essay_lm",
+      "line": 283,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "all_outcomes"
+      },
+      "pattern": "all_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "lm",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 464,
+          "scorer": "lm",
+          "metric_target": "teacher_genes_essay_lm_metrics"
+        }
+      ],
+      "n_fits": 12
+    },
+    {
+      "r_name": "essay_bfi_superlearner",
+      "line": 287,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "bfi_variables"
+      },
+      "pattern": "bfi_variables",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 417,
+          "scorer": "superlearner",
+          "metric_target": "essay_superlearner_bfi_metrics"
+        }
+      ],
+      "n_fits": 5
+    },
+    {
+      "r_name": "gene_bfi_superlearner",
+      "line": 290,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "bfi_variables"
+      },
+      "pattern": "bfi_variables",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 419,
+          "scorer": "superlearner",
+          "metric_target": "gene_superlearner_bfi_metrics"
+        }
+      ],
+      "n_fits": 5
+    },
+    {
+      "r_name": "teacher_bfi_superlearner",
+      "line": 293,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "bfi_variables"
+      },
+      "pattern": "bfi_variables",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 421,
+          "scorer": "superlearner",
+          "metric_target": "teacher_superlearner_bfi_metrics"
+        }
+      ],
+      "n_fits": 5
+    },
+    {
+      "r_name": "teacher_genes_essay_bfi_superlearner",
+      "line": 296,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "bfi_variables"
+      },
+      "pattern": "bfi_variables",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 423,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_essay_superlearner_bfi_metrics"
+        }
+      ],
+      "n_fits": 5
+    },
+    {
+      "r_name": "essay_superlearner_mmg",
+      "line": 301,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 402,
+          "scorer": "superlearner",
+          "metric_target": "essay_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "gene_superlearner_mmg",
+      "line": 304,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 404,
+          "scorer": "superlearner",
+          "metric_target": "gene_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_superlearner_mmg",
+      "line": 307,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 406,
+          "scorer": "superlearner",
+          "metric_target": "teacher_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_genes_superlearner_mmg",
+      "line": 310,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 408,
+          "scorer": "superlearner",
+          "metric_target": "essay_genes_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_teacher_superlearner_mmg",
+      "line": 313,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 410,
+          "scorer": "superlearner",
+          "metric_target": "essay_teacher_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_genes_superlearner_mmg",
+      "line": 316,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 412,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_mmg",
+      "line": 319,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 414,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_essay_superlearner_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_superlearner_mmg_lm",
+      "line": 323,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "gene_superlearner_mmg_lm",
+      "line": 326,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_superlearner_mmg_lm",
+      "line": 329,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_genes_superlearner_mmg_lm",
+      "line": 332,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_teacher_superlearner_mmg_lm",
+      "line": 335,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_genes_superlearner_mmg_lm",
+      "line": 338,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_mmg_lm",
+      "line": 341,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg",
+      "data_prep": [],
+      "scorer": "none",
+      "scorer_sources": [],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_superlearner_cog_mmg",
+      "line": 345,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 426,
+          "scorer": "superlearner",
+          "metric_target": "essay_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "gene_superlearner_cog_mmg",
+      "line": 347,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 427,
+          "scorer": "superlearner",
+          "metric_target": "gene_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_superlearner_cog_mmg",
+      "line": 349,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 428,
+          "scorer": "superlearner",
+          "metric_target": "teacher_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_genes_superlearner_cog_mmg",
+      "line": 351,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 429,
+          "scorer": "superlearner",
+          "metric_target": "essay_genes_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "essay_teacher_superlearner_cog_mmg",
+      "line": 353,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        },
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 430,
+          "scorer": "superlearner",
+          "metric_target": "essay_teacher_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_genes_superlearner_cog_mmg",
+      "line": 355,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 431,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_cog_mmg",
+      "line": 357,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "literal",
+        "value": "s2_co_factor_ability"
+      },
+      "pattern": null,
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "teacher_variables"
+        },
+        {
+          "kind": "list",
+          "value": "gene_variables"
+        },
+        {
+          "kind": "list",
+          "value": "essay_variables"
+        }
+      ],
+      "sample": "ncds_complete_mmg_cog",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 432,
+          "scorer": "superlearner",
+          "metric_target": "teacher_genes_essay_superlearner_cog_mmg_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "cog_superlearner_social",
+      "line": 360,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "cog_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 478,
+          "scorer": "superlearner",
+          "metric_target": "cog_superlearner_social_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "noncog_superlearner_social",
+      "line": 362,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "noncog_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 480,
+          "scorer": "superlearner",
+          "metric_target": "noncog_superlearner_social_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "birthweight_superlearner_social",
+      "line": 364,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s0_mo_birthweight"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 482,
+          "scorer": "superlearner",
+          "metric_target": "birthweight_superlearner_social_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "height_superlearner_social",
+      "line": 366,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s3_co_height"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 484,
+          "scorer": "superlearner",
+          "metric_target": "height_superlearner_social_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "pedu_superlearner_social",
+      "line": 368,
+      "method": "superlearner",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s3_pa_edu"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [
+        {
+          "op": "as_numeric",
+          "columns": [
+            "s3_pa_edu"
+          ]
+        }
+      ],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 486,
+          "scorer": "superlearner",
+          "metric_target": "pedu_superlearner_social_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "sociological_superlearner_social_lm",
+      "line": 372,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "sociological_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [
+        {
+          "op": "as_numeric",
+          "columns_from": "sociological_variables"
+        }
+      ],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 489,
+          "scorer": "superlearner",
+          "metric_target": "sociological_superlearner_social_lm_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "cog_superlearner_social_lm",
+      "line": 377,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s2_co_factor_ability"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 491,
+          "scorer": "superlearner",
+          "metric_target": "cog_superlearner_social_lm_metrics"
+        },
+        {
+          "file": "R/create_data.R",
+          "line": 98,
+          "scorer": "superlearner",
+          "form": "scorer(model) on a bare symbol, not tar_read(): cannot run as written"
+        },
+        {
+          "file": "R/create_data.R",
+          "line": 367,
+          "scorer": "superlearner",
+          "form": "scorer(model) on a bare symbol, not tar_read(): cannot run as written"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "noncog_superlearner_social_lm",
+      "line": 379,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "noncog_variables"
+        }
+      ],
+      "sample": "ncds_complete",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "_targets.R",
+          "line": 493,
+          "scorer": "superlearner",
+          "metric_target": "noncog_superlearner_social_lm_metrics"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "cog_superlearner_social_lm_overlap",
+      "line": 382,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "literal",
+          "value": "s2_co_factor_ability"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 344,
+          "scorer": "superlearner",
+          "form": "scorer(tar_read(model)[[1]])"
+        }
+      ],
+      "n_fits": 1
+    },
+    {
+      "r_name": "noncog_superlearner_social_lm_overlap",
+      "line": 384,
+      "method": "lm",
+      "outcome": {
+        "kind": "list",
+        "value": "social_outcomes"
+      },
+      "pattern": "social_outcomes",
+      "predictors": [
+        {
+          "kind": "list",
+          "value": "noncog_variables"
+        }
+      ],
+      "sample": "ncds_complete_all_overlap",
+      "data_prep": [],
+      "scorer": "superlearner",
+      "scorer_sources": [
+        {
+          "file": "R/create_data.R",
+          "line": 347,
+          "scorer": "superlearner",
+          "form": "scorer(tar_read(model)[[1]])"
+        }
+      ],
+      "n_fits": 1
+    }
+  ],
+  "metric_targets": [
+    {
+      "r_name": "essay_superlearner_overlap_metrics",
+      "line": 387,
+      "scorer": "superlearner",
+      "model": "essay_superlearner_overlap",
+      "pattern": "essay_superlearner_overlap"
+    },
+    {
+      "r_name": "gene_superlearner_overlap_metrics",
+      "line": 389,
+      "scorer": "superlearner",
+      "model": "gene_superlearner_overlap",
+      "pattern": "gene_superlearner_overlap"
+    },
+    {
+      "r_name": "teacher_superlearner_overlap_metrics",
+      "line": 391,
+      "scorer": "superlearner",
+      "model": "teacher_superlearner_overlap",
+      "pattern": "teacher_superlearner_overlap"
+    },
+    {
+      "r_name": "essay_genes_superlearner_overlap_metrics",
+      "line": 393,
+      "scorer": "superlearner",
+      "model": "essay_genes_superlearner_overlap",
+      "pattern": "essay_genes_superlearner_overlap"
+    },
+    {
+      "r_name": "essay_teacher_superlearner_overlap_metrics",
+      "line": 395,
+      "scorer": "superlearner",
+      "model": "essay_teacher_superlearner_overlap",
+      "pattern": "essay_teacher_superlearner_overlap"
+    },
+    {
+      "r_name": "teacher_genes_superlearner_overlap_metrics",
+      "line": 397,
+      "scorer": "superlearner",
+      "model": "teacher_genes_superlearner_overlap",
+      "pattern": "teacher_genes_superlearner_overlap"
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_overlap_metrics",
+      "line": 399,
+      "scorer": "superlearner",
+      "model": "teacher_genes_essay_superlearner_overlap",
+      "pattern": "teacher_genes_essay_superlearner_overlap"
+    },
+    {
+      "r_name": "essay_superlearner_mmg_metrics",
+      "line": 402,
+      "scorer": "superlearner",
+      "model": "essay_superlearner_mmg",
+      "pattern": "essay_superlearner_mmg"
+    },
+    {
+      "r_name": "gene_superlearner_mmg_metrics",
+      "line": 404,
+      "scorer": "superlearner",
+      "model": "gene_superlearner_mmg",
+      "pattern": "gene_superlearner_mmg"
+    },
+    {
+      "r_name": "teacher_superlearner_mmg_metrics",
+      "line": 406,
+      "scorer": "superlearner",
+      "model": "teacher_superlearner_mmg",
+      "pattern": "teacher_superlearner_mmg"
+    },
+    {
+      "r_name": "essay_genes_superlearner_mmg_metrics",
+      "line": 408,
+      "scorer": "superlearner",
+      "model": "essay_genes_superlearner_mmg",
+      "pattern": "essay_genes_superlearner_mmg"
+    },
+    {
+      "r_name": "essay_teacher_superlearner_mmg_metrics",
+      "line": 410,
+      "scorer": "superlearner",
+      "model": "essay_teacher_superlearner_mmg",
+      "pattern": "essay_teacher_superlearner_mmg"
+    },
+    {
+      "r_name": "teacher_genes_superlearner_mmg_metrics",
+      "line": 412,
+      "scorer": "superlearner",
+      "model": "teacher_genes_superlearner_mmg",
+      "pattern": "teacher_genes_superlearner_mmg"
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_mmg_metrics",
+      "line": 414,
+      "scorer": "superlearner",
+      "model": "teacher_genes_essay_superlearner_mmg",
+      "pattern": "teacher_genes_essay_superlearner_mmg"
+    },
+    {
+      "r_name": "essay_superlearner_bfi_metrics",
+      "line": 417,
+      "scorer": "superlearner",
+      "model": "essay_bfi_superlearner",
+      "pattern": "essay_bfi_superlearner"
+    },
+    {
+      "r_name": "gene_superlearner_bfi_metrics",
+      "line": 419,
+      "scorer": "superlearner",
+      "model": "gene_bfi_superlearner",
+      "pattern": "gene_bfi_superlearner"
+    },
+    {
+      "r_name": "teacher_superlearner_bfi_metrics",
+      "line": 421,
+      "scorer": "superlearner",
+      "model": "teacher_bfi_superlearner",
+      "pattern": "teacher_bfi_superlearner"
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_bfi_metrics",
+      "line": 423,
+      "scorer": "superlearner",
+      "model": "teacher_genes_essay_bfi_superlearner",
+      "pattern": "teacher_genes_essay_bfi_superlearner"
+    },
+    {
+      "r_name": "essay_superlearner_cog_mmg_metrics",
+      "line": 426,
+      "scorer": "superlearner",
+      "model": "essay_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "gene_superlearner_cog_mmg_metrics",
+      "line": 427,
+      "scorer": "superlearner",
+      "model": "gene_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "teacher_superlearner_cog_mmg_metrics",
+      "line": 428,
+      "scorer": "superlearner",
+      "model": "teacher_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "essay_genes_superlearner_cog_mmg_metrics",
+      "line": 429,
+      "scorer": "superlearner",
+      "model": "essay_genes_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "essay_teacher_superlearner_cog_mmg_metrics",
+      "line": 430,
+      "scorer": "superlearner",
+      "model": "essay_teacher_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "teacher_genes_superlearner_cog_mmg_metrics",
+      "line": 431,
+      "scorer": "superlearner",
+      "model": "teacher_genes_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_cog_mmg_metrics",
+      "line": 432,
+      "scorer": "superlearner",
+      "model": "teacher_genes_essay_superlearner_cog_mmg",
+      "pattern": null
+    },
+    {
+      "r_name": "essay_superlearner_metrics",
+      "line": 434,
+      "scorer": "superlearner",
+      "model": "essay_superlearner",
+      "pattern": "essay_superlearner"
+    },
+    {
+      "r_name": "gene_superlearner_metrics",
+      "line": 436,
+      "scorer": "superlearner",
+      "model": "gene_superlearner",
+      "pattern": "gene_superlearner"
+    },
+    {
+      "r_name": "teacher_superlearner_metrics",
+      "line": 438,
+      "scorer": "superlearner",
+      "model": "teacher_superlearner",
+      "pattern": "teacher_superlearner"
+    },
+    {
+      "r_name": "essay_genes_superlearner_metrics",
+      "line": 440,
+      "scorer": "superlearner",
+      "model": "essay_genes_superlearner",
+      "pattern": "essay_genes_superlearner"
+    },
+    {
+      "r_name": "essay_teacher_superlearner_metrics",
+      "line": 442,
+      "scorer": "superlearner",
+      "model": "essay_teacher_superlearner",
+      "pattern": "essay_teacher_superlearner"
+    },
+    {
+      "r_name": "teacher_genes_superlearner_metrics",
+      "line": 444,
+      "scorer": "superlearner",
+      "model": "teacher_genes_superlearner",
+      "pattern": "teacher_genes_superlearner"
+    },
+    {
+      "r_name": "teacher_genes_essay_superlearner_metrics",
+      "line": 446,
+      "scorer": "superlearner",
+      "model": "teacher_genes_essay_superlearner",
+      "pattern": "teacher_genes_essay_superlearner"
+    },
+    {
+      "r_name": "sociological_superlearner_metrics",
+      "line": 449,
+      "scorer": "superlearner",
+      "model": "sociological_superlearner",
+      "pattern": "sociological_superlearner"
+    },
+    {
+      "r_name": "essay_lm_metrics",
+      "line": 452,
+      "scorer": "lm",
+      "model": "essay_lm",
+      "pattern": "essay_lm"
+    },
+    {
+      "r_name": "gene_lm_metrics",
+      "line": 454,
+      "scorer": "lm",
+      "model": "gene_lm",
+      "pattern": "gene_lm"
+    },
+    {
+      "r_name": "teacher_lm_metrics",
+      "line": 456,
+      "scorer": "lm",
+      "model": "teacher_lm",
+      "pattern": "teacher_lm"
+    },
+    {
+      "r_name": "essay_genes_lm_metrics",
+      "line": 458,
+      "scorer": "lm",
+      "model": "essay_genes_lm",
+      "pattern": "essay_genes_lm"
+    },
+    {
+      "r_name": "essay_teacher_lm_metrics",
+      "line": 460,
+      "scorer": "lm",
+      "model": "essay_teacher_lm",
+      "pattern": "essay_teacher_lm"
+    },
+    {
+      "r_name": "teacher_genes_lm_metrics",
+      "line": 462,
+      "scorer": "lm",
+      "model": "teacher_genes_lm",
+      "pattern": "teacher_genes_lm"
+    },
+    {
+      "r_name": "teacher_genes_essay_lm_metrics",
+      "line": 464,
+      "scorer": "lm",
+      "model": "teacher_genes_essay_lm",
+      "pattern": "teacher_genes_essay_lm"
+    },
+    {
+      "r_name": "cog_superlearner_social_overlap_metrics",
+      "line": 467,
+      "scorer": "superlearner",
+      "model": "cog_superlearner_social_overlap",
+      "pattern": "cog_superlearner_social_overlap"
+    },
+    {
+      "r_name": "noncog_superlearner_social_overlap_metrics",
+      "line": 469,
+      "scorer": "superlearner",
+      "model": "noncog_superlearner_social_overlap",
+      "pattern": "noncog_superlearner_social_overlap"
+    },
+    {
+      "r_name": "birthweight_superlearner_social_overlap_metrics",
+      "line": 471,
+      "scorer": "superlearner",
+      "model": "birthweight_superlearner_social_overlap",
+      "pattern": "birthweight_superlearner_social_overlap"
+    },
+    {
+      "r_name": "height_superlearner_social_overlap_metrics",
+      "line": 473,
+      "scorer": "superlearner",
+      "model": "height_superlearner_social_overlap",
+      "pattern": "height_superlearner_social_overlap"
+    },
+    {
+      "r_name": "pedu_superlearner_social_overlap_metrics",
+      "line": 475,
+      "scorer": "superlearner",
+      "model": "pedu_superlearner_social_overlap",
+      "pattern": "pedu_superlearner_social_overlap"
+    },
+    {
+      "r_name": "cog_superlearner_social_metrics",
+      "line": 478,
+      "scorer": "superlearner",
+      "model": "cog_superlearner_social",
+      "pattern": "cog_superlearner_social"
+    },
+    {
+      "r_name": "noncog_superlearner_social_metrics",
+      "line": 480,
+      "scorer": "superlearner",
+      "model": "noncog_superlearner_social",
+      "pattern": "noncog_superlearner_social"
+    },
+    {
+      "r_name": "birthweight_superlearner_social_metrics",
+      "line": 482,
+      "scorer": "superlearner",
+      "model": "birthweight_superlearner_social",
+      "pattern": "birthweight_superlearner_social"
+    },
+    {
+      "r_name": "height_superlearner_social_metrics",
+      "line": 484,
+      "scorer": "superlearner",
+      "model": "height_superlearner_social",
+      "pattern": "height_superlearner_social"
+    },
+    {
+      "r_name": "pedu_superlearner_social_metrics",
+      "line": 486,
+      "scorer": "superlearner",
+      "model": "pedu_superlearner_social",
+      "pattern": "pedu_superlearner_social"
+    },
+    {
+      "r_name": "sociological_superlearner_social_lm_metrics",
+      "line": 489,
+      "scorer": "superlearner",
+      "model": "sociological_superlearner_social_lm",
+      "pattern": "sociological_superlearner_social_lm"
+    },
+    {
+      "r_name": "cog_superlearner_social_lm_metrics",
+      "line": 491,
+      "scorer": "superlearner",
+      "model": "cog_superlearner_social_lm",
+      "pattern": "cog_superlearner_social_lm"
+    },
+    {
+      "r_name": "noncog_superlearner_social_lm_metrics",
+      "line": 493,
+      "scorer": "superlearner",
+      "model": "noncog_superlearner_social_lm",
+      "pattern": "noncog_superlearner_social_lm"
+    }
+  ],
+  "totals": {
+    "model_targets": 70,
+    "fits": 416,
+    "metric_targets_in_targets_R": 53,
+    "unscored_model_targets": [
+      "essay_genes_superlearner_mmg_lm",
+      "essay_superlearner_mmg_lm",
+      "essay_teacher_superlearner_mmg_lm",
+      "gene_superlearner_mmg_lm",
+      "teacher_genes_essay_superlearner_mmg_lm",
+      "teacher_genes_superlearner_mmg_lm",
+      "teacher_superlearner_mmg_lm"
+    ]
+  }
+}

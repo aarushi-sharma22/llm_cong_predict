@@ -8,11 +8,23 @@ test execution — the pipeline cannot run without real data + clean_ncds.
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
 from llm_cong_predict.pipeline.build import build_pipeline
 from llm_cong_predict.pipeline.graph import Pipeline, Status, Target
-from llm_cong_predict.pipeline.model_spec import FAMILIES, expand_family, model_targets
+from llm_cong_predict.pipeline.model_spec import (
+    FAMILIES,
+    R_TO_PYTHON_TARGET,
+    expand_family,
+    model_specs,
+    model_targets,
+)
+from llm_cong_predict.pipeline.variable_lists import CONSTANT_LISTS, DATA_DEPENDENT_LISTS
 
 
 # --------------------------------------------------------- generic graph ----
@@ -55,15 +67,18 @@ def test_blocked_is_transitive():
 # --------------------------------------------------------- model spec -------
 
 def test_model_spec_expands_deterministically():
+    """Every scored model target has a paired _metrics target. The seven
+    *_superlearner_mmg_lm targets (R: llm_paper/_targets.R:L323–343) are scored in
+    neither _targets.R nor create_data.R, so they have none (owner decision C6)."""
     targets = model_targets()
     names = [t.name for t in targets]
     assert len(names) == len(set(names))          # no duplicate target names
-    # every model target has a paired _metrics target
-    models = [n for n in names if not n.endswith("_metrics")]
+    specs = model_specs()
+    for s in specs:
+        assert s.name in names
+        assert (f"{s.name}_metrics" in names) == (s.scorer != "none")
     metrics = [n for n in names if n.endswith("_metrics")]
-    assert len(models) == len(metrics)
-    for m in models:
-        assert f"{m}_metrics" in names
+    assert len(metrics) == sum(s.scorer != "none" for s in specs) == 63
 
 
 def test_expand_family_dependencies():
@@ -124,3 +139,76 @@ def test_readers_are_in_the_runnable_frontier():
     # clean_ncds and anything downstream of it must NOT be in the frontier
     assert "ncds_1_to_9_cleaned" not in frontier
     assert "ncds_complete" not in frontier
+
+
+# ------------------------------------------- inventory of the R model targets --
+
+REPO = Path(__file__).resolve().parents[1]
+INVENTORY = json.loads((REPO / "docs" / "reference" / "r_targets_inventory.json").read_text())
+
+
+def test_every_r_model_target_maps_to_one_python_target_with_the_same_definition():
+    """R: llm_paper/_targets.R:L178–385 (via docs/reference/r_targets_inventory.json):
+    each R model target maps to exactly one Python target with the same method,
+    outcome, predictors, sample, data preparation and scorer (brief F7; scorers also
+    from R/create_data.R:L98, L163–170, L181, L344, L347)."""
+    specs = {s.name: s for s in model_specs()}
+    r_names = [m["r_name"] for m in INVENTORY["model_targets"]]
+    assert sorted(R_TO_PYTHON_TARGET) == sorted(r_names)
+    assert sorted(R_TO_PYTHON_TARGET.values()) == sorted(specs)  # a bijection onto the spec
+    for m in INVENTORY["model_targets"]:
+        s = specs[R_TO_PYTHON_TARGET[m["r_name"]]]
+        assert s.method == m["method"], m["r_name"]
+        assert s.outcome.as_dict() == m["outcome"], m["r_name"]
+        assert s.pattern == m["pattern"], m["r_name"]
+        assert [p.as_dict() for p in s.predictors] == m["predictors"], m["r_name"]
+        assert s.sample == m["sample"], m["r_name"]
+        assert list(s.data_prep) == m["data_prep"], m["r_name"]
+        assert s.scorer == m["scorer"], m["r_name"]
+        assert s.n_fits() == m["n_fits"], m["r_name"]
+
+
+def test_cog_social_lm_uses_the_single_ability_factor():
+    """R: llm_paper/_targets.R:L377, L382 — cog_superlearner_social_lm(_overlap) use
+    "s2_co_factor_ability", not cog_variables (brief F7)."""
+    specs = {s.name: s for s in model_specs()}
+    for name in ("cog_lm_social_lm", "cog_lm_social_lm_overlap"):
+        assert [p.as_dict() for p in specs[name].predictors] == [
+            {"kind": "literal", "value": "s2_co_factor_ability"}]
+    assert specs["cog_superlearner_social"].predictors[0].value == "cog_variables"
+
+
+def test_expanding_over_outcomes_gives_416_fits():
+    """70 model targets expand over their outcome lists (pattern = ...) into 416 fits
+    (brief F7; computed from _targets.R: 12 all_outcomes, 1 social outcome, 5 BFI)."""
+    specs = model_specs()
+    assert len(specs) == 70
+    assert sum(s.n_fits() for s in specs) == 416 == INVENTORY["totals"]["fits"]
+
+
+def test_variable_lists_match_the_r_constants():
+    """R: llm_paper/_targets.R:L120–159: constant lists copied verbatim; lists read
+    from data frames are data-dependent."""
+    for name, entry in INVENTORY["variable_lists"].items():
+        if entry["members"] is not None:
+            assert list(CONSTANT_LISTS[name]) == entry["members"], name
+        elif entry["kind"] == "data-dependent":
+            assert name in DATA_DEPENDENT_LISTS, name
+
+
+def test_embedding_models_depend_on_their_embedding_targets():
+    """R: llm_paper/_targets.R:L227, L230 — the RoBERTa and GPT-4 models join their
+    embedding tables onto ncds_complete inside the target."""
+    pipe = build_pipeline()
+    assert "roberta_embeddings" in pipe.get("roberta_embeddings_superlearner_text").deps
+    assert "gpt4_embeddings" in pipe.get("gpt4_embeddings_superlearner_text").deps
+
+
+def test_extractor_reproduces_the_committed_inventory():
+    """scripts/extract_r_targets.py re-derives docs/reference/r_targets_inventory.json
+    from the pinned R sources."""
+    if not (REPO / "reference" / "llm_paper" / "_targets.R").exists():
+        pytest.skip("reference/llm_paper not cloned (see docs/REFERENCE_SOURCES.md)")
+    result = subprocess.run([sys.executable, str(REPO / "scripts" / "extract_r_targets.py"), "--check"],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
