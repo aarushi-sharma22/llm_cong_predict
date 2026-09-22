@@ -37,3 +37,4 @@ are cross-referenced from `docs/PORTING_NOTES.md`.
 | AP7 | `models/screeners.py` | Coordinate-descent convergence differs from glmnet's; CV folds are random in R (C9). | Task 2.2 `screen.glmnet` parity test with shared `foldid` and lambda grid; V4 |
 | AP8 | `cleaning/factors.py::_minres_one_factor` | One-factor minres loadings by iterated eigen-decomposition; psych fits uniquenesses by `optim` (PORTING_NOTES F2). | V3 |
 | AP9 | `io/labels.py::r_number_string` | R's `as.character()` of doubles reproduced for integers and short decimals; long decimals not re-derived. Affects level names of unlabelled values only. | Task 2.1 tests; V1 on real labels |
+| AP10 | `io/labels.py::r_as_numeric` | R's `as.numeric()` of text: decimal, scientific, hexadecimal, Inf/NaN, whitespace trimmed; R's full grammar (e.g. "infinity") not covered. Checked against R 4.6.1 on 15 cases. | `scripts/check_essay_format.py` on the real essays (word counts that fail to parse) |

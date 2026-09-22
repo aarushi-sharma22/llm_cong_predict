@@ -307,3 +307,96 @@ def test_roberta_embeddings_batch_size_does_not_change_output():
         pd.testing.assert_frame_equal(one, three)
         assert list(one.columns[:2]) == ["id", "roberta_dim_1"] and one.shape == (3, 17)
     """)
+
+
+# ------------------------------------ process isolation and the RoBERTa step --
+
+def _run_plain(code: str, env_extra: dict | None = None) -> subprocess.CompletedProcess:
+    env = {"PYTHONPATH": _SRC, "PATH": "/usr/bin:/bin", **(env_extra or {})}
+    return subprocess.run([sys.executable, "-c", textwrap.dedent(code)], capture_output=True,
+                          text=True, env=env)
+
+
+@_needs_torch
+def test_xgboost_learner_refuses_after_torch_is_imported():
+    """docs/ORCHESTRATION.md (owner decision, Checkpoint B): torch and xgboost never share
+    a process. With torch loaded, building SL.xgboost.hist raises before xgboost is
+    imported, instead of segfaulting."""
+    result = _run_plain("""
+        import sys, torch
+        from llm_cong_predict.isolation import ProcessIsolationError
+        from llm_cong_predict.models.base_learners import _make_xgboost_hist
+        try:
+            _make_xgboost_hist(1, 3)
+        except ProcessIsolationError as exc:
+            print("REFUSED", "xgboost" in sys.modules)
+    """)
+    assert "REFUSED False" in result.stdout, result.stdout + result.stderr
+
+
+def test_roberta_generation_refuses_after_xgboost_is_imported():
+    """The other direction: with xgboost loaded, RoBERTa generation raises before torch
+    is imported."""
+    result = _run_plain("""
+        import sys, xgboost
+        import pandas as pd
+        from llm_cong_predict.isolation import ProcessIsolationError
+        from llm_cong_predict.features.embeddings import roberta_embeddings
+        try:
+            roberta_embeddings(pd.DataFrame({"ncdsid": ["SYN000001"], "text": ["x"]}))
+        except ProcessIsolationError:
+            print("REFUSED", "torch" in sys.modules)
+    """)
+    assert "REFUSED False" in result.stdout, result.stdout + result.stderr
+
+
+@_needs_torch
+def test_roberta_step_writes_derived_file_that_reads_back_exactly(tmp_path):
+    """The separate RoBERTa step writes $LCP_DATA_ROOT/derived/roberta_embeddings.csv;
+    read_roberta_embeddings returns exactly the same float64 values, in this
+    (torch-free) process."""
+    from llm_cong_predict.features.embeddings import read_roberta_embeddings
+
+    out = tmp_path / "derived" / "roberta_embeddings.csv"
+    out.parent.mkdir()
+    _run_isolated(f"""
+        from llm_cong_predict.features.roberta_step import write_roberta_embeddings
+
+        class Tok:
+            def __call__(self, texts, max_length, truncation, padding, return_tensors):
+                ids = torch.full((len(texts), max_length), cfg.pad_token_id)
+                for i, t in enumerate(texts):
+                    toks = [3 + (ord(ch) % 90) for ch in t][:max_length]
+                    ids[i, :len(toks)] = torch.tensor(toks)
+                return {{"input_ids": ids}}
+
+        essays = pd.DataFrame({{"ncdsid": ["SYN000001", "SYN000002"], "text": ["one", "two words"]}})
+        emb = write_roberta_embeddings(essays, {str(out)!r}, max_len=10, model=model, tokenizer=Tok())
+        emb.to_pickle({str(tmp_path / "expected.pkl")!r})
+    """)
+    got = read_roberta_embeddings(str(out))
+    expected = pd.read_pickle(tmp_path / "expected.pkl")
+    pd.testing.assert_frame_equal(got, expected)
+    assert list(got["id"]) == ["SYN000001", "SYN000002"]
+
+
+def test_roberta_step_refuses_without_data_root():
+    """The step reads essays only from $LCP_DATA_ROOT (brief Section 2.3)."""
+    result = _run_plain("""
+        from llm_cong_predict.features.roberta_step import main
+        from llm_cong_predict.config import DataRootError
+        try:
+            main([])
+        except DataRootError as exc:
+            print("REFUSED")
+    """)
+    assert "REFUSED" in result.stdout, result.stdout + result.stderr
+
+
+def test_read_roberta_embeddings_checks_columns(tmp_path):
+    from llm_cong_predict.features.embeddings import read_roberta_embeddings
+
+    bad = tmp_path / "bad.csv"
+    pd.DataFrame({"id": ["SYN000001"], "roberta_dim_2": [0.1]}).to_csv(bad, index=False)
+    with pytest.raises(ValueError, match="roberta_dim_1"):
+        read_roberta_embeddings(str(bad))

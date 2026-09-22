@@ -281,3 +281,93 @@ def test_labelled_factor_codes_sets_dont_know_to_missing():
     df = pd.DataFrame({"c": [1.0, 8.0, 9.0]})  # 9 is unlabelled
     df.attrs["value_labels"] = {"c": {1: "Good", 8: "Dont know"}}
     np.testing.assert_array_equal(labelled_factor_codes(df, "c", ("Dont know",)), [1.0, np.nan, 3.0])
+
+
+# ---------------------------------------- read_essays: tidyr::separate semantics --
+
+def _write_essays(folder, contents: dict[str, bytes]):
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, raw in contents.items():
+        (folder / name).write_bytes(raw)
+
+
+_SEP = "\n----------------------\n"
+
+
+def test_read_essays_malformed_files_follow_tidyr_separate(tmp_path, caplog):
+    """R: llm_paper/R/functions.R:L27–30 with tidyr::separate(extra = "warn",
+    fill = "warn") (R pkg: tidyr/R/separate.R:L170–201, src/simplifyPieces.cpp; 1.3.2):
+    pieces after a second separator are discarded, a missing piece is NA. The warning
+    carries only counts: no file name, ID or text (owner decision at Checkpoint B)."""
+    _write_essays(tmp_path / "e", {
+        "a.txt": f"ID: SYN000001{_SEP}good essay  Words: 2".encode(),
+        "b.txt": f"ID: SYN000002{_SEP}first  Words: 3  Words: 99".encode(),  # extra
+        "c.txt": f"ID: SYN000003{_SEP}second part{_SEP}third  Words: 4".encode(),  # extra
+        "d.txt": b"ID: SYN000004 no separator at all",  # missing (both)
+        "e.txt": f"ID: SYN000005{_SEP}no word count".encode(),  # missing words separator
+    })
+    # c.txt counts twice: its second ID separator is discarded together with the
+    # "  Words: " part behind it, so the words piece is then missing as well.
+    with pytest.warns(RuntimeWarning, match=r"2 file\(s\) had additional pieces .* 3 file\(s\) had missing"):
+        df = read_essays(str(tmp_path / "e")).set_index("doc_id")
+    assert (df.loc["b.txt", "text"], df.loc["b.txt", "words"]) == ("first", "3")
+    assert df.loc["c.txt", "text"] == "second part" and pd.isna(df.loc["c.txt", "words"])
+    assert df.loc["d.txt", "ncdsid"] == "SYN000004 no separator at all"
+    assert pd.isna(df.loc["d.txt", "text"]) and pd.isna(df.loc["d.txt", "words"])
+    assert df.loc["e.txt", "text"] == "no word count" and pd.isna(df.loc["e.txt", "words"])
+    assert df.attrs["read_essays_malformed"] == {"files_with_extra_pieces": 2,
+                                                 "files_with_missing_pieces": 3}
+    for record in caplog.records:
+        for secret in ("SYN00000", ".txt", "good essay", "second part", "no separator"):
+            assert secret not in record.getMessage()
+
+
+def test_read_essays_reads_text_like_readtext(tmp_path):
+    """R pkg: readtext/R/get-functions.R:L2–4 (0.92.1): paste(readLines(con), collapse =
+    "\\n"): CRLF and CR line endings become "\\n" and the final line terminator is
+    dropped, so the word count is "8", not "8\\n"."""
+    _write_essays(tmp_path / "e", {
+        "a.txt": b"ID: SYN000001\r\n----------------------\r\nline one\r\nline two  Words: 8\r\n",
+    })
+    row = read_essays(str(tmp_path / "e")).iloc[0]
+    assert (row["ncdsid"], row["text"], row["words"]) == ("SYN000001", "line one\nline two", "8")
+
+
+def test_r_as_numeric_matches_r():
+    """Expected values computed with R 4.6.1:
+    as.numeric(c("123","123\\n"," 45 ","1e3","1_000","abc","0x1A","Inf","inf","NaN","NA",
+                 "1.5e-2","+7",".5","5.")) (NaN and NA are both missing here)."""
+    from llm_cong_predict.io.labels import r_as_numeric
+
+    got = r_as_numeric(["123", "123\n", " 45 ", "1e3", "1_000", "abc", "0x1A", "Inf", "inf",
+                        "NaN", "NA", "1.5e-2", "+7", ".5", "5."]).tolist()
+    expected = [123, 123, 45, 1000, np.nan, np.nan, 26, np.inf, np.inf, np.nan, np.nan,
+                0.015, 7, 0.5, 5]
+    np.testing.assert_array_equal(got, expected)
+
+
+def test_check_essay_format_prints_only_counts(tmp_path):
+    """scripts/check_essay_format.py (owner request, Checkpoint B) prints aggregate
+    counts and never essay text, file names or IDs."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    _write_essays(tmp_path / "e", {
+        "file_alpha.txt": f"ID: SYN000001{_SEP}secret words here  Words: 3".encode(),
+        "file_beta.txt": f"ID: SYN000002{_SEP}more secret text  Words: three".encode(),
+        "file_gamma.txt": f"ID: SYN000003{_SEP}x{_SEP}y  Words: 1".encode(),
+        "file_delta.txt": b"ID: SYN000004 secret without separators",
+        "file_eps.txt": b"\xff\xfe\xfa not utf-8",
+    })
+    script = Path(__file__).resolve().parents[1] / "scripts" / "check_essay_format.py"
+    result = subprocess.run([sys.executable, str(script), "--essays", str(tmp_path / "e")],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    # gamma: extra ID separator -> its "  Words: " part is discarded -> missing, no count
+    assert result.stdout.splitlines() == [
+        "files found: 5", "matching format: 1", "missing separators: 2",
+        "extra separators: 1", "word count unparsable: 3", "unreadable files: 1"]
+    output = result.stdout + result.stderr
+    for secret in ("SYN0000", "file_", "secret", ".txt", str(tmp_path)):
+        assert secret not in output

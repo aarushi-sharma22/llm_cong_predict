@@ -19,7 +19,7 @@ one status:
 | `get_gpt_embeddings` (2) | `features/embeddings.py::gpt_embeddings` | PORTED | Reads a saved embeddings file instead of the R's contradictory RDS reshaper (PORTING_NOTES G1). |
 | `get_gpt4_embeddings` (12) | `features/embeddings.py::gpt_embeddings` | PORTED | Identical to the above in the R (A5). |
 | `read_datalist` (22) | `io/readers.py::read_datalist` | PORTED | Reads the file as R's `read_excel` would, i.e. with row 0 as header. Reading it with assigned column names is Task 2.1 (A1). |
-| `read_essays` (26) | `io/readers.py::read_essays` | PORTED | Malformed files are handled differently from `tidyr::separate` (edge case, logged for Task 2.1 notes). |
+| `read_essays` (26) | `io/readers.py::read_essays` | PORTED | Reads like `readtext`, splits like `tidyr::separate`, including malformed files (E6). |
 | `read_gene_data` (34) | `io/readers.py::read_gene_data` | PORTED | The R body is empty; the Python raises (E1). |
 | `read_camsis` (39) | `io/readers.py::read_camsis` | PORTED | Runs on the shipped file. |
 | `read_occupation_aspiration_mapping` (43) | `io/readers.py::read_occupation_aspiration_mapping` | PORTED | Runs on the shipped file. |
@@ -28,7 +28,7 @@ one status:
 | `clean_ncds` (64) | — | NOT STARTED | Task 2.1. The published R cannot run (A1, A2); reconstruction planned. |
 | `create_aspirations` (244) | `cleaning/aspirations.py::create_aspirations` | PORTED | Sex-comparison quirk reproduced (F3). V5. |
 | `create_factors` (272) | `cleaning/factors.py::create_factors` | PORTED-APPROX | Pearson factor: scoring faithful, loadings APPROX (F2, AP8). The three polychoric factors raise until the R bridge (Task 2.2). V3. |
-| `get_complete_ncds` (309) | `cleaning/assemble.py::get_complete_ncds` | PORTED | The R call passes an unused 5th argument, which is an error in R; reconstruction (A3). |
+| `get_complete_ncds` (309) | `cleaning/assemble.py::get_complete_ncds` | PORTED | Natural joins with the keys checked; the R call passes an unused 5th argument, which is an error in R; reconstruction (A3). |
 | `create_essay_variables` (317) | `features/essay_variables.py::create_essay_variables` | PORTED | Output width depends on the data (G5). V2. |
 | `find_essay_teacher_genetics_overlap` (330) | `cleaning/assemble.py::find_essay_teacher_genetics_overlap` | PORTED | haven integer codes (F5). Never called by the R pipeline. |
 | `find_full_overlap` (348) | `cleaning/assemble.py::find_full_overlap` | PORTED | |
@@ -36,7 +36,7 @@ one status:
 | `calculate_readability_metrics` (369) | `features/readability.py` (+ `ingest_readability_metrics`) | BOUNDARY | koRpus. Task 2.5. |
 | `get_spelling_error_metrics` (390) | `features/salat.py::get_spelling_error_metrics` | INGESTION | LanguageTool output; the R's error cases are reproduced (G3). |
 | `get_salat_metrics` (419) | `features/salat.py::get_salat_metrics` | INGESTION | SALAT tools' output; natural joins (G3). |
-| `get_roberta_embeddings` (446) | `features/embeddings.py::roberta_embeddings` | PORTED | Batched; must run in its own process (G2). Not run on real weights here. |
+| `get_roberta_embeddings` (446) | `features/embeddings.py::roberta_embeddings`, `features/roberta_step.py` | PORTED | Batched; a separate step in its own process (G2, ORCHESTRATION). Not run on real weights here. |
 | `SL.xgboost.hist` (492) | `models/base_learners.py::_make_xgboost_hist` | PORTED-APPROX | C8, AP6. |
 | `get_general_superlearner_cv_model` (496) | `models/native_superlearner.py::fit_cv_superlearner` + `superlearner_library()` | PORTED-APPROX | Mechanics faithful (C1); learners and screener APPROX (C2–C9). The wrapper that selects columns, does `na.omit` and returns `(fit, var)` is Task 2.3. V4. |
 | `get_lm_cv_model` (526) | `models/native_superlearner.py::fit_cv_superlearner` + `lm_library()` | PORTED-APPROX | As above; SL.lm APPROX (C4). |

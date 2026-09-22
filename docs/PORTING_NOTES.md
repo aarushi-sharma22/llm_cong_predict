@@ -92,9 +92,16 @@ reproduce broken behaviour, so each is called out with how we handle it.
 - **Python:** `cleaning/assemble.py::get_complete_ncds` takes an explicit optional
   `ncds_gene`. With `None` it performs the three left joins of the four-argument R.
   Gene-dependent targets are skipped when gene data is absent (Task 2.3).
+  - The joins are dplyr natural joins, on every shared column, as the R's `left_join`
+    without `by` does (Checkpoint B decision). The keys are logged, and a warning is
+    issued whenever a join uses a key other than `ncdsid`.
+  - After every join, `JoinCardinalityError` is raised unless there is exactly one row
+    per `ncdsid`. The R makes no such check.
 - **Why:** the evident intent: join the gene data when available.
 - **Test:** `tests/test_cleaning.py::test_get_complete_ncds_optional_gene_join`,
-  `::test_get_complete_ncds_left_joins`.
+  `::test_get_complete_ncds_left_joins`,
+  `::test_get_complete_ncds_natural_join_warns_on_non_ncdsid_key`,
+  `::test_get_complete_ncds_requires_one_row_per_ncdsid`.
 - **Validation:** none.
 
 ### A4. `create_essay_variables` parameter naming ✅
@@ -459,19 +466,30 @@ names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
 Thin `read_excel` wrapper, faithful to `llm_paper/R/functions.R:L22–24`. Task 2.1
 changes it to read with assigned column names (reconstruction, A1).
 
-### E6. `read_essays`: malformed files differ from `tidyr::separate` (known, not changed)
-- **Label:** faithful for well-formed files; malformed files differ (not yet decided).
-- **R source:** `llm_paper/R/functions.R:L26–31`. `tidyr::separate` defaults to
-  `extra = "warn"`, which drops the pieces after a second delimiter, and
-  `fill = "warn"`, which turns missing pieces into NA.
-- **Python:** `io/readers.py::read_essays` splits at the first delimiter and keeps
-  the remainder (for example a second "  Words: " stays in `words`). When a delimiter
-  is missing it gives `""` or `None`, not NA.
-- **Why:** found in the Task 0 review, outside the brief's list. Well-formed essay
-  files (`ID: …`, one dashed line, text, one "  Words: n") parse identically. The
-  difference matters only for malformed files; raised with the owner at Checkpoint B.
-- **Test:** `tests/test_io.py::test_read_essays_parses_format` (well-formed only).
-- **Validation:** V2. On real essays, count files with extra or missing delimiters.
+### E6. `read_essays` reads like `readtext` and splits like `tidyr::separate` (Checkpoint B decision)
+- **Label:** faithful.
+- **R source:**
+  - `llm_paper/R/functions.R:L26–31`;
+  - `readtext/R/get-functions.R:L2–4` (0.92.1): `paste(readLines(con), collapse = "\n")`,
+    so LF, CRLF and CR endings become `\n` and the final line terminator is dropped;
+  - `tidyr/R/separate.R:L170–201` and `src/simplifyPieces.cpp` (1.3.2):
+    `extra = "warn"` keeps the first two pieces, `fill = "warn"` fills the missing
+    right piece with NA.
+- **Python:** `io/readers.py::read_essays`, `parse_essay`, `_readtext_txt`,
+  `_separate_two`. The first version split at the first separator only and used `""`
+  for a missing piece.
+  - When the ID separator occurs twice, the text is cut at the second one, and the
+    "  Words: " part behind it is discarded too, so the word count is NA, as in R.
+  - tidyr's warnings list row numbers. The port warns and logs only the NUMBER of
+    files with extra and with missing pieces (owner instruction), and keeps the counts
+    in `attrs["read_essays_malformed"]`.
+  - `scripts/check_essay_format.py` gives the owner the same counts for the real
+    essays, as aggregate numbers only.
+- **Why:** owner decision at Checkpoint B.
+- **Test:** `tests/test_io.py::test_read_essays_malformed_files_follow_tidyr_separate`,
+  `::test_read_essays_reads_text_like_readtext`, `::test_read_essays_parses_format`,
+  `::test_check_essay_format_prints_only_counts`.
+- **Validation:** V2. Run `scripts/check_essay_format.py` on the real essays.
 
 ---
 
@@ -594,14 +612,20 @@ the original contradiction both documented.
   `::test_roberta_embeddings_batch_size_does_not_change_output`. The real
   `roberta-base` weights were not loaded here.
 - **Validation:** V2 (essay feature width) on real essays.
-- **Note: process isolation.** torch bundles its own OpenMP runtime (install name
-  `/opt/llvm-openmp/lib/libomp.dylib`), while xgboost loads Homebrew's
-  (`/opt/homebrew/opt/libomp/lib/libomp.dylib`). Once torch has been imported, an
-  xgboost fit in the same process segfaults. This was observed with torch 2.14.0 and
-  xgboost 3.3.0 on macOS; xgboost first and then torch worked. RoBERTa embeddings must
-  therefore be generated in a separate process from the Super Learner fits. The
-  RoBERTa tests run in a subprocess for this reason, and the pipeline (Task 2.4) must
-  do the same.
+- **Process isolation (owner decision, Checkpoint B).** torch bundles its own OpenMP
+  runtime, and once torch has been imported an xgboost fit in the same process
+  segfaults (observed with torch 2.14.0 and xgboost 3.3.0 on macOS). So RoBERTa
+  embeddings are generated by a separate step in its own process,
+  `python -m llm_cong_predict.features.roberta_step`, which writes
+  `$LCP_DATA_ROOT/derived/roberta_embeddings.csv`. The pipeline reads that file
+  (`read_roberta_embeddings`). `llm_cong_predict.isolation` refuses either library
+  when the other is loaded, and no environment workaround is used. Values are saved as
+  float64 holding the model's float32 outputs exactly, as R holds keras' float32
+  predictions in doubles. Tests:
+  `tests/test_features.py::test_xgboost_learner_refuses_after_torch_is_imported`,
+  `::test_roberta_generation_refuses_after_xgboost_is_imported`,
+  `::test_roberta_step_writes_derived_file_that_reads_back_exactly`,
+  `::test_roberta_step_refuses_without_data_root`. See docs/ORCHESTRATION.md.
 
 ### G3. SALAT and spelling: ingestion only, with R's join and pivot semantics (rewritten in Phase 1, Task 1.5)
 - **Label:** faithful. Owner decision C8 and brief F8 items 1–2.
@@ -619,6 +643,9 @@ the original contradiction both documented.
       naming the R line: a category of the nine never occurs (`L410–414`), or no
       essay is error-free (`L415`).
     - `ncdsid` is compared as text (pandas refuses mixed key types).
+    - The word count is converted as R's `as.numeric` converts it
+      (`io/labels.py::r_as_numeric`: whitespace trimmed, hexadecimal accepted; checked
+      against R 4.6.1; AP10).
   - **SALAT:**
     - Each `left_join` joins on every column the two sides share (`io/joins.py`), as
       dplyr does without `by`.

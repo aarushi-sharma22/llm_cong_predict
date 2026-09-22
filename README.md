@@ -102,7 +102,9 @@ src/llm_cong_predict/
   config.py        # public file paths, LCP_DATA_ROOT, restricted file names, CV settings
   io/              # readers (.dta, .xlsx, essays), value labels, dplyr-style joins
   cleaning/        # create_aspirations, create_factors, assembly and overlap subsets
-  features/        # SALAT/spelling/readability ingestion, embeddings, essay variables
+  features/        # SALAT/spelling/readability ingestion, embeddings, essay variables,
+                   # roberta_step.py (RoBERTa embeddings, run as its own process)
+  isolation.py     # torch and xgboost never share a process
   models/          # native Super Learner, base learners, screen.glmnet, rpy2 oracle
   metrics/         # cross-validated metric rows (get_cv_superlearner/lm_metrics)
   pipeline/        # dependency graph, variable lists, model specification
@@ -111,6 +113,7 @@ scripts/
   hooks/pre-commit
   extract_r_targets.py          # _targets.R -> docs/reference/r_targets_inventory.json
   validate_oracle.py            # native vs R SuperLearner on the same folds (needs R)
+  check_essay_format.py         # aggregate format counts for the essay files (numbers only)
   get_gpt_embeddings.py         # provenance only; refuses to run by default
 data/              # public reference files only: variables.xlsx, occupation mapping, camsis/*.dta
 docs/              # porting notes, validation checklist, reference sources, plan, brief

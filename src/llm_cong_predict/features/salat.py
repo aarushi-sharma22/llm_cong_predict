@@ -24,6 +24,7 @@ from __future__ import annotations
 import pandas as pd
 
 from ..io.joins import natural_join
+from ..io.labels import r_as_numeric
 
 # The spelling rule-issue categories the R fills-to-zero and sums (verbatim order).
 _SPELLING_FILL_ZERO = [
@@ -116,7 +117,7 @@ def get_spelling_error_metrics(ncds_essays: pd.DataFrame, path: str) -> pd.DataF
     counts["ncdsid"] = counts["ncdsid"].astype(str)
 
     long = essays.merge(counts, on="ncdsid", how="left")
-    long["error_per_words"] = long["n"] / pd.to_numeric(long["words"], errors="coerce")
+    long["error_per_words"] = long["n"] / r_as_numeric(long["words"]).to_numpy()  # as.numeric(words), L402
     # pivot_wider names the column of a missing rule type "NA"
     long["rule_issue_type"] = long["rule_issue_type"].astype(object).where(long["rule_issue_type"].notna(), "NA")
     if long.duplicated(["ncdsid", "rule_issue_type"]).any():

@@ -48,14 +48,97 @@ behaviour. They are used the same way as the sources above.
 | `reference/r-source` | https://github.com/wch/r-source (sparse checkout: `src/library/base/R`, `src/library/stats/R`) | `675d7dc5689e8a287aa372498793f0fc22ee0770` | 2026-09-21 | R trunk, `VERSION` = "4.7.0 Under development (unstable)" | `ifelse`, `pmin`, `factor`, `Ops.ordered`, `lm.fit`/`lm.wfit` tolerance, `predict.lm` |
 | `reference/xgboost` | https://github.com/dmlc/xgboost (sparse checkout: `doc/changes`, root files incl. `NEWS.md`; tags fetched blobless) | master `56f951e7419a6f66f4568865e1d7835bcb6dbbf1`; tag `v1.7.6` = `36eb41c960483c8b52b44082663c99e6a0de440a` (R package `Version: 1.7.6.1`); tag `v2.0.0` = `096047c547aa71af7d53a507cecdd2a1d3124651`; tag `v3.3.0` = `d5cd2b40725d55747447f66e4a24f9a2c341b0bf` | 2026-09-22 (master) | see tags | default `base_score` for `reg:squarederror` in 1.7.x vs ≥ 2.0 |
 
+Cloned after Checkpoint B, for the `read_essays` decision:
+
+| Directory | Origin | Commit | Version | Used to check |
+|---|---|---|---|---|
+| `reference/tidyr` | https://github.com/cran/tidyr | `a4454c3aca56ffb21683b3dba6a80fc5ae4b8c96` | 1.3.2 | `separate` with `extra = "warn"`, `fill = "warn"` (`R/separate.R`, `src/simplifyPieces.cpp`) |
+| `reference/readtext` | https://github.com/cran/readtext | `ee73002dd5a4c31f67cb1454f3e41df69282ca7d` | 0.92.1 | how a .txt file is read (`R/get-functions.R`) |
+
 `r-source` is the development trunk, not a released R. The base-R functions checked
 (`ifelse`, `pmin`, `factor`) have been stable for many releases, but that stability was
 not checked against the R version the author used.
 
-## Environment facts relevant to these sources (2026-09-22)
+## Installed R environment (2026-09-22, after Checkpoint B)
 
-- R is not installed on this machine (`which Rscript` finds nothing). No R package can
-  be run here, so every R-side claim in the port comes from reading source, not from
-  running it.
+**These are the current CRAN versions installed on the development machine, not the
+versions the paper used, which are unknown. Results may differ between versions.**
+
+- R: `R version 4.6.1 (2026-06-24)`, platform `aarch64-apple-darwin23`, installed by the
+  owner from the CRAN macOS installer; `R.home()` = `/Library/Frameworks/R.framework/Resources`.
+- Installed with
+  `Rscript -e 'install.packages(c("SuperLearner","psych","glmnet","ranger","nnet","kernlab"), repos="https://cloud.r-project.org")'`
+  (CRAN macOS arm64 binaries). R's `xgboost` is deliberately **not** installed: version
+  3.x takes a different SuperLearner code path that drops `params` (PORTING_NOTES C8).
+  Pinning it is a Phase 3 item.
+- Python bridge: `pip install -e '.[oracle]'` installed rpy2 3.6.8 (rpy2-rinterface
+  3.6.7, rpy2-robjects 3.6.5) into `.venv` (Python 3.13.7) without errors.
+  `importr()` loads all seven packages below.
+
+Every package reported by `installed.packages()` after that installation:
+
+| Package | Version | Priority |
+|---|---|---|
+| SuperLearner | 2.0-42 | |
+| psych | 2.6.5 | |
+| glmnet | 5.0 | |
+| ranger | 0.18.0 | |
+| nnet | 7.3-21 | recommended |
+| kernlab | 0.9-33 | |
+| nnls | 1.6 | |
+| gam | 1.22-7 | |
+| cvAUC | 1.1.4 | |
+| GPArotation | 2026.8-2 | |
+| mnormt | 2.1.2 | |
+| foreach | 1.5.2 | |
+| iterators | 1.0.14 | |
+| shape | 1.4.6.1 | |
+| Rcpp | 1.1.2 | |
+| RcppEigen | 0.3.4.0.2 | |
+| rlang | 1.3.0 | |
+| ROCR | 1.0-12 | |
+| gplots | 3.3.0 | |
+| gtools | 3.9.5 | |
+| caTools | 1.18.4 | |
+| bitops | 1.1-0 | |
+| data.table | 1.18.6.1 | |
+| boot | 1.3-32 | recommended |
+| class | 7.3-23 | recommended |
+| cluster | 2.1.8.2 | recommended |
+| codetools | 0.2-20 | recommended |
+| foreign | 0.8-91 | recommended |
+| KernSmooth | 2.23-26 | recommended |
+| lattice | 0.22-9 | recommended |
+| MASS | 7.3-65 | recommended |
+| Matrix | 1.7-5 | recommended |
+| mgcv | 1.9-4 | recommended |
+| nlme | 3.1-169 | recommended |
+| rpart | 4.1.27 | recommended |
+| spatial | 7.3-18 | recommended |
+| survival | 3.8-6 | recommended |
+| base, compiler, datasets, graphics, grDevices, grid, methods, parallel, splines, stats, stats4, tcltk, tools, utils | 4.6.1 | base |
+
+The CRAN versions of kernlab, glmnet, psych, ranger and nnet equal the `Version:` of
+the source clones above. **SuperLearner differs:** CRAN has 2.0-42, while the GitHub
+clone cited throughout (`reference/SuperLearner`, ecpolley master) says 2.0-40. To check
+the difference, the CRAN mirror was cloned too:
+
+| Directory | Origin | Commit | Version |
+|---|---|---|---|
+| `reference/SuperLearner-cran` | https://github.com/cran/SuperLearner | `50d79e3dc924ab8e21fad10f8396a394ac96b551` (2026-09-14) | 2.0-42 |
+
+`diff -rq` of the two `R/` folders: `SuperLearner.R`, `CV.SuperLearner.R`, `method.R`,
+`summary.CV.SuperLearner.R`, `CVFolds.R`, `control.R`, `SL.mean.R`, `SL.nnet.R`,
+`SL.xgboost.R` and `screen.glmnet.R` are byte-identical. `SL.ksvm.R`, `SL.lm.R` and
+`SL.ranger.R` differ only in roxygen comment lines; their code is identical, checked
+with the `#'` lines removed. Citations in the code keep the line numbers of the 2.0-40
+clone; in the 2.0-42 files, the wrapper code of those three is shifted by the removed
+documentation lines.
+
+## Environment facts relevant to these sources
+
+- R 4.6.1 is installed (above). Before 2026-09-22 it was not, and every R-side claim
+  up to Checkpoint B comes from reading source, not from running it.
 - The Python equivalents installed in `.venv` are listed in `docs/PHASE_1_2_PLAN.md`
-  (Task 0.7 section).
+  (Task 0.7 section). Since then: torch 2.14.0, transformers 5.17.0 (owner item after
+  Checkpoint A), rpy2 3.6.8, and Homebrew `libomp` 23.1.2 for xgboost.

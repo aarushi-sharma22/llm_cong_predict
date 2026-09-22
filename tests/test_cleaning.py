@@ -218,3 +218,27 @@ def test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling():
     assert np.isnan(scores[5]) and np.isnan(expected[5])
     np.testing.assert_allclose(np.delete(scores, 5), np.delete(expected, 5))
     assert np.isfinite(np.delete(scores, 5)).all()
+
+
+def test_get_complete_ncds_natural_join_warns_on_non_ncdsid_key():
+    """R: llm_paper/R/functions.R:L310–313 — left_join without `by` joins on every shared
+    column. A key other than ncdsid triggers a warning (owner decision, Checkpoint B)."""
+    cleaned = pd.DataFrame({"ncdsid": ["1", "2"], "v": [10, 20]})
+    factors = pd.DataFrame({"ncdsid": ["1", "2"], "v": [10, 99], "f": [0.5, 0.7]})  # shares v
+    empty = pd.DataFrame({"ncdsid": ["1", "2"]})
+    with pytest.warns(UserWarning, match=r"factors frame uses keys \['ncdsid', 'v'\]"):
+        out = get_complete_ncds(cleaned, factors, empty, empty)
+    rows = out.set_index("ncdsid")
+    assert rows.loc["1", "f"] == 0.5 and bool(pd.isna(rows.loc["2", "f"]))  # v differs for "2"
+
+
+def test_get_complete_ncds_requires_one_row_per_ncdsid():
+    """After every join the result must keep exactly one row per ncdsid (owner decision,
+    Checkpoint B); a duplicated key in a joined frame raises."""
+    from llm_cong_predict.cleaning.assemble import JoinCardinalityError
+
+    cleaned = pd.DataFrame({"ncdsid": ["1", "2"], "v": [10, 20]})
+    dup = pd.DataFrame({"ncdsid": ["1", "1"], "asp": [1.0, 2.0]})
+    empty = pd.DataFrame({"ncdsid": ["1", "2"]})
+    with pytest.raises(JoinCardinalityError, match="aspirations frame, 1 row"):
+        get_complete_ncds(cleaned, empty, dup, empty)

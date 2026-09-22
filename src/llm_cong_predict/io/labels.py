@@ -21,6 +21,8 @@ operations, so read labels early in a chain.
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -87,6 +89,33 @@ def r_number_string(value: float) -> str:
     mantissa = mantissa.rstrip("0").rstrip(".")
     sci = f"{mantissa}e{int(exp):+03d}"
     return sci if len(sci) < len(fixed) else fixed
+
+
+_R_NUMBER = re.compile(r"^[+-]?(?:(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|Inf|inf|NaN)$")
+_R_HEX = re.compile(r"^[+-]?0[xX][0-9a-fA-F]+$")
+
+
+def r_as_numeric(values) -> pd.Series:
+    """``as.numeric()`` of character values, as R converts them: leading and trailing
+    whitespace ignored; decimal, scientific, hexadecimal (``0x1A`` -> 26), ``Inf`` and
+    ``NaN`` accepted; anything else NA (R warns). Checked against R 4.6.1 on the cases
+    in tests/test_io.py. ``pd.to_numeric`` differs on hexadecimal and would accept
+    ``1_000``-style forms through Python's ``float``.
+    # APPROX: R's full grammar (e.g. "infinity", hexadecimal fractions) is not covered.
+    """
+    s = pd.Series(values, dtype="object")
+
+    def one(v):
+        if v is None or (isinstance(v, float) and np.isnan(v)):
+            return np.nan
+        t = str(v).strip()
+        if _R_NUMBER.match(t):
+            return float(t)
+        if _R_HEX.match(t):
+            return float(int(t, 16))
+        return np.nan
+
+    return s.map(one).astype(float)
 
 
 def haven_levels(values: pd.Series, labels: dict) -> list[str]:

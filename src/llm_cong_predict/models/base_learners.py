@@ -33,6 +33,8 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 
+from ..isolation import refuse_if_loaded
+
 
 class LearnerFailure(RuntimeError):
     """A learner cannot be fitted where the R wrapper would stop with an error."""
@@ -290,6 +292,7 @@ def _make_xgboost_hist(seed: int, n_features: int) -> BaseEstimator:
     # The paper-era code path is SL.xgboost's branch for xgboost < 3.0
     # (R pkg: SuperLearner/R/SL.xgboost.R:L106, 2.0-40); the branch for > 3.0 (L53–65,
     # added 2025-12-14) drops `params`, so tree_method would be ignored there.
+    refuse_if_loaded("torch", "Fitting SL.xgboost.hist")  # isolation.py, docs/ORCHESTRATION.md
     from xgboost import XGBRegressor
 
     return XGBRegressor(

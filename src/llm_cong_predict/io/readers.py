@@ -18,6 +18,7 @@ from __future__ import annotations
 import glob
 import logging
 import os
+import warnings
 
 import pandas as pd
 import pyreadstat
@@ -139,8 +140,53 @@ def read_gene_data(path: str | None = None):
     )
 
 
+ESSAY_ID_SEPARATOR = "\n----------------------\n"  # R: llm_paper/R/functions.R:L28
+ESSAY_WORDS_SEPARATOR = "  Words: "  # R: llm_paper/R/functions.R:L29
+
+
+def _readtext_txt(path: str, encoding: str) -> str:
+    """A .txt file as ``readtext`` reads it: ``paste(readLines(con), collapse = "\\n")``
+    (R pkg: readtext/R/get-functions.R:L2–4, 0.92.1). readLines accepts LF, CRLF and CR
+    line endings and drops the final line terminator."""
+    with open(path, encoding=encoding, newline=None) as fh:  # universal newlines -> "\n"
+        content = fh.read()
+    return content[:-1] if content.endswith("\n") else content
+
+
+def _separate_two(value: str | None, sep: str) -> tuple[list[str | None], str | None]:
+    """``tidyr::separate(into = <2 columns>, sep, extra = "warn", fill = "warn")`` on one
+    value (R pkg: tidyr/R/separate.R:L170–201 and src/simplifyPieces.cpp, 1.3.2).
+
+    The value is split at EVERY match of ``sep`` (the separators here contain no regex
+    metacharacters, so a literal split equals tidyr's regex split). More than two
+    pieces: the first two are kept and the rest discarded ("extra"). Fewer than two:
+    the missing piece on the right is NA ("missing"). NA in, NA out, no flag.
+    """
+    if value is None:
+        return [None, None], None
+    pieces = value.split(sep)
+    if len(pieces) > 2:
+        return pieces[:2], "extra"
+    if len(pieces) < 2:
+        return [pieces[0], None], "missing"
+    return pieces, None
+
+
+def parse_essay(content: str) -> tuple[dict, set[str]]:
+    """Parse one essay file's content as ``read_essays`` does.
+
+    Returns the fields ``ncdsid``, ``text`` and ``words`` (strings or None) and the set
+    of problems found: "extra" (a separator occurs more than once), "missing" (a
+    separator is absent). Never logs anything itself.
+    """
+    (id_part, body), f1 = _separate_two(content, ESSAY_ID_SEPARATOR)
+    (text, words), f2 = _separate_two(body, ESSAY_WORDS_SEPARATOR)
+    ncdsid = None if id_part is None else id_part.replace("ID: ", "")  # gsub("ID: ", "", ncdsid)
+    return {"ncdsid": ncdsid, "text": text, "words": words}, {f for f in (f1, f2) if f}
+
+
 def read_essays(folder: str, encoding: str = "utf-8") -> pd.DataFrame:
-    """Port of ``read_essays(folder)``.
+    """Port of ``read_essays(folder)`` (R: llm_paper/R/functions.R:L26–31).
 
     R:
         readtext::readtext(folder) %>%
@@ -155,33 +201,33 @@ def read_essays(folder: str, encoding: str = "utf-8") -> pd.DataFrame:
         ----------------------
         <essay text>  Words: <count>
 
-    Returns a frame with columns ``doc_id`` (filename), ``ncdsid``, ``text``,
-    ``words`` — matching the R output. Splitting is done on the FIRST occurrence of
-    each delimiter so essay bodies containing similar text do not break parsing
-    (this mirrors the practical intent of the two ``separate`` calls).
+    Returns ``doc_id`` (file name), ``ncdsid``, ``text``, ``words``, as the R does.
+    Malformed files are handled as ``tidyr::separate`` handles them (owner decision at
+    Checkpoint B): pieces after a second separator are dropped, a missing piece is NA.
+    tidyr warns and lists row numbers; the port only logs and warns with the NUMBER
+    of files affected, never file names, IDs or text. The counts are also kept in
+    ``attrs["read_essays_malformed"]``.
     """
-    id_delim = "\n----------------------\n"
-    words_delim = "  Words: "
-
     rows = []
+    extra = missing = 0
     for path in sorted(glob.glob(os.path.join(folder, "*"))):
         if not os.path.isfile(path):
             continue
-        with open(path, encoding=encoding) as fh:
-            content = fh.read()
+        fields, problems = parse_essay(_readtext_txt(path, encoding))
+        extra += "extra" in problems
+        missing += "missing" in problems
+        rows.append({"doc_id": os.path.basename(path), **fields})
 
-        head, _, body = content.partition(id_delim)
-        if _ == "":  # delimiter absent: whole content is the "id" part, no body
-            head, body = content, ""
-        text, _, words = body.partition(words_delim)
-        words_val = words if _ != "" else None
-
-        ncdsid = head.replace("ID: ", "")  # gsub is global; str.replace replaces all
-        rows.append(
-            {"doc_id": os.path.basename(path), "ncdsid": ncdsid, "text": text, "words": words_val}
-        )
-
-    return pd.DataFrame(rows, columns=["doc_id", "ncdsid", "text", "words"])
+    out = pd.DataFrame(rows, columns=["doc_id", "ncdsid", "text", "words"])
+    out.attrs["read_essays_malformed"] = {"files_with_extra_pieces": extra,
+                                          "files_with_missing_pieces": missing}
+    if extra or missing:
+        message = (f"read_essays: {extra} file(s) had additional pieces (discarded) and "
+                   f"{missing} file(s) had missing pieces (filled with NA), as "
+                   "tidyr::separate(extra = 'warn', fill = 'warn') does")
+        logger.warning(message)
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
+    return out
 
 
 class ColumnCollisionError(ValueError):

@@ -11,12 +11,16 @@ end-to-end behaviour is validated only once ``clean_ncds`` and real data exist.
 
 from __future__ import annotations
 
-from functools import reduce
+import warnings
 
 import pandas as pd
 
 from ..io.joins import natural_join
 from ..io.labels import labelled_factor_codes
+
+
+class JoinCardinalityError(ValueError):
+    """A join produced more than one row for some ncdsid."""
 
 
 def get_complete_ncds(
@@ -26,7 +30,7 @@ def get_complete_ncds(
     ncds_essay: pd.DataFrame,
     ncds_gene: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Port of ``get_complete_ncds``.
+    """Port of ``get_complete_ncds`` (R: llm_paper/R/functions.R:L309–314).
 
     R:
         ncds_cleaned %>%
@@ -34,19 +38,35 @@ def get_complete_ncds(
           left_join(ncds_aspirations) %>%
           left_join(ncds_essay)
 
-    Successive left joins onto the cleaned frame. All joins are on the shared key
-    ``ncdsid`` (the only common column across these frames).
+    Each ``left_join`` has no ``by``, so it joins on every column the two frames share
+    (io/joins.py; owner decision at Checkpoint B). The keys of every join are logged.
+    A warning is issued whenever a join uses any key other than ``ncdsid``, since that
+    means a column name occurs in both frames. After every join the result must still
+    have exactly one row per ``ncdsid``, otherwise :class:`JoinCardinalityError` is
+    raised (a check the R does not make).
 
-    NOTE on the gene argument (PORTING_NOTES A3): the R *definition* takes 4 args
-    but ``_targets.R`` *calls* it with a 5th (``gene_data``), which is an error in R
+    Gene argument (PORTING_NOTES A3): the R *definition* takes 4 arguments, but
+    ``_targets.R`` *calls* it with a 5th (``gene_data``), which is an error in R
     ("unused argument"), so the published target cannot run. Reconstruction: the gene
-    frame is an explicit optional argument; when provided it is joined on ``ncdsid``
-    too, when ``None`` the joins are those of the 4-argument R.
+    frame is an optional argument, joined the same way when given; with ``None`` the
+    joins are those of the 4-argument R.
     """
-    frames = [ncds_cleaned, ncds_factors, ncds_aspirations, ncds_essay]
+    frames = [("factors", ncds_factors), ("aspirations", ncds_aspirations), ("essay", ncds_essay)]
     if ncds_gene is not None:
-        frames.append(ncds_gene)
-    return reduce(lambda left, right: left.merge(right, on="ncdsid", how="left"), frames)
+        frames.append(("gene", ncds_gene))
+    out = ncds_cleaned
+    for name, right in frames:
+        out, keys = natural_join(out, right, "left", step=f"get_complete_ncds: {name}")
+        if keys != ["ncdsid"]:
+            warnings.warn(f"get_complete_ncds: the join with the {name} frame uses keys {keys}, "
+                          "not only ncdsid: those columns exist in both frames", UserWarning,
+                          stacklevel=2)
+        n_dup = int(out["ncdsid"].duplicated().sum())
+        if n_dup:
+            raise JoinCardinalityError(
+                f"get_complete_ncds: after joining the {name} frame, {n_dup} row(s) repeat an "
+                "ncdsid; expected exactly one row per ncdsid")
+    return out
 
 
 def find_full_overlap(ncds_complete: pd.DataFrame, varlist: list[str]) -> pd.DataFrame:

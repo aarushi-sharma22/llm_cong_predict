@@ -72,6 +72,12 @@ RESTRICTED_INPUTS: dict[str, str] = {
 # Participant-level OUTPUT folders, always under $LCP_DATA_ROOT.
 PARTICIPANT_OUTPUT_DIRS = ("derived", "fits", "logs")
 
+# Files written by separate pipeline steps into $LCP_DATA_ROOT/derived/ (names chosen by
+# the port). RoBERTa embeddings are generated in their own process (isolation.py).
+DERIVED_FILES: dict[str, str] = {
+    "roberta_embeddings": "roberta_embeddings.csv",
+}
+
 
 class DataRootError(RuntimeError):
     """$LCP_DATA_ROOT is unset, missing, or points inside the repository."""
@@ -123,6 +129,13 @@ def participant_output_dir(kind: str) -> Path:
 
 def derived_dir() -> Path:
     return participant_output_dir("derived")
+
+
+def derived_path(key: str) -> Path:
+    """Path of a derived, participant-level file under ``$LCP_DATA_ROOT/derived/``."""
+    if key not in DERIVED_FILES:
+        raise KeyError(f"unknown derived file {key!r}; known: {sorted(DERIVED_FILES)}")
+    return derived_dir() / DERIVED_FILES[key]
 
 
 def fits_dir() -> Path:
