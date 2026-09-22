@@ -1,4 +1,4 @@
-"""Super Learner mechanics (brief Task 1.3, fact F4).
+"""Super Learner mechanics.
 
 Failure handling, shared screening, the weight recomputation after a failed refit,
 determinism and n_jobs invariance. Cheap learners are used wherever the rule does not
@@ -213,7 +213,7 @@ def test_n_jobs_does_not_change_output_full_library():
 
 
 def test_fixed_folds_are_used(data):
-    """Outer and inner folds can be fixed, for the R oracle comparison (Task 2.2)."""
+    """Outer and inner folds can be fixed, for the R oracle comparison."""
     X, y = data
     folds = [np.arange(i, 100, 4) for i in range(4)]
     fit = _fit(X, y, lm_library(), folds=folds)

@@ -43,5 +43,8 @@ venv/
 # ...except the public CAMSIS reference files (the last matching rule wins).
 !/data/camsis/*.dta
 
-# --- per-person tables written at the repository root (brief F8.6) -----------
+# --- per-person tables written at the repository root ------------------------
 /*.csv
+
+# --- AI assistant instructions (kept on disk, not tracked) -------------------
+/CLAUDE.md

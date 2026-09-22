@@ -1,4 +1,4 @@
-"""Port of the output tables of ``R/create_data.R`` (brief Task 2.6).
+"""Port of the output tables of ``R/create_data.R``.
 
 Every file the R writes is listed, with its inputs and its state, in
 docs/reference/create_data_outputs.md. Each function below builds one of them from
@@ -13,7 +13,7 @@ docs/reference/create_data_outputs.md. Each function below builds one of them fr
 Four of the R's outputs cannot run as written (fig_4, D2, D9, D11) and are
 reconstructed here, each marked in its docstring and in PORTING_NOTES N2. D6 is not
 reconstructed: it needs a code the variable table does not contain, so it raises, as
-the R stops (N2). D4 and D7 are participant-level in the R (brief F9), so instead of
+the R stops (N2). D4 and D7 are participant-level in the R, so instead of
 those two tables the port builds aggregate summaries (N3).
 
 Labels are NOT wrapped: the R wraps them for plotting with ``stringr::str_wrap``
@@ -257,7 +257,7 @@ def appendix_d3(fits: dict) -> pd.DataFrame:
 def summary_d4_essays(essays: pd.DataFrame) -> pd.DataFrame:
     """Replaces appendix_D4_data.csv, which is PARTICIPANT-LEVEL in the R
     (``appendix_1_data``, R: llm_paper/R/create_data.R:L241–242, is the full essay text
-    with ``ncdsid``; brief F9). The port never builds that table outside
+    with ``ncdsid``). The port never builds that table outside
     ``$LCP_DATA_ROOT``; this is an aggregate summary of the word counts instead
     (PORTING_NOTES N3). ``words`` is converted as the R converts it, with
     ``as.numeric`` (L242).
@@ -317,7 +317,7 @@ def appendix_d6(ncds_1_to_9: pd.DataFrame) -> pd.DataFrame:
 def summary_d7_bsag(ncds_1_to_9: pd.DataFrame) -> pd.DataFrame:
     """Replaces appendix_D7_data.csv, which is PARTICIPANT-LEVEL in the R
     (``appendix_4_data``, R: llm_paper/R/create_data.R:L273–288, is every person's BSAG
-    values with ``ncdsid``; brief F9). This is a per-item aggregate summary instead
+    values with ``ncdsid``). This is a per-item aggregate summary instead
     (PORTING_NOTES N3).
     """
     missing = [code for code in BSAG_ITEMS if code not in ncds_1_to_9.columns]
@@ -339,7 +339,7 @@ def appendix_d8(ncds_1_to_9: pd.DataFrame) -> pd.DataFrame:
     """``appendix_5_data`` -> appendix_D8_data.csv (R: llm_paper/R/create_data.R:L290–297):
     how many cohort members aspired to each job.
 
-    COUNTS PER JOB, so small cells are possible; the export guard (Task 2.7) decides
+    COUNTS PER JOB, so small cells are possible; the export guard decides
     whether the table may leave ``$LCP_DATA_ROOT``. The R's
     ``filter(!aspired_job %in% c(47, 20.5))`` compares a factor with numbers, so it
     removes a job only if its LABEL is "47" or "20.5" — reproduced, quirk included.

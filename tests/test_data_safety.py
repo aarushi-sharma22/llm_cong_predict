@@ -1,4 +1,4 @@
-"""Data-safety tests (brief Task 1.1, Section 2.3).
+"""Data-safety tests.
 
 Covers the restricted-data checker, the pre-commit hook, the .gitignore allow-list,
 the $LCP_DATA_ROOT configuration and the external-API gate on the GPT script.
@@ -74,7 +74,7 @@ def test_checker_rejects_staged_tab_file(scratch_repo: Path):
 
 def test_checker_rejects_staged_parquet_under_data_embeddings(scratch_repo: Path):
     """data/embeddings/x.parquet is the old default output folder of
-    scripts/get_gpt_embeddings.py (brief F8.6); staging it is refused."""
+    scripts/get_gpt_embeddings.py; staging it is refused."""
     _stage(scratch_repo, "data/embeddings/x.parquet")
     result = _run_checker(scratch_repo)
     assert result.returncode == 1
@@ -145,9 +145,9 @@ def test_pre_commit_hook_blocks_commit(scratch_repo: Path):
 @pytest.mark.parametrize(
     "rel",
     [
-        "data/embeddings/embeddings_gpt35.parquet",  # brief F8.6
-        "data/raw/ncds.tab",  # brief F8.6
-        "predictions.csv",  # brief F8.6: predictions CSV at the repository root
+        "data/embeddings/embeddings_gpt35.parquet",
+        "data/raw/ncds.tab",
+        "predictions.csv",  # predictions CSV at the repository root
         "data/ncds_1_2_3/ncds0123.dta",
         "outputs/table.csv",
         "results/fits.pkl",
@@ -268,7 +268,7 @@ def test_gpt_script_refuses_without_double_opt_in(flag: bool, allow_env: bool):
 
 
 def test_embeddings_extra_does_not_include_openai():
-    """The local embedding extra must not pull in the OpenAI client (owner decision)."""
+    """The local embedding extra must not pull in the OpenAI client."""
     import tomllib
 
     extras = tomllib.loads((REPO / "pyproject.toml").read_text())["project"]["optional-dependencies"]

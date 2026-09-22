@@ -14,7 +14,7 @@ targets from ``model_spec``. Each target carries a status flag:
 ``gene_data`` is optional: without the polygenic score file it is absent (the R's
 ``gene_data`` is a function, ``gene_variables`` NULL) and the gene-dependent models are
 skipped (PORTING_NOTES L2). pipeline/execute.py binds every target to the function it
-calls and runs the graph (Task 2.4).
+calls and runs the graph.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def _load_targets() -> list[Target]:
 def _essay_targets() -> list[Target]:
     return [
         Target("tokenized_essays", ("ncds_essays",), Status.EXTERNAL,
-               "tokenize_essays: TreeTagger, run inside r/readability.R (Task 2.5)"),
+               "tokenize_essays: TreeTagger, run inside r/readability.R"),
         Target("spelling_errors", ("ncds_essays",), Status.BUILT, "get_spelling_error_metrics (ingestion; needs CSV)"),
         Target("readability_metrics", ("ncds_essays", "tokenized_essays"), Status.BUILT,
                "ingest_readability_metrics: reads the koRpus output of r/readability.R"),

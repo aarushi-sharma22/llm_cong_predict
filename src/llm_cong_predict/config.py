@@ -30,7 +30,7 @@ OCCUPATION_ASPIRATION_XLSX = DATA_DIR / "occupation_aspiration_mapping.xlsx"  # 
 # Restricted inputs (NCDS sweeps, essays, derived essay features, polygenic scores)
 # and participant-level outputs live ONLY under the directory named by this
 # environment variable. There is deliberately no default, and a directory inside the
-# repository is refused (brief Section 2.3).
+# repository is refused.
 LCP_DATA_ROOT_ENV = "LCP_DATA_ROOT"
 
 # Every restricted file name, relative to $LCP_DATA_ROOT, in one place. The names
@@ -67,21 +67,21 @@ RESTRICTED_INPUTS: dict[str, str] = {
     # format chosen by the port (CSV, so no Parquet library is needed).
     "gpt35_embeddings": "embeddings/embeddings_gpt35.csv",
     "gpt4_embeddings": "embeddings/embeddings_gpt4.csv",
-    # Readability indices computed outside Python (TreeTagger + koRpus, r/readability.R,
-    # Task 2.5), read by features/readability.py::ingest_readability_metrics. Name chosen
-    # by the port.
+    # Readability indices computed outside Python (TreeTagger + koRpus,
+    # r/readability.R), read by features/readability.py::ingest_readability_metrics.
+    # Name chosen by the port.
     "readability_metrics": "readability_metrics.csv",
     # Polygenic scores, OPTIONAL. The R reader is an empty placeholder (R:
     # llm_paper/R/functions.R:L34–36). Placeholder format chosen by the port: CSV with
     # ncdsid first, then one numeric column per score (io/readers.py::read_gene_data).
-    # The released files' format is a Phase 5/6 item. When the file is absent, the
-    # gene-dependent targets are skipped (PORTING_NOTES L2).
+    # When the file is absent, the gene-dependent targets are skipped
+    # (PORTING_NOTES L2).
     "gene_data": "genetics/polygenic_scores.csv",
 }
 
 # OUTPUT folders, always under $LCP_DATA_ROOT: participant-level outputs (derived,
 # fits, logs) and the aggregate tables — the metric rows and the reporting tables —
-# which stay there until they pass the export guard (Task 2.7).
+# which stay there until they pass the export guard.
 PARTICIPANT_OUTPUT_DIRS = ("derived", "fits", "logs", "metrics", "reporting")
 
 # Files written by separate pipeline steps into $LCP_DATA_ROOT/derived/ (names chosen by
@@ -164,7 +164,7 @@ def metrics_dir() -> Path:
 
 # --- Export guard (export.py) --------------------------------------------------
 # The smallest count that may appear in a table written OUTSIDE $LCP_DATA_ROOT.
-# Set by the owner (Checkpoint D): the UK Data Service's handling guide gives 3 as the
+# The UK Data Service's handling guide gives 3 as the
 # baseline threshold and advises 10 where several outputs come from the same source,
 # which is the case here (many tables from one cohort dataset).
 # STILL TO BE CONFIRMED WITH UKDS before anything is released.
@@ -179,7 +179,7 @@ MINIMUM_CELL_SIZE: int | None = 10
 SYNTHETIC_MARKER_FILE = "SYNTHETIC_DATA_MARKER.json"
 
 
-# --- Corrected variant: the code n885 (owner decision at Checkpoint D) ------------
+# --- Corrected variant: the code n885 ------------------------------------------
 # R/create_data.R:L264 selects n885 ("Imperfect Grasp of English") for appendix D6, and
 # find_essay_teacher_genetics_overlap names it too, but it is NOT in data/variables.xlsx,
 # so read_ncds never loads it and both stop. The R's behaviour is the DEFAULT: D6 stays

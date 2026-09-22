@@ -1,4 +1,4 @@
-"""The synthetic input set and the end-to-end run (brief Task 2.4).
+"""The synthetic input set and the end-to-end run.
 
 Every test here runs on data written by tests/fixtures/synthetic_ncds.py into a
 temporary ``$LCP_DATA_ROOT``: obviously synthetic IDs (SYN000001...), deterministic
@@ -26,13 +26,13 @@ from llm_cong_predict.pipeline.build import build_pipeline
 from llm_cong_predict.pipeline.execute import SAMPLE_NOTE_NO_GENE_DATA, SmokeRunRefused, run_pipeline
 from llm_cong_predict.rbridge import r_unavailable_reason
 
-SMOKE_N = 120  # small n, as the smoke configuration allows (brief Task 2.4)
+SMOKE_N = 120  # small n, as the smoke configuration allows
 SEED = 7
 
 # A run that leaves config.FACTOR_BACKEND at its default computes the three polychoric
 # factor scores through psych::fa, so it needs R, rpy2 and psych (PORTING_NOTES F1).
 # Every test that does so carries this guard, so that on a machine without R the suite
-# ends with skips and no failures (docs/PHASE_3_NOTES.md).
+# ends with skips and no failures (docs/REMAINING_WORK.md).
 R_FACTORS_REASON = r_unavailable_reason(("psych",))
 R_FACTORS_SKIP = f"{R_FACTORS_REASON} — this run needs the 'r' factor backend"
 needs_r_factors = pytest.mark.skipif(R_FACTORS_REASON is not None, reason=R_FACTORS_SKIP)
@@ -64,7 +64,7 @@ def _smoke(**changes) -> config.RunConfig:
 # ------------------------------------------------------- the synthetic set ----
 
 def test_synthetic_inputs_are_deterministic_given_the_seed(tmp_path):
-    """Brief Section 2.3: synthetic data is generated deterministically from a seed."""
+    """synthetic data is generated deterministically from a seed."""
     roots = []
     for name in ("a", "b"):
         root = tmp_path / name
@@ -86,7 +86,7 @@ def test_synthetic_inputs_are_deterministic_given_the_seed(tmp_path):
 
 
 def test_every_code_of_the_variable_table_is_in_exactly_one_ncds_file(synthetic_root):
-    """The set holds every code of data/variables.xlsx (brief Task 2.4), each in one
+    """The set holds every code of data/variables.xlsx, each in one
     file, so that combine_ncds' full join has no column collision."""
     codes = {c.lower() for c in read_datalist(str(config.VARIABLES_XLSX))["variable"]}
     seen: dict[str, str] = {}
@@ -102,13 +102,13 @@ def test_every_code_of_the_variable_table_is_in_exactly_one_ncds_file(synthetic_
 
 
 def test_value_labels_include_missing_strings_negative_codes_and_the_aspiration_labels(synthetic_root):
-    """Brief Task 2.4: realistic value-label sets that include the missing-label
+    """realistic value-label sets that include the missing-label
     strings, negative missing codes, and n2771 labels from the public mapping file."""
     _, meta = pyreadstat.read_dta(str(synthetic_root / config.RESTRICTED_INPUTS["ncds_1_2_3"]))
     labels = meta.variable_value_labels
     used = {text for mapping in labels.values() for text in mapping.values()}
     assert len(used & set(MISSING_LABELS)) >= 8
-    assert " Cant say,inappl" in used  # the entry with the leading space (brief F2)
+    assert " Cant say,inappl" in used  # the entry with the leading space
     assert any(code < 0 for mapping in labels.values() for code in mapping)
     mapping_file = pd.read_excel(config.OCCUPATION_ASPIRATION_XLSX)
     # the codes keep the mixed case of variables.xlsx ("N2771"), which read_ncds lower-cases
@@ -119,7 +119,7 @@ def test_value_labels_include_missing_strings_negative_codes_and_the_aspiration_
 
 def test_essays_salat_and_spelling_are_in_the_format_the_readers_parse(synthetic_root):
     """The essay folder parses with no malformed file, the shared SALAT metric becomes a
-    join key (brief F8), and the spelling CSV has essays with no error and all nine
+    join key, and the spelling CSV has essays with no error and all nine
     categories (so get_spelling_error_metrics does not stop, PORTING_NOTES G3/C8)."""
     from llm_cong_predict.features.salat import get_salat_metrics, get_spelling_error_metrics
 
@@ -139,14 +139,14 @@ def test_essays_salat_and_spelling_are_in_the_format_the_readers_parse(synthetic
         spelling = pd.read_csv(config.restricted_path("spelling_mistakes"))
         assert set(spelling["rule_issue_type"]) == set(SPELLING_CATEGORIES)
         errors = get_spelling_error_metrics(essays, str(config.restricted_path("spelling_mistakes")))
-        assert (errors["total"] == 0).any()  # essays with no error are kept (brief F8)
+        assert (errors["total"] == 0).any()  # essays with no error are kept
         assert len(errors) == len(essays)
 
 
 # ------------------------------------------------------------- the bindings ----
 
 def test_every_target_is_bound_to_the_function_it_calls():
-    """Brief Task 2.4: each pipeline target is bound to the function it calls."""
+    """each pipeline target is bound to the function it calls."""
     from llm_cong_predict.cleaning.clean_ncds import clean_ncds
     from llm_cong_predict.features.readability import ingest_readability_metrics
     from llm_cong_predict.io.readers import read_ncds
@@ -168,7 +168,7 @@ def test_every_target_is_bound_to_the_function_it_calls():
 # ------------------------------------------------ refusing a real smoke run ----
 
 def test_smoke_configuration_is_refused_without_the_synthetic_marker(tmp_path):
-    """Brief Task 2.4: the smoke configuration is impossible to use for a real run."""
+    """the smoke configuration is impossible to use for a real run."""
     with data_root(tmp_path):
         with pytest.raises(SmokeRunRefused, match=config.SYNTHETIC_MARKER_FILE):
             run_pipeline(config.SMOKE_RUN, targets=["mapping_df"])
@@ -197,7 +197,7 @@ def no_gene_result(synthetic_root_no_genes):
 
 
 def test_gene_targets_are_skipped_and_gene_defined_samples_are_marked(no_gene_result):
-    """Owner decision at Checkpoint C: targets whose predictors need gene_variables are
+    """targets whose predictors need gene_variables are
     skipped (PORTING_NOTES L2), and every metric row from a sample the R defines with
     gene_variables carries sample_note, so the warning travels with the numbers."""
     result = no_gene_result
@@ -213,7 +213,7 @@ def test_gene_targets_are_skipped_and_gene_defined_samples_are_marked(no_gene_re
 
 
 def test_every_smoke_output_is_labelled(no_gene_result):
-    """Brief Task 2.4: the smoke configuration labels every output it produces."""
+    """the smoke configuration labels every output it produces."""
     result = no_gene_result
     assert result.metrics_path.name == "SMOKE_metrics.csv"
     assert result.log_path.name == "SMOKE_run_log.json"
@@ -230,7 +230,7 @@ def test_every_smoke_output_is_labelled(no_gene_result):
 
 
 def test_predictions_and_metrics_are_written_only_under_the_data_root(no_gene_result, synthetic_root_no_genes):
-    """Participant-level output stays under $LCP_DATA_ROOT (brief Section 2.3)."""
+    """Participant-level output stays under $LCP_DATA_ROOT."""
     root = synthetic_root_no_genes.resolve()
     for path in [no_gene_result.metrics_path, no_gene_result.log_path, *no_gene_result.prediction_paths]:
         assert root in path.resolve().parents
@@ -240,7 +240,7 @@ def test_predictions_and_metrics_are_written_only_under_the_data_root(no_gene_re
 
 def test_the_n885_corrected_variant_marks_every_output(synthetic_root_no_genes, monkeypatch,
                                                        no_gene_result):
-    """Owner decision at Checkpoint D: the R's behaviour is the default, and with the
+    """the R's behaviour is the default, and with the
     corrected variant on (config.INCLUDE_N885) every output of the run says so, the way
     a sample built without gene data does. The models themselves do not change: no
     predictor list contains the added column."""
@@ -262,7 +262,7 @@ def test_the_n885_corrected_variant_marks_every_output(synthetic_root_no_genes, 
 # ------------------------------------- the native factor backend: not run ----
 
 def test_native_factor_backend_reports_the_polychoric_outcomes_as_not_run(synthetic_root):
-    """Owner decision at Checkpoint C: with factor_backend="native" the three
+    """with factor_backend="native" the three
     polychoric factor outcomes are reported as not run, with a reason, and no metric
     row exists for them (PORTING_NOTES F1)."""
     polychoric = ["s3_co_factor_scholastic_motivation", "s3_te_factor_externalizing",
@@ -307,9 +307,9 @@ def full_smoke_result(synthetic_root):
 
 @pytest.mark.slow
 def test_smoke_run_scores_every_scored_target(full_smoke_result):
-    """Brief Task 2.4: the smoke run on synthetic data produces a metric row for every
+    """the smoke run on synthetic data produces a metric row for every
     scored target. 63 targets are scored and 409 of the 416 fits are scored; the seven
-    *_mmg_lm targets are scored nowhere in the R (owner decision C6)."""
+    *_mmg_lm targets are scored nowhere in the R."""
     specs = execute.model_specs_by_name()
     scored = {name: s for name, s in specs.items() if s.scorer != "none"}
     result = full_smoke_result
@@ -332,7 +332,7 @@ def test_smoke_run_scores_every_scored_target(full_smoke_result):
 
 @pytest.mark.slow
 def test_reporting_tables_build_from_the_end_to_end_run(full_smoke_result, synthetic_root):
-    """Brief Task 2.6: every table of R/create_data.R that can be built is built from a
+    """every table of R/create_data.R that can be built is built from a
     real run — the metric rows, the fits (appendix D3) and the NCDS data (D5, D8 and the
     D4/D7 summaries). D6 is the one that cannot be built (PORTING_NOTES N2)."""
     from llm_cong_predict.reporting import build_from_run, write_tables
@@ -359,7 +359,7 @@ def test_reporting_tables_build_from_the_end_to_end_run(full_smoke_result, synth
 
 @pytest.mark.slow
 def test_paper_configuration_runs_on_one_target(synthetic_root):
-    """Brief Task 2.4: one slow test runs the full paper configuration (10 outer folds,
+    """one slow test runs the full paper configuration (10 outer folds,
     5 inner folds, the 6-learner library) on one small synthetic target. Its outputs
     say they come from synthetic data."""
     import dataclasses

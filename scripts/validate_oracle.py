@@ -10,7 +10,7 @@ Prerequisites:
     pip install -e '.[oracle]'
     # and R with: SuperLearner, nnls, ranger, nnet, kernlab, glmnet (versions in
     # docs/REFERENCE_SOURCES.md). R's xgboost is deliberately NOT installed yet
-    # (Phase 3 pins it), so with --library full R's SL.xgboost.hist fails inside
+    # so with --library full R's SL.xgboost.hist fails inside
     # SuperLearner's try() and gets weight 0 on the R side only.
 
 Usage:

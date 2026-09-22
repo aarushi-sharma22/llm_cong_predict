@@ -175,7 +175,7 @@ def observed_rank_codes(values: pd.Series) -> np.ndarray:
     """Integer codes of ``factor(x)`` for a plain numeric vector: the rank of each value
     among the sorted distinct observed values, starting at 1 (R pkg:
     forcats/R/as_factor.R:L52–54; r-source/src/library/base/R/factor.R:L26–38).
-    Used where labels are already gone (clean_ncds' teacher block, brief F2)."""
+    Used where labels are already gone (clean_ncds' teacher block)."""
     v = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
     distinct = np.unique(v[~np.isnan(v)])
     out = np.full(v.shape, np.nan)

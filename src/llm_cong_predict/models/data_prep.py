@@ -1,10 +1,10 @@
-"""Data preparation applied to a sample inside a model target (brief F7).
+"""Data preparation applied to a sample inside a model target.
 
 The R prepares the sample inside four kinds of model target; the steps are recorded in
 ``pipeline/model_spec.py::DATA_PREP`` and applied here:
 
   * ``as_numeric`` (R: llm_paper/_targets.R:L208, L258, L368, L374): R's
-    ``as.numeric()`` — a factor gives its level position (``codes + 1``, brief F2), a
+    ``as.numeric()`` — a factor gives its level position (``codes + 1``), a
     logical gives 0/1, a number stays itself, text is parsed as R parses it;
   * ``inner_join`` (L227, L230): ``dplyr::inner_join(table, by = c("ncdsid" = "id"))``;
   * ``drop_columns_starting_with`` (L230): ``select(-starts_with(prefix))``, where

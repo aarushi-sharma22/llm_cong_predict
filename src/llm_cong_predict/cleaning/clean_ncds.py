@@ -1,4 +1,4 @@
-"""``clean_ncds``: recode and rename the combined NCDS data (brief F2).
+"""``clean_ncds``: recode and rename the combined NCDS data.
 
 Port of ``clean_ncds(ncds_complete, mapping_df)`` (R: llm_paper/R/functions.R:L64–242).
 The published function cannot run: the public ``variables.xlsx`` has no header row
@@ -158,7 +158,7 @@ def combine_parent_education(mother: pd.Categorical, father: pd.Categorical) -> 
       NoQual/NoQual 1, NoQual/Lower 2, Lower/Lower 3, (<Upper)/Upper 4, Upper/Upper 5,
       (<Degree)/Degree 6, Degree/Degree 7, else NA;
     then ``factor(s3_pa_edu)``: levels are the sorted distinct OBSERVED values, so
-    ``as.numeric()`` later gives the level position, not the value (brief F2)."""
+    ``as.numeric()`` later gives the level position, not the value."""
     m = np.asarray(mother.codes, dtype=float)
     f = np.asarray(father.codes, dtype=float)
     m[m < 0] = np.nan
@@ -186,7 +186,7 @@ def _block(data: pd.DataFrame, variables: pd.DataFrame, types) -> pd.DataFrame:
 
 
 def clean_ncds(ncds_complete: pd.DataFrame, mapping_df: pd.DataFrame) -> pd.DataFrame:
-    """Port of ``clean_ncds`` (R: llm_paper/R/functions.R:L64–242; brief F2).
+    """Port of ``clean_ncds`` (R: llm_paper/R/functions.R:L64–242).
 
     Returns one row per ``ncdsid`` with the columns of sex, birthweight, height,
     teacher, parents, personality, behavior, ability, motivation and highest_edu, in

@@ -65,7 +65,7 @@ def fit_model(
       and inner folds (``native_superlearner.default_folds``).
 
     ``outer_v``/``inner_v`` default to 10 and 5 (functions.R:L512, L541); only the
-    smoke configuration (Task 2.4) changes them. The fit carries the ``ncdsid`` of its
+    smoke configuration changes them. The fit carries the ``ncdsid`` of its
     rows in ``fit.ids`` when ``data`` has an ``ncdsid`` column.
     """
     cfg = config.SUPERLEARNER if method == "superlearner" else config.LM
@@ -122,7 +122,7 @@ def save_predictions(fit: CVSuperLearnerFit, target: str, prefix: str = "", labe
     ``$LCP_DATA_ROOT/fits/<prefix><target>__<outcome>.csv`` and return the path.
 
     Participant-level output: there is deliberately no way to choose another location
-    (brief Section 2.3). Columns: ``ncdsid`` (if known), ``fold`` (1-based outer fold),
+    Columns: ``ncdsid`` (if known), ``fold`` (1-based outer fold),
     ``Y``, ``SL.predict`` and one column per library learner. A non-empty ``label``
     (the smoke configuration's, config.SMOKE_RUN) is added as a first column
     ``run_label``, and ``prefix`` starts the file name, so such a file cannot be taken

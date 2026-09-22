@@ -183,7 +183,7 @@ def fit_cv_superlearner(
     folds, inner_folds:
         Optional fixed outer folds (0-based index arrays) and, per outer fold, fixed
         inner folds (0-based indices into that fold's training rows), for the R oracle
-        comparison (Task 2.2).
+        comparison.
     """
     X = np.asarray(X, dtype=float)
     y = np.asarray(y, dtype=float)

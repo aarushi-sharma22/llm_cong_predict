@@ -4,20 +4,19 @@ Every deviation from the original R code (`tobiaswolfram/llm_paper`, commit
 `b0cfe4c`), and every non-obvious fidelity decision, is logged here. This is the
 audit trail that distinguishes a documented translation from a rewrite.
 
-The stance (brief Section 2.2, replacing the earlier "fix bugs" stance):
+The stance:
 - **Default: faithful.** The port reproduces what the R evidently did, including
   quirks that change results.
 - **Reconstruction:** where the published R cannot have run (undefined objects, a
   wrong call), the port implements the evident intent and says so here.
-- **Corrected variant (off by default):** a corrected behaviour exists only where the
-  brief asks for one, behind a keyword argument that defaults to `False`.
+- **Corrected variant (off by default):** a corrected behaviour exists behind a
+  keyword argument that defaults to `False`.
 - **APPROX:** where Python can only approximate the R, the gap is measured by an item
   in `docs/VALIDATION_CHECKLIST.md`.
 - **Data-safety change:** changes made to keep restricted data out of the repository
   and away from external services.
 
-Entries written or rewritten from Phase 1 on use the format of brief Section 7: ID,
-label, R source lines, what the Python does, why, the test, and the VALIDATION_CHECKLIST
+Entries use the format: ID, label, R source lines, what the Python does, why, the test, and the VALIDATION_CHECKLIST
 item. Older entries keep the status legend ✅ done · 🔦 flagged, decision pending real
 data · ⏳ not yet ported. Line numbers refer to the clones listed in
 `docs/REFERENCE_SOURCES.md`.
@@ -27,15 +26,15 @@ data · ⏳ not yet ported. Line numbers refer to the clones listed in
 ## A. Bugs and inconsistencies in the original repo
 
 These are defects in the *public* R repo. A naive line-by-line port would faithfully
-reproduce broken behaviour, so each is called out with how we handle it.
+reproduce broken behaviour, so each is called out with its handling.
 
-### A1. `variables.xlsx` is the right file with its header row missing (rewritten in Phase 1, Task 1.6)
+### A1. `variables.xlsx` is the right file with its header row missing
 - **Label:** reconstruction. It replaces the earlier note, which was wrong.
 - **R source:** `llm_paper/_targets.R:L43` (`read_datalist("data/variables.xlsx")`);
   `llm_paper/R/functions.R:L22–24` (`read_excel(path)`), `L75–78` (uses `variable`,
   `sweep`, `respondent`, `new_varname`), `L103, L196, L201, L207, L212, L217` (uses
   `type`).
-- **What is true** (brief F1, verified at Checkpoint A):
+- **What is true:**
   - The file has no header row, so `read_excel` makes row 0 the header and the
     columns the R needs do not exist. The published R cannot have run on this exact
     file.
@@ -58,7 +57,7 @@ reproduce broken behaviour, so each is called out with how we handle it.
   written by `scripts/extract_r_targets.py`); `tests/test_io.py::test_read_datalist_real_file_returns_frame`.
 - **Validation:** V1.
 
-### A2. `clean_ncds` refers to four undefined blocks; reconstructed without them (rewritten in Phase 1, Task 1.6)
+### A2. `clean_ncds` refers to four undefined blocks; reconstructed without them
 - **Label:** reconstruction.
 - **R source:** `llm_paper/R/functions.R:L224–240`.
   `plyr::join_all(list(teacher, parents, height, birthweight, bsag, behavior,
@@ -66,7 +65,7 @@ reproduce broken behaviour, so each is called out with how we handle it.
   refers to `bsag`, `aspirations`, `parenting` and `camsis`, which are defined nowhere,
   so R stops here. `L202` (`select(-s2_co_total_ability)`) also errors with this
   table, because that name is not in it (A1).
-- **What the evident intent is** (brief F2, verified):
+- **What the evident intent is:**
   - The final `select` keeps only the columns of sex, birthweight, height, teacher,
     parents, personality, behavior, ability, motivation and highest_edu, in that order
     (`L228–239`), and every block comes from the same rows.
@@ -86,7 +85,7 @@ reproduce broken behaviour, so each is called out with how we handle it.
   `::test_collision_check_reports_identical_and_different`.
 - **Validation:** V1, and the collision report on real data.
 
-### A3. `get_complete_ncds` is called with an argument it does not have (corrected in Phase 1, Task 1.6)
+### A3. `get_complete_ncds` is called with an argument it does not have
 - **Label:** reconstruction. It corrects the earlier note.
 - **R source:** `llm_paper/R/functions.R:L309` defines four arguments and no `...`.
   `llm_paper/_targets.R:L169` calls it with five (`…, essay_data, gene_data`).
@@ -98,9 +97,9 @@ reproduce broken behaviour, so each is called out with how we handle it.
   (`L132`).
 - **Python:** `cleaning/assemble.py::get_complete_ncds` takes an explicit optional
   `ncds_gene`. With `None` it performs the three left joins of the four-argument R.
-  Gene-dependent targets are skipped when gene data is absent (Task 2.3).
+  Gene-dependent targets are skipped when gene data is absent.
   - The joins are dplyr natural joins, on every shared column, as the R's `left_join`
-    without `by` does (Checkpoint B decision). The keys are logged, and a warning is
+    without `by` does. The keys are logged, and a warning is
     issued whenever a join uses a key other than `ncdsid`.
   - After every join, `JoinCardinalityError` is raised unless there is exactly one row
     per `ncdsid`. The R makes no such check.
@@ -135,12 +134,12 @@ upstream), and several objects used before assignment
 `cog_superlearner_social_lm` used without `tar_read`). Mixed `tar_read(...)` vs
 bare-symbol usage throughout.
 
-Handling (done in Task 2.6): every output file, its inputs and its state are listed in
+Handling: every output file, its inputs and its state are listed in
 **docs/reference/create_data_outputs.md**, and `src/llm_cong_predict/reporting/` builds
 them. Four outputs are reconstructed and one (`appendix_D6_data`, which needs the code
 `n885`) cannot be built at all: N2. The planned `scripts/make_figures.py` was never
 written. D4 (essay text) and D7 (per-person BSAG values) are participant-level and
-become aggregate summaries (brief F9, N3).
+become aggregate summaries (N3).
 
 ### A7. Machine-specific / Windows-only paths ✅
 `C:/TreeTagger` (TreeTagger install), `C:/Users/usr/anaconda3/python.exe`
@@ -177,9 +176,9 @@ so in practice the clamp fires rarely. This is faithful to the original, not a f
 Tested in `test_winsorise_only_clamps_beyond_10_sd`.
 
 ### B4. Metric rows: MSE and SE from the unclamped predictions, and lm MSE from `SL.lm_All`
-Rewritten in Phase 1, Task 1.2. The earlier version of this note claimed the port
+The earlier version of this note claimed the port
 was "numerically identical". It was not: it computed the MSE after the clamp, and the
-lm row used the ensemble's MSE (brief F6).
+lm row used the ensemble's MSE.
 
 - **Label:** faithful.
 - **R source:** `llm_paper/R/functions.R:L704–705` (the "Super Learner" row of
@@ -197,18 +196,17 @@ lm row used the ensemble's MSE (brief F6).
     unclamped `SL.lm_All` column (the linear model alone). R² comes from `SL.lm_All`
     against `SL.mean_All`, and MAD and RMSE from the clamped ensemble, as before.
   - SE uses `ddof=1`.
-  - Naming: R calls the SE column **`se`**; the port calls it `se_mse` (owner decision
-    C5). The R rows also carry an `Algorithm` column ("Super Learner" or "SL.lm_All"),
+  - Naming: R calls the SE column **`se`**; the port calls it `se_mse`. The R rows also carry an `Algorithm` column ("Super Learner" or "SL.lm_All"),
     which the port does not reproduce. The lm row's sample-size column stays `n`
     instead of R's `length(cv_fit$Y)`.
-- **Why:** faithful order of operations (brief F6).
+- **Why:** faithful order of operations.
 - **Test:** `tests/test_cv_metrics.py::test_superlearner_mse_unclamped_r2_mad_rmse_clamped`,
   `::test_lm_metrics_mse_is_sl_lm_all_fold_mean`, `::test_se_mse_hand_computation`.
 - **Validation:** V6. Figure and appendix CSVs against the paper.
 
 ---
 
-## C. Super Learner engine and base learners (rewritten in Phase 1, Task 1.3)
+## C. Super Learner engine and base learners
 
 Citations are to SuperLearner 2.0-40 and the package versions in
 `docs/REFERENCE_SOURCES.md`. The SuperLearner files involved have not changed since
@@ -236,10 +234,7 @@ and **V7** (learner settings).
     CV. A learner that fails only in the refit keeps a number, as in R. When its
     positive weight forced a recomputation, that number is computed from its zeroed Z
     column.
-  - The brief's wording "cv_risk is NaN for failed learners" is therefore exact only
-    for CV failures.
-- **Why:** brief F4.
-- **Measured against R (Task 2.2):** on identical outer and inner folds, R's
+- **Measured against R:** on identical outer and inner folds, R's
   `CV.SuperLearner` (SuperLearner 2.0-42, R 4.6.1) and the native engine with the lm
   library (`SL.mean`, `SL.lm`) agree to at most 1.7e-14. That covers library
   predictions, weights, SL predictions, CV risks and discrete-SL predictions, with an
@@ -315,8 +310,7 @@ and **V7** (learner settings).
   max_features=max(1, floor(sqrt(p))), min_samples_split=6, min_samples_leaf=1,
   bootstrap=True, max_samples=None, n_jobs=1)`, with p counted after screening.
 - **Why:** sklearn splits when `n >= min_samples_split`
-  (`sklearn/tree/_tree.pyx:L231`), so 6 reproduces ranger's threshold (owner decision
-  C2; brief F5 said 5, which is off by one). APPROX: sklearn bootstraps with sample
+  (`sklearn/tree/_tree.pyx:L231`), so 6 reproduces ranger's threshold. APPROX: sklearn bootstraps with sample
   weights and counts distinct rows per node, while ranger counts draws including
   duplicates. The trees and their random numbers are different implementations.
 - **Test:** `tests/test_learners.py::test_ranger_settings`.
@@ -377,8 +371,8 @@ and **V7** (learner settings).
 - **Note:** SuperLearner added a branch for xgboost > 3.0 on 2025-12-14 (commit
   `abebb56`, `SL.xgboost.R:L53–65`). That branch **does not pass `params`**, so under
   R xgboost ≥ 3 the `tree_method = "hist"` override would be silently ignored. The R
-  oracle therefore needs pinned package versions, which is a Phase 3 item. R's xgboost
-  is deliberately not installed here yet (owner instruction).
+  oracle therefore needs pinned package versions. R's xgboost
+  is deliberately not installed here yet.
 - **Test:** `tests/test_learners.py::test_xgboost_settings_and_base_score`.
 - **Validation:** V4, V7.
 
@@ -406,9 +400,9 @@ and **V7** (learner settings).
     `which.max` of an all-FALSE vector does;
   - `ScreenFailure` when p < 2 or y is constant. The engine then keeps all columns.
 - **Why:** faithful selection rule. APPROX: convergence criteria differ, and R's CV
-  folds are random. `foldid` and `lambdas` arguments let the Task 2.2 oracle compare
+  folds are random. `foldid` and `lambdas` arguments let the oracle compare
   on identical folds and grid.
-- **Measured against R (Task 2.2, glmnet 5.0, synthetic data):**
+- **Measured against R (glmnet 5.0, synthetic data):**
   - With R's lambda sequence and shared folds: identical selections in 12/12
     datasets.
   - With each side's own default grid and early stop (the screener as the pipeline
@@ -441,7 +435,7 @@ and **V7** (learner settings).
 ### E1. `read_gene_data` raises instead of returning NULL ✅ (documented)
 The R body was an empty `#PLACEHOLDER` returning `NULL` silently. Called without a
 path, the Python port raises `NotImplementedError` with a clear message, so any use of
-gene data fails loudly rather than propagating a silent `None`. Since Task 2.4 it reads
+gene data fails loudly rather than propagating a silent `None`. It reads
 the optional polygenic score file when one exists, in the placeholder format of M5.
 (Note: `_targets.R` also mis-wires this target — `tar_target(gene_data, read_gene_data)`
 passes the function itself, uncalled — which is handled at the pipeline layer, not
@@ -455,8 +449,8 @@ equivalent, so the readers carry `pyreadstat`'s `variable_value_labels` on
 Caveat: `df.attrs` is not always propagated across pandas operations, so labels are
 re-attached after transforms and should be read early in the cleaning chain.
 
-### E3. `combine_ncds` resolves column collisions as plyr does (rewritten in Phase 1, Task 1.5)
-- **Label:** faithful. Owner decision C1 corrects brief F8 item 4.
+### E3. `combine_ncds` resolves column collisions as plyr does
+- **Label:** faithful.
 - **R source:**
   - `llm_paper/R/functions.R:L57–62`:
     `plyr::join_all(by = "ncdsid", type = "full") %>% as_tibble()`.
@@ -473,11 +467,9 @@ re-attached after transforms and should be read early in the cleaning chain.
   - Every collision is logged (warning) and recorded in
     `attrs["combine_ncds_collisions"]` with the count of differing cells.
   - `strict=True` raises `ColumnCollisionError` instead. This option is not in the R.
-- **Why:** the brief (F8) said `join_all` keeps both copies and `as_tibble` then
-  rejects the duplicated names, so the Python should raise. That is not what plyr
-  does. `rbind.fill` removes the duplicates, so `as_tibble` never sees any, and the
+- **Why:** `rbind.fill` removes the duplicates, so `as_tibble` never sees any, and the
   author's run could have had silent collisions. The earlier port coalesced, which
-  matched neither R nor the brief.
+  matches neither R nor plyr.
 - **Test:** `tests/test_io.py::test_combine_ncds_collision_keeps_first_frame_like_plyr`,
   `::test_combine_ncds_right_only_rows_take_right_value_in_plyr_order`,
   `::test_combine_ncds_strict_mode_raises_on_collision`,
@@ -489,10 +481,10 @@ re-attached after transforms and should be read early in the cleaning chain.
 Matches the R (`haven::read_dta` only). The real CAMSIS files already use lower-case
 names (`co1970`/`mcamsis`/`fcamsis`) that `create_aspirations` relies on.
 
-### E5. `read_datalist` reads `variables.xlsx` with assigned column names (Task 2.1)
+### E5. `read_datalist` reads `variables.xlsx` with assigned column names
 Reconstruction. See A1.
 
-### E6. `read_essays` reads like `readtext` and splits like `tidyr::separate` (Checkpoint B decision)
+### E6. `read_essays` reads like `readtext` and splits like `tidyr::separate`
 - **Label:** faithful.
 - **R source:**
   - `llm_paper/R/functions.R:L26–31`;
@@ -507,18 +499,17 @@ Reconstruction. See A1.
   - When the ID separator occurs twice, the text is cut at the second one, and the
     "  Words: " part behind it is discarded too, so the word count is NA, as in R.
   - tidyr's warnings list row numbers. The port warns and logs only the NUMBER of
-    files with extra and with missing pieces (owner instruction), and keeps the counts
+    files with extra and with missing pieces, and keeps the counts
     in `attrs["read_essays_malformed"]`.
-  - `scripts/check_essay_format.py` gives the owner the same counts for the real
-    essays, as aggregate numbers only.
-- **Why:** owner decision at Checkpoint B.
+  - `scripts/check_essay_format.py` gives the same counts for the real essays, as
+    aggregate numbers only.
 - **Test:** `tests/test_io.py::test_read_essays_malformed_files_follow_tidyr_separate`,
   `::test_read_essays_reads_text_like_readtext`, `::test_read_essays_parses_format`,
   `::test_check_essay_format_prints_only_counts`.
 - **Validation:** V2. Run `scripts/check_essay_format.py` on the real essays.
 
 
-### E7. `to_character` follows sjlabelled (Task 2.1)
+### E7. `to_character` follows sjlabelled
 - **Label:** faithful.
 - **R source:** `sjlabelled/R/as_character.R:L10–15, L33–38`, `as_label.R:L229–269`
   (1.2.0): `add.non.labelled = FALSE`.
@@ -536,10 +527,10 @@ Reconstruction. See A1.
 
 Scope note: `clean_ncds` was deferred in the first build (option (b)) on the belief
 that the public `variables.xlsx` was the wrong file. That belief was wrong (A1): the
-file is right and only lacks a header row. `clean_ncds` is ported in Phase 2,
-Task 2.1, as a reconstruction (A1, A2). The other five cleaning functions are ported.
+file is right and only lacks a header row. `clean_ncds` is ported as a
+reconstruction (A1, A2). The other five cleaning functions are ported.
 
-### F1. `create_factors` backends: R's `psych::fa` (default) or native (Task 2.2)
+### F1. `create_factors` backends: R's `psych::fa` (default) or native
 - **Label:** faithful with the `"r"` backend. The native backend is APPROX for the
   Pearson factor and cannot compute the polychoric factors.
 - **R source:** `llm_paper/R/functions.R:L272–307`. Each factor is
@@ -553,16 +544,15 @@ Task 2.1, as a reconstruction (A1, A2). The other five cleaning functions are po
   - `"native"` computes the Pearson factor in numpy (F2). The polychoric factors are
     deferred, or raise with `include_polychoric=True`. A polychoric estimator matching
     psych would be guesswork.
-  - The default `"r"` is my choice, because it is the only backend that produces all
-    four factors as the R does. It needs R, rpy2 and psych.
-- **Why:** brief Task 2.2.
+  - The default is `"r"`: it is the only backend that produces all four factors as the
+    R does. It needs R, rpy2 and psych.
 - **Test:** `tests/test_oracle.py::test_r_bridge_computes_all_four_factors`,
   `::test_pearson_factor_matches_psych_fa`;
   `tests/test_cleaning.py::test_create_factors_polychoric_raises_not_guesses`
   (native).
 - **Validation:** V3.
 
-### F2. `create_factors` implemented in numpy; Pearson-factor scoring follows `factor.scores` (scoring fixed in Phase 1, Task 1.5)
+### F2. `create_factors` implemented in numpy; Pearson-factor scoring follows `factor.scores`
 - **Label:** faithful for the scoring; APPROX for the loadings.
 - **R source:** `llm_paper/R/functions.R:L297–306`; `psych/R/fa.R:L19–41` (defaults:
   minres, regression scores, `missing = FALSE`, `impute = "none"`), `L811` (no
@@ -573,13 +563,13 @@ Task 2.1, as a reconstruction (A1, A2). The other five cleaning functions are po
   columns centred on their means and divided by the SD with denominator **n − 1**,
   both over non-missing values, and **no imputation**, so a row with any missing item
   gets NaN. The earlier port mean-imputed missing items and used the n denominator
-  (brief F3).
+ .
 - **Why:** faithful scoring. `factor_analyzer` 0.5.1 is incompatible with the
   installed scikit-learn. APPROX: psych fits the uniquenesses by `optim`, which
   minimises the same criterion, but identical loadings are not guaranteed.
 - **Test:** `tests/test_cleaning.py::test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling`,
   `::test_create_factors_computes_pearson_defers_polychoric`.
-- **Measured against R (Task 2.2, psych 2.6.5):** on 4 synthetic datasets with missing
+- **Measured against R (psych 2.6.5):** on 4 synthetic datasets with missing
   items, the NA pattern is identical, the correlation with `psych::fa(x, 1)$scores` is
   ≥ 0.99999999997, and the largest absolute difference is 2.2e-5, from the loadings
   (AP8). `tests/test_oracle.py::test_pearson_factor_matches_psych_fa`.
@@ -599,8 +589,8 @@ The R definition takes 4 arguments but `_targets.R` passes 5, which is an error 
 (A3, corrected). The port adds an explicit optional `ncds_gene`. With `None` it
 performs the joins of the 4-argument R.
 
-### F5. `find_essay_teacher_genetics_overlap`: haven integer codes, unlabelled values kept (rewritten in Phase 1, Task 1.5)
-- **Label:** faithful. Owner decision C9 and brief F8 item 3.
+### F5. `find_essay_teacher_genetics_overlap`: haven integer codes, unlabelled values kept
+- **Label:** faithful.
 - **R source:** `llm_paper/R/functions.R:L330–346`; `haven/R/as_factor.R:L62–84`
   (2.5.5, `levels = "default"`); `r-source/src/library/base/R/ifelse.R:L46–55`.
 - **Python:**
@@ -623,7 +613,7 @@ performs the joins of the 4-argument R.
   `::test_as_factor_keeps_unlabelled_values_like_haven_default`.
 - **Validation:** none (unused by the pipeline).
 
-### F6. `read_ncds` drops the labels of the codes it sets to missing (Phase 1, Task 1.5)
+### F6. `read_ncds` drops the labels of the codes it sets to missing
 - **Label:** faithful.
 - **R source:** `llm_paper/R/functions.R:L51` (`sjlabelled::set_na(na = -99:-1)`);
   `sjlabelled/R/set_na.R:L258–263` (values become NA), `L268–272` (their labels are
@@ -636,7 +626,7 @@ performs the joins of the 4-argument R.
 - **Test:** `tests/test_io.py::test_read_ncds_drops_labels_of_recoded_missing_codes`.
 - **Validation:** none.
 
-### F7. `clean_ncds` (Phase 2, Task 2.1)
+### F7. `clean_ncds`
 - **Label:** faithful per step. The whole function is a reconstruction (A1, A2).
 - **R source:** `llm_paper/R/functions.R:L64–242`. Each step is cited in
   `cleaning/clean_ncds.py`.
@@ -660,9 +650,7 @@ performs the joins of the 4-argument R.
     the parents' age-left columns) raises `MissingColumnError` when absent, as dplyr
     stops there.
   - `ncdsid` must be unique.
-- **Why:** brief F2.
-- **Test:** `tests/test_clean_ncds.py` (14 tests: the ten the brief lists, plus the
-  table, the parent-education bounds, sex, absent codes).
+- **Test:** `tests/test_clean_ncds.py` (14 tests).
 - **Validation:** V1 (absent codes, collision report on real data).
 
 ---
@@ -679,7 +667,7 @@ Parquet/CSV with `ncdsid` + embedding columns, and (b) makes the reshaper read t
 and return the reshaper's INTENDED output (`id` + embedding columns). Deviation and
 the original contradiction both documented.
 
-### G2. RoBERTa: mean over all positions, padding included; batched (batching added in Phase 1, Task 1.5)
+### G2. RoBERTa: mean over all positions, padding included; batched
 - **Label:** faithful. Batching does not change the numbers.
 - **R source:** `llm_paper/R/functions.R:L446–490`, in particular `L480–482`: a keras
   input of token ids only, no attention mask, and
@@ -691,13 +679,13 @@ the original contradiction both documented.
   by default the public `roberta-base` weights are loaded locally. PyTorch replaces
   TensorFlow.
 - **Why:** a single forward pass over about 10,000 essays of 250 tokens runs out of
-  memory (brief F8). Rows are independent, so batching gives the same numbers.
+  memory. Rows are independent, so batching gives the same numbers.
 - **Test:** `tests/test_features.py::test_roberta_pool_batched_equals_unbatched`
   (bit-identical on a tiny randomly initialised `RobertaConfig` model),
   `::test_roberta_embeddings_batch_size_does_not_change_output`. The real
   `roberta-base` weights were not loaded here.
 - **Validation:** V2 (essay feature width) on real essays.
-- **Process isolation (owner decision, Checkpoint B).** torch bundles its own OpenMP
+- **Process isolation.** torch bundles its own OpenMP
   runtime, and once torch has been imported an xgboost fit in the same process
   segfaults (observed with torch 2.14.0 and xgboost 3.3.0 on macOS). So RoBERTa
   embeddings are generated by a separate step in its own process,
@@ -712,8 +700,8 @@ the original contradiction both documented.
   `::test_roberta_step_writes_derived_file_that_reads_back_exactly`,
   `::test_roberta_step_refuses_without_data_root`. See docs/ORCHESTRATION.md.
 
-### G3. SALAT and spelling: ingestion only, with R's join and pivot semantics (rewritten in Phase 1, Task 1.5)
-- **Label:** faithful. Owner decision C8 and brief F8 items 1–2.
+### G3. SALAT and spelling: ingestion only, with R's join and pivot semantics
+- **Label:** faithful.
 - **R source:** `llm_paper/R/functions.R:L390–417` (spelling), `L419–444` (SALAT);
   `dplyr/R/join.R:L624`, `join-by.R:L376–379` (joins without `by`).
 - **Python** (`features/salat.py`):
@@ -750,7 +738,7 @@ the original contradiction both documented.
 - **Validation:** V2. On real data, check `attrs["salat_join_keys"]`: any key other
   than `filename` means a shared metric column.
 
-### G4. Readability/tokenisation: an external-tool boundary, with the R script that crosses it (Task 2.5)
+### G4. Readability/tokenisation: an external-tool boundary, with the R script that crosses it
 - **Label:** faithful (the R script), plus a deviation for the two paths.
 - **R source:** `llm_paper/R/functions.R:L26–31` (`read_essays`), `L356–367`
   (`tokenize_essays`), `L369–388` (`calculate_readability_metrics`).
@@ -760,7 +748,7 @@ the original contradiction both documented.
   the metrics computed outside Python, the way the SALAT and LanguageTool outputs are
   read.
 - **R:** `r/readability.R` is the standalone port of those three functions, copied line
-  for line with two changes the brief requires: the TreeTagger path comes from
+  for line with two changes: the TreeTagger path comes from
   `LCP_TREETAGGER_PATH` instead of the hard-coded `C:/TreeTagger` (`L362`), and the
   essays are read from `$LCP_DATA_ROOT/essays` and the result written to
   `$LCP_DATA_ROOT/readability_metrics.csv` (`config.RESTRICTED_INPUTS`), so restricted
@@ -773,8 +761,7 @@ the original contradiction both documented.
   So its output has never been checked, and the koRpus index names in the file it
   writes are whatever `summary(readability(...))` returns — not verified here. Treat
   its first run as untested code.
-- **Why:** brief Task 2.5.
-- **Test:** the Python side only, as the brief says:
+- **Test:** the Python side only:
   `tests/test_features.py::test_ingest_readability_metrics_reads_what_the_korpus_script_writes`,
   `::test_tokenize_essays_raises_external_boundary`,
   `::test_calculate_readability_metrics_raises_external_boundary`.
@@ -788,9 +775,9 @@ passes `gpt_embeddings`; see A4).
 
 ---
 
-## H. Data safety (Phase 1, Task 1.1)
+## H. Data safety
 
-Entries from here on use the format of brief Section 7: ID, label, R source lines,
+Entries from here on use the format: ID, label, R source lines,
 what the Python does, why, the test that covers it, and the VALIDATION_CHECKLIST
 item, if any.
 
@@ -807,7 +794,7 @@ item, if any.
   resolves (symlinks followed) inside the repository. There is no default. Importing
   the package never touches the data root. The file names are those of `_targets.R`
   and are not yet confirmed against the UK Data Service downloads.
-- **Why:** restricted data must never be inside the repository (brief Section 2.3).
+- **Why:** restricted data must never be inside the repository.
 - **Test:** `tests/test_data_safety.py::test_data_root_*`,
   `::test_restricted_and_output_paths_built_under_data_root`,
   `::test_importing_config_never_touches_the_data_root`.
@@ -826,7 +813,6 @@ item, if any.
   `$LCP_DATA_ROOT`. No code in the package or pipeline calls the script (checked with
   `git grep`). The `openai` client moved from the `embeddings` extra to a separate
   `external-api` extra, so installing the local embedding stack never installs it.
-- **Why:** brief Section 2.3; owner decision at Checkpoint A (item 2).
 - **Test:** `tests/test_data_safety.py::test_gpt_script_refuses_without_double_opt_in`
   (three cases), `::test_embeddings_extra_does_not_include_openai`.
 - **Validation:** none.
@@ -840,8 +826,7 @@ item, if any.
     `data/occupation_aspiration_mapping.xlsx` and `data/camsis/*.dta`.
   - It ignores `/reference/`, `/outputs/`, `/results/`, `/.cache_pipeline/` and the
     data-like extensions everywhere.
-  - It ignores CSV files at the repository root. That goes beyond the brief's list;
-    it covers the root predictions CSV found in F8.6.
+  - It ignores CSV files at the repository root, which covers the root predictions CSV.
   - `scripts/check_no_restricted_data.py` checks staged files (or all tracked files
     with `--all`). It refuses: data-like extensions outside the allow-list, other files
     under `data/`, CSV/TXT outside `tests/` and `docs/` (except `requirements*.txt`),
@@ -849,14 +834,14 @@ item, if any.
   - `scripts/hooks/pre-commit` runs the checker. It is enabled per clone with
     `git config core.hooksPath scripts/hooks`, which is documented in the README and
     enabled in the development clone.
-- **Why:** `.gitignore` alone is bypassed by `git add -f`. Brief Task 1.1, F8.6.
+- **Why:** `.gitignore` alone is bypassed by `git add -f`.
 - **Test:** `tests/test_data_safety.py::test_checker_*`,
   `::test_pre_commit_hook_blocks_commit`, `::test_gitignore_*`.
 - **Validation:** none.
 
 ---
 
-### H4. The export guard: one way out of `$LCP_DATA_ROOT` (Phase 2, Task 2.7)
+### H4. The export guard: one way out of `$LCP_DATA_ROOT`
 - **Label:** data-safety change (nothing in the R corresponds to it).
 - **Python:** `export.py`. `export_table` is the only function that writes a table
   outside `$LCP_DATA_ROOT`; `export_tables` runs it over a set of tables and reports
@@ -872,19 +857,18 @@ item, if any.
      not caught by this.
 - **The minimum cell size is a decision, not a computation.** The port never picks one:
   with `config.MINIMUM_CELL_SIZE = None` every export is refused, with a message saying
-  to confirm the value against the UK Data Service's output rules. It is now **10**
-  (owner, Checkpoint D): the UKDS handling guide gives 3 as the baseline threshold and
+  to confirm the value against the UK Data Service's output rules. It is now **10**:
+  the UKDS handling guide gives 3 as the baseline threshold and
   advises 10 where several outputs come from the same source, which is the case here.
   Still to be confirmed with UKDS (V10).
 - **What passing does not mean:** the guard is four mechanical checks, not a
   disclosure review. Passing says only that these four found nothing.
-- **Why:** brief Task 2.7.
 - **Test:** `tests/test_export.py` (14 tests: one per refusal, the unset minimum, the
   nonsense minimum, and that a refused table leaves no file behind),
   `tests/test_reporting.py::test_the_built_tables_go_through_the_export_guard`.
 - **Validation:** V10.
 
-## I. Model specification (Phase 1, Task 1.4)
+## I. Model specification
 
 ### I1. Every model target records its method, outcome, predictors, sample, data preparation and scorer
 - **Label:** faithful.
@@ -902,18 +886,16 @@ item, if any.
   - `R_TO_PYTHON_TARGET` maps every R name to its Python name. The names are
     regularised as `<feature set>_<method><suffix>`, for example `essay_lm` →
     `essay_lm_lm` and `salat_metrics_superlearner` → `salat_metrics_superlearner_text`.
-- **Scorers (brief F7):** `lm` only for the seven `*_lm` targets (`L452–464`).
+- **Scorers:** `lm` only for the seven `*_lm` targets (`L452–464`).
   `superlearner` for every other scored target, including the three `*_social_lm` lm
   fits (`L489–494`), `text_length` and the seven text components (create_data.R), and
   the two `*_social_lm_overlap` targets (create_data.R). **`none`** for the seven
-  `*_superlearner_mmg_lm` targets (`L323–343`), which neither file scores (owner
-  decision C6). They are fitted but get no metric target.
-- **Data preparation (brief F7):** `pedu` → `as.numeric(s3_pa_edu)` (`L208, L368`);
+  `*_superlearner_mmg_lm` targets (`L323–343`), which neither file scores. They are fitted but get no metric target.
+- **Data preparation:** `pedu` → `as.numeric(s3_pa_edu)` (`L208, L368`);
   `sociological` → `as.numeric` on all seven sociological variables (`L258, L374`);
   RoBERTa → inner join of `roberta_embeddings` on `ncdsid = id` (`L227`); GPT-4 → drop
   columns starting with `embedding`, then inner join `gpt4_embeddings` (`L230`). The
   joined tables are graph dependencies of their model targets.
-- **Why:** brief Task 1.4 and F7.
 - **Test:** `tests/test_pipeline.py::test_every_r_model_target_maps_to_one_python_target_with_the_same_definition`,
   `::test_expanding_over_outcomes_gives_416_fits`, `::test_variable_lists_match_the_r_constants`,
   `::test_embedding_models_depend_on_their_embedding_targets`,
@@ -928,18 +910,16 @@ item, if any.
 - **Python:** the `_social_lm` and `_social_lm_overlap` families override the `cog`
   feature set with the literal column. The previous port used all seven
   `cog_variables`.
-- **Why:** brief F7.
 - **Test:** `tests/test_pipeline.py::test_cog_social_lm_uses_the_single_ability_factor`.
 - **Validation:** none.
 
 ---
 
-## J. Corrections to the facts of the Phase 1–2 brief (Section 4)
+## J. Corrections
 
-Found at Checkpoint A (`docs/PHASE_1_2_PLAN.md` A.4) and confirmed by the owner. The
-code follows the corrected version.
+The code follows the corrected version.
 
-### J1. F2: why the teacher version of the collided columns is kept
+### J1. Why the teacher version of the collided columns is kept
 The conclusion is right, the reason is not. `plyr::join_all` keeps the first
 occurrence of a duplicated column (`plyr/R/rbind-fill.r:L70–71, L80`). The teacher
 block comes first in the join list (`functions.R:L224`), so its rank-coded columns
@@ -951,15 +931,14 @@ survive. The final `select` never sees duplicates. Also:
   become NA.
 - `select(-s2_co_total_ability)` errors on every run with this table (A2).
 
-### J2. F4: CV risk of learners that fail only in the refit
+### J2. CV risk of learners that fail only in the refit
 SuperLearner sets `cvRisk` to NA only for learners that failed in cross-validation
 (`SuperLearner/R/SuperLearner.R:L303–305`). A learner that fails only in the
-full-data refit keeps a number. The port copies this (owner decision C10; C1).
+full-data refit keeps a number. The port copies this (C1).
 
-### J3. F5: learner mappings
+### J3. Learner mappings
 - **ranger:** the sklearn value is `min_samples_split = 6`, not 5. ranger does not split
-  a node with `n <= min.node.size` (`ranger/src/TreeRegression.cpp:L106`) (owner
-  decision C2; C5).
+  a node with `n <= min.node.size` (`ranger/src/TreeRegression.cpp:L106`) (C5).
 - **ksvm:** `cache`, `tol` and `shrinking` come from kernlab's defaults
   (`kernlab/R/ksvm.R:L61–63`), not from the wrapper, which does not pass them. The
   values are the same (C7).
@@ -974,12 +953,12 @@ full-data refit keeps a number. The port copies this (owner decision C10; C1).
   (v1.7.6 source), although that version's parameter documentation suggests otherwise
   (C8).
 
-### J4. F8 item 4: `combine_ncds` collisions
+### J4. `combine_ncds` collisions
 `plyr::join_all(type = "full")` does not return duplicated names, so `as_tibble` does
 not reject them and the Python must not raise. The later frame's values only fill rows
-the earlier frames did not have (owner decision C1; E3).
+the earlier frames did not have (E3).
 
-### J5. F10: the aspiration mapping is many-to-one
+### J5. The aspiration mapping is many-to-one
 13 `occupation_1970` values are shared by several aspirations, so the mapping is
 many-to-one, not one-to-one. Each aspiration matches exactly one CAMSIS row, so the
 join in `create_aspirations` adds no rows (computed with pandas: 58 joined rows for
@@ -990,7 +969,7 @@ An unmatched fifth argument is an error in R, not silently dropped (A3, rewritte
 
 ---
 
-## K. R bridge (Phase 2, Task 2.2)
+## K. R bridge
 
 ### K1. `models/r_superlearner.py` fixed, and first run
 - **Label:** faithful (it calls R itself).
@@ -1006,14 +985,13 @@ An unmatched fifth argument is an error in R, not silently dropped (A3, rewritte
   - It returned no per-fold CV risks; it now returns them from `AllSL`.
   - Results are fetched piece by piece, because the numpy/pandas converter turns an
     R list into a `NamedList`.
-- **R's xgboost is not installed** (owner instruction; Phase 3 pins it). With the full
+- **R's xgboost is not installed.** With the full
   library, R's `SL.xgboost.hist` therefore fails inside `try()` and gets weight 0 on
   the R side. The oracle tests use only the lm library.
-- **Why:** brief Task 2.2.
 - **Test:** `tests/test_oracle.py::test_sl_mean_and_sl_lm_match_r_superlearner_on_identical_folds`;
   `scripts/validate_oracle.py` (lm library, identical outer and inner folds: every
-  difference ≤ 1.7e-14, run at Task 2.2).
-- **Validation:** V4 (the full library needs a pinned R xgboost < 3.0, Phase 3).
+  difference ≤ 1.7e-14).
+- **Validation:** V4 (the full library needs a pinned R xgboost < 3.0).
 
 ### K2. torch, xgboost and R in one process
 R embedded through rpy2 and xgboost were run in one process, in both orders (glmnet,
@@ -1023,7 +1001,7 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
 
 ---
 
-## L. Model runner (Phase 2, Task 2.3)
+## L. Model runner
 
 ### L1. `fit_model`: one R model function call
 - **Label:** faithful. Refusing non-numeric predictors is a check the R does not make.
@@ -1044,7 +1022,6 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
   - It returns `(fit, outcome_var)`, as the R returns `list(fit, var)`. `fit.ids`
     carries the `ncdsid` of the rows used.
   - `make.names` on column names is not reproduced; it changes names only.
-- **Why:** brief Task 2.3.
 - **Test:** `tests/test_run.py::test_fit_model_lm_recovers_planted_signal_and_applies_na_omit`,
   `::test_fit_model_refuses_non_numeric_predictors`, `::test_fit_model_missing_column_raises`,
   `::test_fit_model_superlearner_recovers_planted_signal` (slow),
@@ -1090,7 +1067,7 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
 
 ---
 
-## M. Execution layer and synthetic data (Phase 2, Task 2.4)
+## M. Execution layer and synthetic data
 
 ### M1. The runner: every target bound to the function it calls
 - **Label:** faithful (it is the port of `tar_make()`).
@@ -1107,10 +1084,9 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
     `n_jobs` worker processes (joblib). The R parallelises the outer folds of one fit
     (`parallel::makeCluster(10)`, `functions.R:L506`); either way the port's numbers do
     not depend on `n_jobs` (every fold and seed is fixed, C2).
-  - No caching and no scheduler: Phase 3 (docs/ORCHESTRATION.md).
+  - No caching and no scheduler (docs/ORCHESTRATION.md).
   - Outputs, all under `$LCP_DATA_ROOT`: `metrics/<prefix>metrics.csv` (one row per
     scored fit), `logs/<prefix>run_log.json`, `fits/` (per-person predictions, L3).
-- **Why:** brief Task 2.4.
 - **Test:** `tests/test_execute.py::test_every_target_is_bound_to_the_function_it_calls`,
   `::test_smoke_run_scores_every_scored_target` (slow),
   `::test_paper_configuration_runs_on_one_target` (slow),
@@ -1127,7 +1103,6 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
   metric rows, the prediction files and the run log carry
   "SMOKE RUN on synthetic data: not results". The paper configuration on a synthetic
   root is labelled too (`SYNTHETIC_`).
-- **Why:** brief Task 2.4 ("make it impossible to use for a real run").
 - **Test:** `tests/test_execute.py::test_smoke_configuration_is_refused_without_the_synthetic_marker`,
   `::test_smoke_configuration_is_refused_when_an_id_is_not_synthetic`,
   `::test_every_smoke_output_is_labelled`.
@@ -1153,7 +1128,6 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
     GPT EMBEDDING dimension is lost.
   Both change which predictors a model gets. They are reproduced, not corrected
   (the stance: keep the R's quirks by default); the loss is one column out of many.
-- **Why:** brief F7 and Task 2.4.
 - **Test:** `tests/test_pipeline.py::test_data_dependent_variable_lists_follow_the_r_including_its_two_quirks`.
 - **Validation:** V8 (which names are affected depends on the real tool output).
 
@@ -1164,13 +1138,11 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
   - gene data absent: the gene-dependent targets are skipped (L2), and every metric
     row from a sample the R defines with `gene_variables` (`ncds_complete_mmg`,
     `ncds_complete_mmg_cog`, `ncds_complete_all_overlap`) carries
-    `sample_note = "built without gene data, not comparable to the paper"` (owner
-    decision at Checkpoint C, so the warning stays with the numbers wherever the
-    table goes);
+    `sample_note = "built without gene data, not comparable to the paper"`, so the
+    warning stays with the numbers wherever the table goes;
   - a factor the backend does not compute (`FACTOR_BACKEND = "native"`, F1): the fits
     whose outcome is that factor, the targets that use it as a predictor and the
     samples whose variable list contains it are not run, each with the reason.
-- **Why:** owner decisions at Checkpoint C.
 - **Test:** `tests/test_execute.py::test_gene_targets_are_skipped_and_gene_defined_samples_are_marked`,
   `::test_native_factor_backend_reports_the_polychoric_outcomes_as_not_run`.
 - **Validation:** none.
@@ -1182,8 +1154,7 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
   `ncdsid` and whose other columns are numeric scores, because the R takes the scores
   as `colnames(gene_data)[-1]`. Without a path it still raises (E1). The pipeline
   reads the file only when it exists; otherwise gene data is absent (M4). The format
-  of the released polygenic index files is a Phase 5/6 item and will replace this.
-- **Why:** brief Task 2.4 ("an optional synthetic polygenic score table").
+  of the released polygenic index files will replace this.
 - **Test:** `tests/test_io.py::test_read_gene_data_reads_the_placeholder_format`.
 - **Validation:** V8.
 
@@ -1201,7 +1172,7 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
   dimensions (GPT 16/24; RoBERTa is 768, fixed by `_targets.R:L139`), which file each
   code sits in, and the placement of `nwords` (the predictor of `text_length`,
   `_targets.R:L261`) in the TAALED and TAALES files — where it also serves as the metric
-  shared by two tools that brief F8 asks for.
+  shared by two tools.
 - **Test:** `tests/test_execute.py::test_synthetic_inputs_are_deterministic_given_the_seed`,
   `::test_every_code_of_the_variable_table_is_in_exactly_one_ncds_file`,
   `::test_value_labels_include_missing_strings_negative_codes_and_the_aspiration_labels`,
@@ -1220,7 +1191,7 @@ R. torch and xgboost remain separated (docs/ORCHESTRATION.md).
 
 ---
 
-## N. Reporting: the port of `R/create_data.R` (Phase 2, Task 2.6)
+## N. Reporting: the port of `R/create_data.R`
 
 Every output file of the R, its inputs, its transformations, whether it is aggregate or
 participant-level, and whether the R can produce it: **docs/reference/create_data_outputs.md**.
@@ -1241,7 +1212,6 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
   that target from the runner's metrics table (M1).
 - **A table whose inputs are missing is never built from fewer rows.** Without gene
   data, for example, `fig_2_data` and `fig_3_data` are not produced, and say why.
-- **Why:** brief Task 2.6.
 - **Test:** `tests/test_reporting.py` (19 tests),
   `tests/test_execute.py::test_reporting_tables_build_from_the_end_to_end_run` (slow).
 - **Validation:** V6.
@@ -1271,7 +1241,7 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
     The port does not rebuild the table from the five codes that do exist: it raises
     with that reason. (`n885` is also named in `find_essay_teacher_genetics_overlap`,
     `functions.R:L333`, which `_targets.R` never calls.)
-    **Corrected variant, OFF by default** (owner decision at Checkpoint D):
+    **Corrected variant, OFF by default** :
     `config.INCLUDE_N885` — or `read_datalist(..., include_n885=True)` — adds the row
     `sweep 2, teacher, type behavior, s2_te_imperfect_english` (`io/readers.py::N885_ROW`),
     so the code is read, `clean_ncds`' behaviour block gains exactly that one column, and
@@ -1295,14 +1265,13 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
   `tests/test_clean_ncds.py::test_the_n885_corrected_variant_adds_exactly_one_column`;
   `tests/test_execute.py::test_the_n885_corrected_variant_marks_every_output`.
 - **Validation:** V6. The four reconstructions are written up as questions for the
-  author in **docs/OPEN_QUESTIONS_FOR_AUTHOR.md** (owner decision at Checkpoint D: the
-  owner is emailing him).
+  author in **docs/OPEN_QUESTIONS_FOR_AUTHOR.md**.
 
 ### N3. D4 and D7 are participant-level: aggregate summaries instead
 - **Label:** data-safety change.
 - **R source:** `llm_paper/R/create_data.R:L241–242` (`appendix_D4_data.csv` is
   `ncds_essays`: the full essay text with `ncdsid`) and `L273–288`
-  (`appendix_D7_data.csv` is every person's BSAG values with `ncdsid`). Brief F9.
+  (`appendix_D7_data.csv` is every person's BSAG values with `ncdsid`).
 - **Python:** the port does not build either table. `summary_d4_essays` gives the word
   counts' n, mean, sd, min, quartiles and max; `summary_d7_bsag` gives the same per BSAG
   item. They are written as `appendix_D4_summary` and `appendix_D7_summary`, under
@@ -1313,7 +1282,7 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
 - **Validation:** none.
 - **Note:** `appendix_D8_data` is aggregate but holds counts per aspired job, so small
   cells are possible. Whether it may leave `$LCP_DATA_ROOT` is the export guard's
-  decision (Task 2.7).
+  decision.
 
 ### N4. Labels are not wrapped
 - **Label:** deviation.
@@ -1335,4 +1304,4 @@ participant-level, and whether the R can produce it: **docs/reference/create_dat
   `::test_fig_5_divides_by_the_word_count_baseline`.
 - **Validation:** V6. To match the paper's released CSVs character for character, the
   labels would have to be wrapped exactly as `stri_wrap` does; that needs stringr/stringi
-  installed to check against, which is an open question for the owner.
+  installed to check against.

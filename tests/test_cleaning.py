@@ -181,8 +181,8 @@ def test_create_factors_polychoric_raises_not_guesses():
 
 def test_find_essay_teacher_genetics_overlap_keeps_unlabelled_codes_as_integer_codes():
     """R: llm_paper/R/functions.R:L332–345. haven::as_factor keeps an unlabelled teacher
-    code (brief F8), so that row survives na.omit; the columns returned are integer
-    positions in haven's level set, not label text (owner decision C9)."""
+    code, so that row survives na.omit; the columns returned are integer
+    positions in haven's level set, not label text."""
     codes = ["n876", "n877", "n878", "n879", "n880", "n881", "n882", "n883", "n884", "n885"]
     raw = pd.DataFrame({"ncdsid": ["1", "2"], **{c: [1.0, 7.0] for c in codes}})  # 7 unlabelled
     raw.attrs["value_labels"] = {c: {1: "Good", 5: "Poor", 8: "Dont know"} for c in codes}
@@ -199,7 +199,7 @@ def test_find_essay_teacher_genetics_overlap_keeps_unlabelled_codes_as_integer_c
 def test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling():
     """R pkg: psych/R/factor.scores.R:L21–27, L135 (2.6.5): scores = scale(x) %*% solve(r, L),
     r the pairwise Pearson correlation, scale() with the n-1 SD over non-missing values,
-    and no imputation (fa.R:L28–29), so a row with a missing item gets NA (brief F3)."""
+    and no imputation (fa.R:L28–29), so a row with a missing item gets NA."""
     from llm_cong_predict.cleaning.factors import _minres_one_factor, _pearson_corr
 
     rng = np.random.default_rng(3)
@@ -222,7 +222,7 @@ def test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling():
 
 def test_get_complete_ncds_natural_join_warns_on_non_ncdsid_key():
     """R: llm_paper/R/functions.R:L310–313 — left_join without `by` joins on every shared
-    column. A key other than ncdsid triggers a warning (owner decision, Checkpoint B)."""
+    column. A key other than ncdsid triggers a warning."""
     cleaned = pd.DataFrame({"ncdsid": ["1", "2"], "v": [10, 20]})
     factors = pd.DataFrame({"ncdsid": ["1", "2"], "v": [10, 99], "f": [0.5, 0.7]})  # shares v
     empty = pd.DataFrame({"ncdsid": ["1", "2"]})
@@ -233,8 +233,7 @@ def test_get_complete_ncds_natural_join_warns_on_non_ncdsid_key():
 
 
 def test_get_complete_ncds_requires_one_row_per_ncdsid():
-    """After every join the result must keep exactly one row per ncdsid (owner decision,
-    Checkpoint B); a duplicated key in a joined frame raises."""
+    """After every join the result must keep exactly one row per ncdsid; a duplicated key in a joined frame raises."""
     from llm_cong_predict.cleaning.assemble import JoinCardinalityError
 
     cleaned = pd.DataFrame({"ncdsid": ["1", "2"], "v": [10, 20]})

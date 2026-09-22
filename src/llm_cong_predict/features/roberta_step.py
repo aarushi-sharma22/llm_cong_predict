@@ -9,7 +9,7 @@ runs :func:`llm_cong_predict.features.embeddings.roberta_embeddings` (public
 pipeline then reads that file (``read_roberta_embeddings``).
 
 Why a separate process: torch and xgboost load different OpenMP runtimes and crash
-when used in one process (owner decision at Checkpoint B; ``llm_cong_predict.isolation``,
+when used in one process (``llm_cong_predict.isolation``,
 docs/ORCHESTRATION.md). This module imports neither library at import time.
 """
 

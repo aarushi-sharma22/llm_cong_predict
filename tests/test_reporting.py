@@ -1,4 +1,4 @@
-"""The reporting tables: the port of ``R/create_data.R`` (brief Task 2.6).
+"""The reporting tables: the port of ``R/create_data.R``.
 
 Synthetic metric rows and synthetic NCDS frames only. Every output file of the R, with
 its inputs and its state, is in docs/reference/create_data_outputs.md.
@@ -281,7 +281,7 @@ def test_appendix_d5_proportions_count_the_missing_responses_in_the_denominator(
 
 def test_appendix_d6_builds_under_the_corrected_variant():
     """With config.INCLUDE_N885 on, read_ncds loads n885 and the table can be built
-    (owner decision at Checkpoint D). Every output of such a run is marked with
+   . Every output of such a run is marked with
     config.N885_NOTE, the way a sample built without gene data is marked."""
     from llm_cong_predict import config
 
@@ -321,7 +321,7 @@ def test_appendix_d8_counts_jobs_and_keeps_the_r_filter_quirk():
 
 
 def test_d4_and_d7_summaries_hold_no_participant_data():
-    """Brief F9: appendix D4 (essay text) and D7 (every person's BSAG values) are
+    """appendix D4 (essay text) and D7 (every person's BSAG values) are
     participant-level in the R. The port builds aggregate summaries instead
     (PORTING_NOTES N3)."""
     essays = pd.DataFrame({"doc_id": ["e1", "e2"], "ncdsid": ["SYN000001", "SYN000002"],
@@ -355,8 +355,8 @@ def test_a_table_whose_inputs_are_missing_is_reported_not_faked(metrics):
 
 
 def test_write_tables_writes_only_under_the_data_root(metrics, tmp_path):
-    """Brief Section 2.3 / Task 2.6: nothing is written outside $LCP_DATA_ROOT until it
-    passes the export guard (Task 2.7)."""
+    """nothing is written outside $LCP_DATA_ROOT until it
+    passes the export guard."""
     built = build_tables(metrics)
     with data_root(tmp_path):
         written = write_tables(built, prefix="SMOKE_")
@@ -367,7 +367,7 @@ def test_write_tables_writes_only_under_the_data_root(metrics, tmp_path):
 
 
 def test_the_built_tables_go_through_the_export_guard(metrics, monkeypatch, tmp_path):
-    """Task 2.7: a reporting table leaves $LCP_DATA_ROOT only through the guard. The
+    """A reporting table leaves $LCP_DATA_ROOT only through the guard. The
     metric tables pass; appendix D8 holds counts per job, so small cells stop it."""
     from llm_cong_predict import config
     from llm_cong_predict.export import export_tables

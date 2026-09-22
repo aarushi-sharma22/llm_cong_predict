@@ -35,8 +35,7 @@ _SPELLING_OTHER = ["locale-violation", "whitespace", "uncategorized", "inconsist
 
 
 class SpellingMetricsError(ValueError):
-    """Raised where the R ``get_spelling_error_metrics`` stops with an error
-    (owner decision C8: reproduce R's errors)."""
+    """Raised where the R ``get_spelling_error_metrics`` stops with an error."""
 
 
 def _read_and_concat(paths: list[str]) -> pd.DataFrame:
@@ -97,11 +96,11 @@ def get_spelling_error_metrics(ncds_essays: pd.DataFrame, path: str) -> pd.DataF
     Reproduced:
       * an essay with no error row is KEPT: the left join gives it rule type NA, so
         ``pivot_wider`` makes a column literally named "NA" and the essay's categories
-        are filled with 0 (brief F8: the old port dropped these essays);
+        are filled with 0 (the old port dropped these essays);
       * rows in essay order; columns in order of first appearance, where each essay's
         rule types come sorted (``count()`` returns groups sorted, NA last);
       * the two cases where the R stops with an error raise
-        :class:`SpellingMetricsError` (owner decision C8): a category of the nine never
+        :class:`SpellingMetricsError`: a category of the nine never
         occurring (``select(., grammar, ...)`` on L410–414 names a missing column), and
         no essay without errors (``select(-"NA")`` on L415 names a missing column).
     ``ncdsid`` is compared as text on both sides (pandas refuses mixed key types).

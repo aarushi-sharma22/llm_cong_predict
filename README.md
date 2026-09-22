@@ -150,7 +150,7 @@ scripts/
   check_essay_format.py         # aggregate format counts for the essay files (numbers only)
   get_gpt_embeddings.py         # provenance only; refuses to run by default
 data/              # public reference files only: variables.xlsx, occupation mapping, camsis/*.dta
-docs/              # porting notes, validation checklist, reference sources, plan, brief
+docs/              # porting notes, validation checklist, reference sources
 tests/             # unit tests on synthetic data; nothing real
   fixtures/synthetic_ncds.py    # the complete synthetic input set for an end-to-end run
 ```

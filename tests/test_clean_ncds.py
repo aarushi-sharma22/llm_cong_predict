@@ -1,4 +1,4 @@
-"""clean_ncds (brief Task 2.1, fact F2), on synthetic data.
+"""clean_ncds, on synthetic data.
 
 The variable table is the public ``data/variables.xlsx``. The NCDS values are
 synthetic (IDs SYN000001...), generated from a seed; they encode nothing real.
@@ -62,7 +62,7 @@ def _combined(mapping: pd.DataFrame, n: int = 40, seed: int = 0, drop: tuple = (
 # --------------------------------------------------------------- table (F1) --
 
 def test_the_n885_corrected_variant_adds_exactly_one_column(mapping):
-    """Owner decision at Checkpoint D. The R's behaviour is the default: n885
+    """The R's behaviour is the default: n885
     ("Imperfect Grasp of English") is not in variables.xlsx, so read_ncds never loads it
     and appendix D6 stops (PORTING_NOTES N2). The corrected variant is off by default
     and adds s2_te_imperfect_english (n885, sweep 2, teacher, type behavior); the only
@@ -94,7 +94,7 @@ def test_read_datalist_gives_63_named_rows(mapping):
 
 
 def test_all_74_r_names_resolve(mapping):
-    """Brief F1: every s<sweep>_<co|te|pa|mo>_... name in _targets.R and functions.R is a
+    """every s<sweep>_<co|te|pa|mo>_... name in _targets.R and functions.R is a
     full_name of the table or created by the R; the only exception is
     s2_co_total_ability, which the R only removes (functions.R:L202)."""
     names = set(json.loads((REPO / "docs/reference/r_variable_names.json").read_text())["names"])
@@ -186,7 +186,7 @@ def test_parent_education_truth_table():
 def test_pedu_level_position_when_a_level_is_absent():
     """factor(s3_pa_edu) (functions.R:L145) has the sorted OBSERVED values as levels, so
     as.numeric() gives the level position: with values {1, 3, 7} observed, 3 -> 2 and
-    7 -> 3 (brief F2; used by _targets.R:L208, L368)."""
+    7 -> 3 (used by _targets.R:L208, L368)."""
     levels = ["No Qualifications", "Lower Secondary", "Upper Secondary", "Degree"]
     mother = pd.Categorical(["No Qualifications", "Lower Secondary", "Degree", None],
                             categories=levels, ordered=True)
@@ -228,7 +228,7 @@ def test_s2_co_total_ability_absent_is_handled(mapping):
 
 
 def test_collision_check_reports_identical_and_different(mapping):
-    """Nine teacher columns also appear in the ability or behavior block (brief F2). The
+    """Nine teacher columns also appear in the ability or behavior block. The
     teacher (rank-coded) version is kept, as plyr keeps the first occurrence; the check
     says whether it equals the raw version, which holds when the observed values are
     exactly 1..max."""

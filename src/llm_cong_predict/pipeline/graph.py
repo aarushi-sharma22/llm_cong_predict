@@ -2,7 +2,7 @@
 
 This is the STRUCTURE: it resolves target dependencies, detects cycles, produces a
 topological order, and computes which targets are *blocked* because some dependency
-is not implemented (a "stub"). Execution is in pipeline/execute.py (Task 2.4).
+is not implemented (a "stub"). Execution is in pipeline/execute.py.
 
 A ``Target`` is a name, its dependency names, and a status flag:
   * BUILT    — the underlying function is implemented and runs given its inputs;
@@ -126,7 +126,7 @@ class Pipeline:
 
     def runnable_frontier(self) -> list[str]:
         """Targets that are BUILT and NOT blocked, i.e. that run given their inputs
-        (pipeline/execute.py; synthetic inputs in tests, real ones in Phase 4)."""
+        (pipeline/execute.py; synthetic inputs in tests)."""
         b = self.blocked()
         return sorted(n for n, t in self._t.items() if t.status is Status.BUILT and n not in b)
 

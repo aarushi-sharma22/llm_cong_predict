@@ -1,7 +1,7 @@
-"""Learner settings and the glmnet screener (brief Task 1.3, facts F5).
+"""Learner settings and the glmnet screener.
 
 Each test names the R wrapper or package line it encodes. Numerical agreement with R
-itself is the job of the oracle tests (Task 2.2); these tests pin the ported rules.
+itself is the job of the oracle tests; these tests pin the ported rules.
 """
 
 from __future__ import annotations

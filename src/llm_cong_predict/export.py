@@ -1,8 +1,7 @@
 """The export guard: the one function every file written outside ``$LCP_DATA_ROOT`` goes through.
 
-Restricted inputs and participant-level outputs stay under ``$LCP_DATA_ROOT`` (brief
-Section 2.3). A table may leave it only through :func:`export_table`, which refuses it
-when it:
+Restricted inputs and participant-level outputs stay under ``$LCP_DATA_ROOT``. A
+table may leave it only through :func:`export_table`, which refuses it when it:
 
   1. has an ID-like column (``ncdsid``, ``NCDSID``, ``id``);
   2. has a free-text column (a value longer than ``max_text_length``, or a name that
@@ -33,7 +32,7 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
-# 1. ID-like column names (brief Task 2.7), compared without regard to case.
+# 1. ID-like column names, compared without regard to case.
 ID_COLUMNS = frozenset({"ncdsid", "id"})
 # 2. Column names that hold text rather than a label, and the length above which a
 # value counts as free text. The longest label in the R's own tables is 69 characters

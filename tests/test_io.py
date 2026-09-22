@@ -137,9 +137,9 @@ def test_read_gene_data_raises():
 
 
 def test_read_gene_data_reads_the_placeholder_format(tmp_path):
-    """The optional polygenic score table (Task 2.4): ncdsid first, then numeric
+    """The optional polygenic score table: ncdsid first, then numeric
     scores, because the R takes them as colnames(gene_data)[-1]
-    (R: llm_paper/_targets.R:L132). The released files' format is a Phase 5/6 item."""
+    (R: llm_paper/_targets.R:L132)."""
     path = tmp_path / "pgs.csv"
     pd.DataFrame({"ncdsid": ["SYN000001", "SYN000002"], "syn_pgs_1": [0.1, -0.3],
                   "syn_pgs_2": [1.0, 2.0]}).to_csv(path, index=False)
@@ -173,8 +173,7 @@ def test_combine_ncds_full_outer_join():
 def test_combine_ncds_collision_keeps_first_frame_like_plyr():
     """R pkg: plyr/R/join.r:L127–130 and rbind-fill.r:L70–71, L80 (1.8.9): a column in
     both frames is not duplicated and not coalesced; rows of the first frame keep the
-    first frame's value, even when it is NA (owner decision C1; this test replaced one
-    that asserted a coalesce)."""
+    first frame's value, even when it is NA."""
     a = pd.DataFrame({"ncdsid": ["1", "2"], "shared": [1, np.nan]})
     b = pd.DataFrame({"ncdsid": ["1", "2"], "shared": [np.nan, 2]})
     out = combine_ncds(a, b)
@@ -198,7 +197,7 @@ def test_combine_ncds_right_only_rows_take_right_value_in_plyr_order():
 
 
 def test_combine_ncds_strict_mode_raises_on_collision():
-    """Opt-in strict mode (not in the R, owner decision C1) refuses shared columns."""
+    """Opt-in strict mode (not in the R) refuses shared columns."""
     from llm_cong_predict.io.readers import ColumnCollisionError
 
     a = pd.DataFrame({"ncdsid": ["1"], "shared": [1]})
@@ -262,7 +261,7 @@ def test_read_ncds_drops_labels_of_recoded_missing_codes(tmp_path):
 
 def test_as_factor_keeps_unlabelled_values_like_haven_default():
     """R pkg: haven/R/as_factor.R:L62–84 (2.5.5), levels = "default": an unlabelled value
-    keeps its value as a level (it is not set to missing, brief F8); levels are all
+    keeps its value as a level (it is not set to missing); levels are all
     labels plus observed unlabelled values, sorted by value, unobserved labels included."""
     df = pd.DataFrame({"c": [2.0, 47.0, 20.5, np.nan]})
     df.attrs["value_labels"] = {"c": {1: "one", 2: "two", 50: "fifty"}}
@@ -319,7 +318,7 @@ def test_read_essays_malformed_files_follow_tidyr_separate(tmp_path, caplog):
     """R: llm_paper/R/functions.R:L27–30 with tidyr::separate(extra = "warn",
     fill = "warn") (R pkg: tidyr/R/separate.R:L170–201, src/simplifyPieces.cpp; 1.3.2):
     pieces after a second separator are discarded, a missing piece is NA. The warning
-    carries only counts: no file name, ID or text (owner decision at Checkpoint B)."""
+    carries only counts: no file name, ID or text."""
     _write_essays(tmp_path / "e", {
         "a.txt": f"ID: SYN000001{_SEP}good essay  Words: 2".encode(),
         "b.txt": f"ID: SYN000002{_SEP}first  Words: 3  Words: 99".encode(),  # extra
@@ -368,7 +367,7 @@ def test_r_as_numeric_matches_r():
 
 
 def test_check_essay_format_prints_only_counts(tmp_path):
-    """scripts/check_essay_format.py (owner request, Checkpoint B) prints aggregate
+    """scripts/check_essay_format.py prints aggregate
     counts and never essay text, file names or IDs."""
     import subprocess
     import sys

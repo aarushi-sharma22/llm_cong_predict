@@ -39,7 +39,7 @@ What is reproduced (glmnet 5.0 sources, see docs/REFERENCE_SOURCES.md):
 # APPROX: coordinate-descent convergence differs (glmnet thresh = 1e-7 on its own
 # scale; sklearn uses a duality-gap tolerance), and glmnet's CV folds are random in R
 # (cv.glmnet.R:L256–257); here they come from KFold(10, shuffle=True, random_state).
-# VALIDATION_CHECKLIST V4 / the Task 2.2 oracle measures the gap with shared folds.
+# VALIDATION_CHECKLIST V4 / the oracle measures the gap with shared folds.
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ def screen_glmnet(
     """Boolean mask of the columns of ``X`` that ``screen.glmnet`` keeps.
 
     ``foldid`` (values 0..nfolds-1) and ``lambdas`` override the random CV folds and
-    the default grid; they exist for the R parity test (Task 2.2), which passes the
+    the default grid; they exist for the R parity test, which passes the
     same folds and grid to R's ``cv.glmnet``. With ``lambdas`` given, no early stopping
     is applied (glmnet does not stop early on a user-supplied grid, base.hpp:L307).
     """

@@ -13,7 +13,7 @@
 Running needs the restricted inputs under ``$LCP_DATA_ROOT`` (config.RESTRICTED_INPUTS)
 and the steps that happen outside this pipeline: the RoBERTa embeddings
 (``python -m llm_cong_predict.features.roberta_step``) and the koRpus readability CSV
-(``r/readability.R``, Task 2.5). See docs/ORCHESTRATION.md.
+(``r/readability.R``). See docs/ORCHESTRATION.md.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         print(pipe.status_report())
         print("\nSteps done outside this pipeline, whose output it reads:")
         print("  - RoBERTa embeddings: python -m llm_cong_predict.features.roberta_step")
-        print("  - readability: r/readability.R (TreeTagger + koRpus), Task 2.5")
+        print("  - readability: r/readability.R (TreeTagger + koRpus)")
         print("  - SALAT metrics and LanguageTool spelling errors: the tools' CSVs")
         print("\nNothing was executed. Use --run (see --help).")
         return 0

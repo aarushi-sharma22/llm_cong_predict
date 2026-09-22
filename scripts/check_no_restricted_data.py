@@ -2,7 +2,7 @@
 """Refuse to commit restricted or participant-level data.
 
 This repository must never contain NCDS survey data, essays, derived essay features,
-embeddings, polygenic scores or per-person outputs (brief Section 2.3). Those live
+embeddings, polygenic scores or per-person outputs. Those live
 outside the repository, under ``$LCP_DATA_ROOT``. This checker is the last line of
 defence behind ``.gitignore``, because ``git add -f`` bypasses ignore rules.
 
@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {p}: {why}", file=sys.stderr)
         print(
             "Restricted or participant-level data must stay under $LCP_DATA_ROOT, outside "
-            "the repository (brief Section 2.3). Unstage the file(s) with "
+            "the repository. Unstage the file(s) with "
             "'git restore --staged <path>'.",
             file=sys.stderr,
         )

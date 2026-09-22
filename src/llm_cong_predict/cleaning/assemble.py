@@ -39,7 +39,7 @@ def get_complete_ncds(
           left_join(ncds_essay)
 
     Each ``left_join`` has no ``by``, so it joins on every column the two frames share
-    (io/joins.py; owner decision at Checkpoint B). The keys of every join are logged.
+    (io/joins.py). The keys of every join are logged.
     A warning is issued whenever a join uses any key other than ``ncdsid``, since that
     means a column name occurs in both frames. After every join the result must still
     have exactly one row per ``ncdsid``, otherwise :class:`JoinCardinalityError` is
@@ -116,7 +116,7 @@ def find_essay_teacher_genetics_overlap(
     ``ncds_1_to_9`` still carries its value labels, so ``haven::as_factor`` builds each
     factor from every label plus every observed unlabelled value, sorted by the
     underlying value, including labels that never occur (haven/R/as_factor.R:L74–82).
-    Unlabelled values are KEPT as levels, not set to missing (brief F8). ``ifelse(x ==
+    Unlabelled values are KEPT as levels, not set to missing. ``ifelse(x ==
     "Dont know", NA, x)`` then returns the factor's INTEGER CODES, i.e. the position in
     that level set (io/labels.py::labelled_factor_codes). This differs from the
     rank-of-observed-values coding of clean_ncds' teacher block, where labels are

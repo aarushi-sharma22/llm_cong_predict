@@ -54,7 +54,7 @@ def roberta_embeddings(
       * :func:`roberta_pool` on every essay;
       * return a frame ``id`` + ``roberta_dim_1 .. roberta_dim_768`` (L487–489).
 
-    Essays go through the model ``batch_size`` at a time (brief F8: a single forward
+    Essays go through the model ``batch_size`` at a time (a single forward
     pass over ~10,000 essays of 250 tokens runs out of memory). The R's keras
     ``predict()`` also runs in batches. ``model`` and ``tokenizer`` may be passed in;
     by default the public ``roberta-base`` weights are loaded locally. No essay text

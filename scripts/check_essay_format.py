@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Check the format of the essay files, printing AGGREGATE COUNTS ONLY.
 
-For the project owner to run on the real essays, outside Claude Code. It prints
+It prints
 numbers and nothing else: never essay text, never file names, never IDs. It writes
 no files.
 

@@ -2,7 +2,7 @@
 
 These verify the WIRING is sound: dependencies resolve, the graph is acyclic, the
 model spec expands deterministically, the variable lists follow the R, and nothing is
-blocked. Running the graph is tested in tests/test_execute.py (Task 2.4).
+blocked. Running the graph is tested in tests/test_execute.py.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def test_blocked_is_transitive():
 def test_model_spec_expands_deterministically():
     """Every scored model target has a paired _metrics target. The seven
     *_superlearner_mmg_lm targets (R: llm_paper/_targets.R:L323–343) are scored in
-    neither _targets.R nor create_data.R, so they have none (owner decision C6)."""
+    neither _targets.R nor create_data.R, so they have none."""
     targets = model_targets()
     names = [t.name for t in targets]
     assert len(names) == len(set(names))          # no duplicate target names
@@ -114,11 +114,9 @@ def test_full_pipeline_validates():
 
 
 def test_nothing_is_blocked_and_tokenisation_is_the_only_external_target():
-    """Task 2.4 runs the graph (pipeline/execute.py), so no target is a STUB any more:
-    readability is ingested from the koRpus output (as SALAT and spelling are), and
-    gene data is optional. Only tokenisation is EXTERNAL: TreeTagger runs inside
-    r/readability.R (Task 2.5), and it blocks nothing. Replaces two tests that asserted
-    the three stub roots of Tasks 2.1–2.3."""
+    """No target is a STUB: readability is ingested from the koRpus output (as SALAT
+    and spelling are), and gene data is optional. Only tokenisation is EXTERNAL:
+    TreeTagger runs inside r/readability.R, and it blocks nothing."""
     pipe = build_pipeline()
     assert pipe.stub_roots() == []
     assert pipe.blocked() == {}
@@ -135,8 +133,8 @@ def test_readers_are_in_the_runnable_frontier():
     assert "ncds_essays" in frontier
     assert "camsis_data" in frontier
     assert "ncds_1_2_3" in frontier
-    # after Task 2.4 the whole graph runs given its inputs (tokenized_essays is
-    # EXTERNAL, so it is not in the frontier and blocks nothing)
+    # the whole graph runs given its inputs (tokenized_essays is EXTERNAL, so it is
+    # not in the frontier and blocks nothing)
     assert "ncds_1_to_9_cleaned" in frontier
     assert "factor_data" in frontier
     assert "ncds_complete" in frontier
@@ -153,7 +151,7 @@ INVENTORY = json.loads((REPO / "docs" / "reference" / "r_targets_inventory.json"
 def test_every_r_model_target_maps_to_one_python_target_with_the_same_definition():
     """R: llm_paper/_targets.R:L178–385 (via docs/reference/r_targets_inventory.json):
     each R model target maps to exactly one Python target with the same method,
-    outcome, predictors, sample, data preparation and scorer (brief F7; scorers also
+    outcome, predictors, sample, data preparation and scorer (scorers also
     from R/create_data.R:L98, L163–170, L181, L344, L347)."""
     specs = {s.name: s for s in model_specs()}
     r_names = [m["r_name"] for m in INVENTORY["model_targets"]]
@@ -173,7 +171,7 @@ def test_every_r_model_target_maps_to_one_python_target_with_the_same_definition
 
 def test_cog_social_lm_uses_the_single_ability_factor():
     """R: llm_paper/_targets.R:L377, L382 — cog_superlearner_social_lm(_overlap) use
-    "s2_co_factor_ability", not cog_variables (brief F7)."""
+    "s2_co_factor_ability", not cog_variables."""
     specs = {s.name: s for s in model_specs()}
     for name in ("cog_lm_social_lm", "cog_lm_social_lm_overlap"):
         assert [p.as_dict() for p in specs[name].predictors] == [
@@ -183,7 +181,7 @@ def test_cog_social_lm_uses_the_single_ability_factor():
 
 def test_expanding_over_outcomes_gives_416_fits():
     """70 model targets expand over their outcome lists (pattern = ...) into 416 fits
-    (brief F7; computed from _targets.R: 12 all_outcomes, 1 social outcome, 5 BFI)."""
+    (computed from _targets.R: 12 all_outcomes, 1 social outcome, 5 BFI)."""
     specs = model_specs()
     assert len(specs) == 70
     assert sum(s.n_fits() for s in specs) == 416 == INVENTORY["totals"]["fits"]

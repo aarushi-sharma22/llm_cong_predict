@@ -21,7 +21,7 @@ scanner for balanced parentheses and quotes, written for this one pinned file; a
 construct it does not recognise raises instead of being guessed.
 
 It also writes ``docs/reference/r_variable_names.json``: every name of the form
-``s<sweep>_<co|te|pa|mo>_...`` in ``_targets.R`` and ``R/functions.R`` (brief F1).
+``s<sweep>_<co|te|pa|mo>_...`` in ``_targets.R`` and ``R/functions.R``.
 
 Usage:  python scripts/extract_r_targets.py [--check]
         --check  compare with the committed JSON instead of writing it (exit 1 if different)
@@ -42,7 +42,7 @@ CREATE_DATA_R = LLM_PAPER / "R" / "create_data.R"
 OUT = REPO / "docs" / "reference" / "r_targets_inventory.json"
 NAMES_OUT = REPO / "docs" / "reference" / "r_variable_names.json"
 FUNCTIONS_R = LLM_PAPER / "R" / "functions.R"
-NAME_PATTERN = r"s[0-9]_(?:co|te|pa|mo)_[a-z_]+"  # brief F1
+NAME_PATTERN = r"s[0-9]_(?:co|te|pa|mo)_[a-z_]+"
 COMMIT = "b0cfe4ceba0c29fcc6121aa7ff49c761b8127285"
 
 MODEL_FUNCTIONS = {"get_general_superlearner_cv_model": "superlearner", "get_lm_cv_model": "lm"}
@@ -314,8 +314,8 @@ def build_inventory() -> dict:
 
 
 def build_variable_names() -> dict:
-    """Every name of the form s<sweep>_<co|te|pa|mo>_... in _targets.R and functions.R
-    (brief F1), with the first file and line where it occurs."""
+    """Every name of the form s<sweep>_<co|te|pa|mo>_... in _targets.R and functions.R,
+    with the first file and line where it occurs."""
     first: dict[str, dict] = {}
     for rel, path in (("_targets.R", TARGETS_R), ("R/functions.R", FUNCTIONS_R)):
         for lineno, line in enumerate(_mask(path.read_text()).splitlines(), start=1):

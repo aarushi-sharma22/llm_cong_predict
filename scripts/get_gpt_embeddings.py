@@ -3,7 +3,7 @@
 
 Port of ``R/get_gpt_embeddings.R``. THIS SCRIPT SENDS ESSAY TEXT TO AN EXTERNAL
 SERVICE (OpenAI). The project rule is that essays and any other participant data
-must never be sent to an external API (brief Section 2.3; PORTING_NOTES H2). The
+must never be sent to an external API (PORTING_NOTES H2). The
 script therefore refuses to run unless BOTH of these are given:
 
   * the command-line flag  --i-confirm-the-data-licence-permits-external-processing
@@ -38,7 +38,7 @@ ALLOW_ENV = "LCP_ALLOW_EXTERNAL_API"
 REFUSAL = (
     "get_gpt_embeddings.py: REFUSED. This script sends essay text to the OpenAI API, an "
     "external service. The project rule is that essays and any other participant data "
-    "must never be sent to an external API (brief Section 2.3). It runs only if you both "
+    "must never be sent to an external API. It runs only if you both "
     f"pass {CONFIRM_FLAG} and set {ALLOW_ENV}=1, after confirming that the data licence "
     "permits external processing."
 )

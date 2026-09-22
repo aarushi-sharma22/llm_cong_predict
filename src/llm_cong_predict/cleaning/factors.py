@@ -17,7 +17,7 @@ Two reasons this is the least-certain port in the project and is explicitly flag
    regression (Thurstone) scores computed without imputation. The one-factor minres
    loadings are computed here in numpy by iterating eigen-decompositions; psych fits
    the uniquenesses with ``optim``. Both minimise the same least-squares criterion,
-   but identical loadings are not guaranteed; V3 and the Task 2.2 oracle measure it.
+   but identical loadings are not guaranteed; V3 and the oracle measure it.
    Scoring follows ``factor.scores`` exactly (:func:`_regression_scores`).
 
 2. Polychoric correlation must be computed by hand (no standard dependency provides
@@ -163,7 +163,7 @@ def _regression_scores(X: np.ndarray, loadings: np.ndarray, corr: np.ndarray) ->
         by the SD with denominator n - 1, both over the non-missing values (base R
         ``scale``). With ``missing = FALSE`` / ``impute = "none"`` (fa.R:L28–29) nothing
         is imputed, so a row with any missing item gets an NA score.
-    The previous port mean-imputed missing items and used the n denominator (brief F3).
+    The previous port mean-imputed missing items and used the n denominator.
     """
     mean = np.nanmean(X, axis=0)
     std = np.nanstd(X, axis=0, ddof=1)
@@ -189,7 +189,7 @@ def create_factors_r(ncds_cleaned: pd.DataFrame) -> pd.DataFrame:
     ``ncds_cleaned %>% select(vars) %>% psych::fa(1, cor = type) %>% .$score``;
     ``$score`` partially matches ``scores``, the only element starting with "score"
     (checked with psych 2.6.5). The reference implementation for the three polychoric
-    factors (brief Task 2.2). Requires R, rpy2 and psych (docs/REFERENCE_SOURCES.md).
+    factors. Requires R, rpy2 and psych (docs/REFERENCE_SOURCES.md).
     Returns ``ncdsid`` plus one column per factor, in the R's order.
     """
     from ..rbridge import converter, require_r

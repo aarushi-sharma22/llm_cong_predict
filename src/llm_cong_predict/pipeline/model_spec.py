@@ -9,14 +9,14 @@ its (regularised) Python name. tests/test_pipeline.py checks all of this against
 ``docs/reference/r_targets_inventory.json``, which scripts/extract_r_targets.py
 derives from the R files.
 
-Scorers (brief F7): ``_targets.R`` uses ``get_cv_lm_metrics`` only for the seven
+Scorers: ``_targets.R`` uses ``get_cv_lm_metrics`` only for the seven
 ``*_lm`` targets (L452–464) and ``get_cv_superlearner_metrics`` for every other
 metric target, including the three ``*_social_lm`` lm fits (L489–494). Targets
 without a metric target in ``_targets.R`` are scored by ``R/create_data.R`` with
 ``get_cv_superlearner_metrics`` (text_length and the seven text components,
 L163–170; the two ``*_social_lm_overlap`` targets, L344, L347). The seven
-``*_superlearner_mmg_lm`` targets are scored nowhere; they get scorer "none" (owner
-decision C6), so they are fitted but produce no metric row.
+``*_superlearner_mmg_lm`` targets are scored nowhere; they get scorer "none", so they
+are fitted but produce no metric row.
 """
 
 from __future__ import annotations
@@ -73,12 +73,12 @@ FEATURE_SETS: dict[str, tuple[Ref, ...]] = {
     "gpt4_embeddings": _lists("gpt4_embeddings_variables"),
 }
 
-# Data preparation applied to the sample inside the model target (brief F7). It
+# Data preparation applied to the sample inside the model target. It
 # depends only on the feature set: the same feature set gets the same preparation in
 # every family where it appears.
 DATA_PREP: dict[str, tuple[dict, ...]] = {
     # R: llm_paper/_targets.R:L208, L368 — mutate(s3_pa_edu = as.numeric(s3_pa_edu)):
-    # the factor's level position, not its value (brief F2).
+    # the factor's level position, not its value.
     "pedu": ({"op": "as_numeric", "columns": ["s3_pa_edu"]},),
     # R: llm_paper/_targets.R:L258, L374 — mutate_at(vars(sociological_variables), as.numeric):
     # logical -> 0/1, ordered parent-education factors -> level positions 1..4.
@@ -134,14 +134,14 @@ FAMILIES: list[ModelFamily] = [
     ModelFamily(("essay", "gene", "teacher", "teacher_genes_essay"), Ref("list", "bfi_variables"), "ncds_complete", "superlearner", "_bfi", "superlearner"),
     # L301–321, metrics L402–415
     ModelFamily(_MAIN, Ref("list", "social_outcomes"), "ncds_complete_mmg", "superlearner", "_mmg", "superlearner"),
-    # L323–343: scored nowhere (owner decision C6)
+    # L323–343: scored nowhere
     ModelFamily(_MAIN, Ref("list", "social_outcomes"), "ncds_complete_mmg", "lm", "_mmg_lm", "none"),
     # L345–358 (no pattern: literal outcome), metrics L426–432
     ModelFamily(_MAIN, Ref("literal", "s2_co_factor_ability"), "ncds_complete_mmg_cog", "superlearner", "_cog_mmg", "superlearner"),
     # L360–369, metrics L478–487
     ModelFamily(_SOCIAL, Ref("list", "social_outcomes"), "ncds_complete", "superlearner", "_social", "superlearner"),
     # L372–380, metrics L489–494 (get_cv_superlearner_metrics on lm fits).
-    # cog uses the single column s2_co_factor_ability here, not cog_variables (L377; brief F7).
+    # cog uses the single column s2_co_factor_ability here, not cog_variables (L377).
     ModelFamily(("sociological", "cog", "noncog"), Ref("list", "social_outcomes"), "ncds_complete", "lm", "_social_lm", "superlearner",
                 predictor_overrides={"cog": _literal("s2_co_factor_ability")}),
     # L382–385, scored in R/create_data.R:L344, L347
@@ -317,7 +317,7 @@ def is_gene_dependent(spec: ModelTargetSpec) -> bool:
 
 def split_gene_dependent(specs: list[ModelTargetSpec], gene_data_available: bool):
     """``(runnable, skipped)``: without gene data, targets whose predictors include
-    ``gene_variables`` are skipped (brief Task 2.3).
+    ``gene_variables`` are skipped.
 
     In R, ``gene_data`` is the function ``read_gene_data`` itself, so
     ``gene_variables`` is ``NULL`` (R: llm_paper/_targets.R:L93, L132). A gene-only model

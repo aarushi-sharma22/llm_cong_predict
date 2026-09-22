@@ -1,4 +1,4 @@
-"""The export guard (brief Task 2.7).
+"""The export guard.
 
 Every file written outside ``$LCP_DATA_ROOT`` goes through one function, which refuses
 a table with an ID-like column, a free-text column, one row per person, or a count
@@ -42,15 +42,15 @@ def _aggregate() -> pd.DataFrame:
 
 # --------------------------------------------------- the minimum cell size ----
 
-def test_the_configured_minimum_cell_size_is_the_one_the_owner_set():
-    """Owner decision at Checkpoint D: 10. The UK Data Service's handling guide gives 3
+def test_the_configured_minimum_cell_size():
+    """10. The UK Data Service's handling guide gives 3
     as the baseline threshold and advises 10 where several outputs come from the same
     source, which is the case here. Still to be confirmed with UKDS."""
     assert config.MINIMUM_CELL_SIZE == 10
 
 
 def test_nothing_is_exported_when_no_minimum_cell_size_is_set(monkeypatch, tmp_path):
-    """Brief Task 2.7: the minimum comes from the config and the code never picks one;
+    """the minimum comes from the config and the code never picks one;
     with it unset the guard raises, pointing at the UK Data Service's output rules."""
     monkeypatch.setattr(config, "MINIMUM_CELL_SIZE", None)
     with pytest.raises(MinimumCellSizeNotSet, match="UK Data Service"):
@@ -103,7 +103,7 @@ def test_a_table_with_one_row_per_person_is_refused(cell_size):
 
 
 def test_a_count_below_the_minimum_cell_size_is_refused(cell_size):
-    """Brief Task 2.7: a count column may hold no value below the minimum."""
+    """a count column may hold no value below the minimum."""
     table = pd.DataFrame({"aspired_job": ["Teacher", "Fisherman"], "n": [120, 3]})
     with pytest.raises(ExportRefused, match="below the minimum cell size 10"):
         check_export(table, n_people=N_PEOPLE)

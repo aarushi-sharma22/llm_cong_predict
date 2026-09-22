@@ -7,7 +7,7 @@ is listed in ``ReportingTables.skipped`` with the reason.
 
 Nothing here writes outside ``$LCP_DATA_ROOT``: :func:`write_tables` puts the tables
 under ``$LCP_DATA_ROOT/reporting/``. Sending any of them anywhere else goes through
-the export guard (Task 2.7).
+the export guard.
 """
 
 from __future__ import annotations
@@ -102,7 +102,7 @@ def write_tables(tables: ReportingTables, prefix: str = "") -> list[Path]:
     """Write every built table to ``$LCP_DATA_ROOT/reporting/<prefix><name>.csv``.
 
     There is deliberately no parameter for another location: a table leaves the data
-    root only through the export guard (Task 2.7). ``prefix`` carries a run's label
+    root only through the export guard. ``prefix`` carries a run's label
     (``SMOKE_``), so a table from a smoke run cannot be taken for a real result.
     """
     directory = config.participant_output_dir("reporting")

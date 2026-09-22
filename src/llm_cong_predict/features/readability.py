@@ -61,7 +61,7 @@ def ingest_readability_metrics(ncds_essays: pd.DataFrame, path: str) -> pd.DataF
     """INGESTION path (not in the original): read the readability table produced
     outside Python and attach it to the essays by ``doc_id``/``filename``.
 
-    The file is the one ``r/readability.R`` writes (Task 2.5), which is this repository's
+    The file is the one ``r/readability.R`` writes, which is this repository's
     port of ``tokenize_essays`` and ``calculate_readability_metrics``: one row per essay,
     the columns ``filename``, ``ncdsid`` and one column per koRpus index, values as text.
     That script has never been run here (it needs TreeTagger and koRpus), so this reader

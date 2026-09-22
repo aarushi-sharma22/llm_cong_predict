@@ -14,7 +14,7 @@ matters, the port says so at the point of use and records it in `docs/PORTING_NO
 Only `llm_paper` is pinned to the exact commit behind the paper (`b0cfe4c`, the
 repository's only commit).
 
-## Sources listed in the Phase 1–2 brief (Task 0.2)
+## Sources
 
 | Directory | Origin | Commit (HEAD at clone) | Commit date | `Version:` in DESCRIPTION |
 |---|---|---|---|---|
@@ -36,9 +36,9 @@ release, so `git log` inside them lists past versions. For example, `plyr`'s
 `R/join.r`, `R/join-all.r` and `R/rbind-fill.r` have no code changes between 1.8.4
 (2016) and 1.8.9 (2023). Only roxygen export tags changed (checked with `git diff`).
 
-## Additional sources cloned during Task 0.8 (not in the brief's list)
+## Additional sources
 
-These were cloned only to check facts in Section 4 of the brief that depend on their
+These were cloned only to check facts that depend on their
 behaviour. They are used the same way as the sources above.
 
 | Directory | Origin | Commit | Commit date | Version | Used to check |
@@ -48,7 +48,7 @@ behaviour. They are used the same way as the sources above.
 | `reference/r-source` | https://github.com/wch/r-source (sparse checkout: `src/library/base/R`, `src/library/stats/R`) | `675d7dc5689e8a287aa372498793f0fc22ee0770` | 2026-09-21 | R trunk, `VERSION` = "4.7.0 Under development (unstable)" | `ifelse`, `pmin`, `factor`, `Ops.ordered`, `lm.fit`/`lm.wfit` tolerance, `predict.lm` |
 | `reference/xgboost` | https://github.com/dmlc/xgboost (sparse checkout: `doc/changes`, root files incl. `NEWS.md`; tags fetched blobless) | master `56f951e7419a6f66f4568865e1d7835bcb6dbbf1`; tag `v1.7.6` = `36eb41c960483c8b52b44082663c99e6a0de440a` (R package `Version: 1.7.6.1`); tag `v2.0.0` = `096047c547aa71af7d53a507cecdd2a1d3124651`; tag `v3.3.0` = `d5cd2b40725d55747447f66e4a24f9a2c341b0bf` | 2026-09-22 (master) | see tags | default `base_score` for `reg:squarederror` in 1.7.x vs ≥ 2.0 |
 
-Cloned after Checkpoint B, for the `read_essays` decision:
+Cloned for the `read_essays` decision:
 
 | Directory | Origin | Commit | Version | Used to check |
 |---|---|---|---|---|
@@ -59,18 +59,17 @@ Cloned after Checkpoint B, for the `read_essays` decision:
 (`ifelse`, `pmin`, `factor`) have been stable for many releases, but that stability was
 not checked against the R version the author used.
 
-## Installed R environment (2026-09-22, after Checkpoint B)
+## Installed R environment (2026-09-22)
 
 **These are the current CRAN versions installed on the development machine, not the
 versions the paper used, which are unknown. Results may differ between versions.**
 
-- R: `R version 4.6.1 (2026-06-24)`, platform `aarch64-apple-darwin23`, installed by the
-  owner from the CRAN macOS installer; `R.home()` = `/Library/Frameworks/R.framework/Resources`.
+- R: `R version 4.6.1 (2026-06-24)`, platform `aarch64-apple-darwin23`, installed from
+  the CRAN macOS installer; `R.home()` = `/Library/Frameworks/R.framework/Resources`.
 - Installed with
   `Rscript -e 'install.packages(c("SuperLearner","psych","glmnet","ranger","nnet","kernlab"), repos="https://cloud.r-project.org")'`
   (CRAN macOS arm64 binaries). R's `xgboost` is deliberately **not** installed: version
   3.x takes a different SuperLearner code path that drops `params` (PORTING_NOTES C8).
-  Pinning it is a Phase 3 item.
 - Python bridge: `pip install -e '.[oracle]'` installed rpy2 3.6.8 (rpy2-rinterface
   3.6.7, rpy2-robjects 3.6.5) into `.venv` (Python 3.13.7) without errors.
   `importr()` loads all seven packages below.
@@ -138,7 +137,6 @@ documentation lines.
 ## Environment facts relevant to these sources
 
 - R 4.6.1 is installed (above). Before 2026-09-22 it was not, and every R-side claim
-  up to Checkpoint B comes from reading source, not from running it.
-- The Python equivalents installed in `.venv` are listed in `docs/PHASE_1_2_PLAN.md`
-  (Task 0.7 section). Since then: torch 2.14.0, transformers 5.17.0 (owner item after
-  Checkpoint A), rpy2 3.6.8, and Homebrew `libomp` 23.1.2 for xgboost.
+  made before then comes from reading source, not from running it.
+- Installed in `.venv`: torch 2.14.0, transformers 5.17.0, rpy2 3.6.8, and Homebrew
+  `libomp` 23.1.2 for xgboost.

@@ -39,13 +39,13 @@ def _lower_map(d: dict | None) -> dict:
     return {str(k).lower(): v for k, v in (d or {}).items()}
 
 
-# Column meanings of variables.xlsx, by position (brief F1; fixed by how clean_ncds uses
+# Column meanings of variables.xlsx, by position (fixed by how clean_ncds uses
 # them, R: llm_paper/R/functions.R:L75–78, L103, L196, L201, L207, L212, L217).
 DATALIST_COLUMNS = ("sweep", "type", "respondent", "question", "label", "new_varname", "variable")
 DATALIST_REQUIRED = ("sweep", "type", "respondent", "new_varname", "variable")
-DATALIST_ROWS = 63  # computed from the public file at Checkpoint A (PORTING_NOTES A1)
+DATALIST_ROWS = 63  # computed from the public file (PORTING_NOTES A1)
 
-# CORRECTED VARIANT, off by default (config.INCLUDE_N885; owner decision at Checkpoint D).
+# CORRECTED VARIANT, off by default (config.INCLUDE_N885).
 # n885 ("Imperfect Grasp of English") is selected by R/create_data.R:L264 for appendix D6
 # and named in find_essay_teacher_genetics_overlap (functions.R:L333), but it is not in
 # variables.xlsx, so the R stops in both places. Adding this row makes read_ncds load the
@@ -62,7 +62,7 @@ def read_datalist(path: str, include_n885: bool | None = None) -> pd.DataFrame:
     public ``variables.xlsx`` has no header row, so the columns ``clean_ncds`` needs
     would not exist and the published R cannot run (PORTING_NOTES A1). The evident
     intent is reproduced: the file is read without a header, columns 0–6 are named
-    ``sweep, type, respondent, question, label, new_varname, variable`` (brief F1),
+    ``sweep, type, respondent, question, label, new_varname, variable``,
     columns 7 onwards (empty, apart from one cell of spaces) are dropped, and the rows
     complete on the five columns the R uses are kept. The result must have exactly 63
     rows and no duplicated ``variable`` code.
@@ -166,8 +166,7 @@ def read_gene_data(path: str | None = None) -> pd.DataFrame:
     E1). With a path it reads the port's PLACEHOLDER format: a CSV whose first column
     is ``ncdsid`` and whose other columns are numeric scores. The R takes the scores as
     ``colnames(gene_data)[-1]`` (``_targets.R:L132``), so the ID must come first. The
-    format of the released polygenic index files is a Phase 5/6 item; this reader is
-    replaced then. The pipeline calls it only when the file exists
+    pipeline calls it only when the file exists
     (``config.RESTRICTED_INPUTS["gene_data"]``); otherwise gene data is absent.
     """
     if path is None:
@@ -252,8 +251,8 @@ def read_essays(folder: str, encoding: str = "utf-8") -> pd.DataFrame:
         <essay text>  Words: <count>
 
     Returns ``doc_id`` (file name), ``ncdsid``, ``text``, ``words``, as the R does.
-    Malformed files are handled as ``tidyr::separate`` handles them (owner decision at
-    Checkpoint B): pieces after a second separator are dropped, a missing piece is NA.
+    Malformed files are handled as ``tidyr::separate`` handles them: pieces after a
+    second separator are dropped, a missing piece is NA.
     tidyr warns and lists row numbers; the port only logs and warns with the NUMBER
     of files affected, never file names, IDs or text. The counts are also kept in
     ``attrs["read_essays_malformed"]``.

@@ -56,7 +56,7 @@ def test_get_salat_metrics_joins_and_drops_filename(tmp_path):
 # ------------------------------------------------------------ spelling ingest --
 
 def test_get_spelling_error_metrics_pivots_fills_and_sums(tmp_path):
-    # Fixture extended in Phase 1 (owner decision C8): the R stops unless all nine
+    # The R stops unless all nine
     # categories occur somewhere (functions.R:L410-414) and at least one essay has no
     # error (L415), so essay 3 carries the other seven categories and essay 4 none.
     essays = pd.DataFrame({"ncdsid": ["1", "2", "3", "4"], "words": ["100", "50", "10", "20"]})
@@ -150,7 +150,7 @@ def test_calculate_readability_metrics_raises_external_boundary():
 
 
 def test_ingest_readability_metrics_reads_what_the_korpus_script_writes(tmp_path):
-    """The file r/readability.R writes (Task 2.5), the R's
+    """The file r/readability.R writes, the R's
     calculate_readability_metrics output (R: llm_paper/R/functions.R:L384-387):
     filename, ncdsid, then one column per koRpus index. The R writes the values as
     text; pandas reads numbers back where it can, and create_essay_variables coerces
@@ -180,7 +180,7 @@ def test_ingest_readability_metrics_path(tmp_path):
     assert out[out["ncdsid"] == "1"].iloc[0]["flesch"] == 70.0
 
 
-# -------------------------------------------------- spelling (brief F8, C8) --
+# -------------------------------------------------- spelling --
 
 _NINE = ["grammar", "misspelling", "typographical", "locale-violation", "duplication",
          "style", "whitespace", "uncategorized", "inconsistency"]
@@ -193,7 +193,7 @@ def _spelling(tmp_path, essays, rows):
 
 
 def test_spelling_keeps_essays_without_errors_with_zeros(tmp_path):
-    """Brief F8 reproducer: essays A, B, C with error rows only for A and B. In R the
+    """Reproducer: essays A, B, C with error rows only for A and B. In R the
     left join (functions.R:L399–400) keeps C with rule type NA, pivot_wider makes an
     "NA" column, and C's categories are filled with 0 (L405–408); the old port lost C."""
     essays = pd.DataFrame({"ncdsid": ["A", "B", "C"], "words": ["10", "20", "30"]})
@@ -234,7 +234,7 @@ def test_spelling_raises_like_r_when_a_category_never_occurs(tmp_path):
         _spelling(tmp_path, essays, rows)
 
 
-# ------------------------------------------------------ SALAT joins (brief F8) --
+# ------------------------------------------------------ SALAT joins --
 
 def test_salat_natural_join_uses_shared_metric_as_key(tmp_path):
     """R: llm_paper/R/functions.R:L440–442: left_join without `by` joins on every shared
@@ -258,7 +258,7 @@ def test_salat_natural_join_uses_shared_metric_as_key(tmp_path):
     assert rows.loc["2", "sentiment"] == -0.2
 
 
-# -------------------------------------------------------- RoBERTa (brief F8) --
+# -------------------------------------------------------- RoBERTa --
 #
 # These tests run in a SUBPROCESS. torch bundles its own OpenMP runtime
 # (install name /opt/llvm-openmp/lib/libomp.dylib) while xgboost loads Homebrew's
@@ -293,7 +293,7 @@ def _run_isolated(body: str) -> None:
 def test_roberta_pool_batched_equals_unbatched():
     """R: llm_paper/R/functions.R:L480–482: mean of the last hidden state over all
     positions, no attention mask. Rows are independent, so batching must give identical
-    numbers (brief F8). Tiny randomly initialised model; nothing is downloaded."""
+    numbers. Tiny randomly initialised model; nothing is downloaded."""
     _run_isolated("""
         from llm_cong_predict.features.embeddings import roberta_pool
         ids = torch.randint(3, cfg.vocab_size, (7, 20))
@@ -340,7 +340,7 @@ def _run_plain(code: str, env_extra: dict | None = None) -> subprocess.Completed
 
 @_needs_torch
 def test_xgboost_learner_refuses_after_torch_is_imported():
-    """docs/ORCHESTRATION.md (owner decision, Checkpoint B): torch and xgboost never share
+    """docs/ORCHESTRATION.md: torch and xgboost never share
     a process. With torch loaded, building SL.xgboost.hist raises before xgboost is
     imported, instead of segfaulting."""
     result = _run_plain("""
@@ -402,7 +402,7 @@ def test_roberta_step_writes_derived_file_that_reads_back_exactly(tmp_path):
 
 
 def test_roberta_step_refuses_without_data_root():
-    """The step reads essays only from $LCP_DATA_ROOT (brief Section 2.3)."""
+    """The step reads essays only from $LCP_DATA_ROOT."""
     result = _run_plain("""
         from llm_cong_predict.features.roberta_step import main
         from llm_cong_predict.config import DataRootError

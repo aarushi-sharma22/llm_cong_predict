@@ -1,4 +1,4 @@
-"""A complete synthetic input set for the end-to-end run (brief Task 2.4).
+"""A complete synthetic input set for the end-to-end run.
 
 ``write_synthetic_inputs(root, seed)`` writes into ``root``, a directory used as
 ``$LCP_DATA_ROOT``, every restricted input the pipeline reads
@@ -251,7 +251,7 @@ def write_synthetic_inputs(root, seed: int, n: int = 200, gene_data: bool = Fals
         return np.round(weight * a_e + rng.standard_normal(m_e), 6)
 
     # --- SALAT: three tools x three batches; nwords is reported by TAALED and TAALES
-    # (identical values), so it becomes a join key of the TAALES step (brief F8) ---
+    # (identical values), so it becomes a join key of the TAALES step ---
     batches = np.array_split(np.arange(m_e), 3)
     taaled = pd.DataFrame({"filename": filenames, "nwords": words,
                            **{f"taaled_metric_{k}": noisy(w) for k, w in ((1, 0.8), (2, 0.4), (3, 0.0))}})

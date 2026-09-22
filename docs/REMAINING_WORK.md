@@ -1,6 +1,6 @@
-# Phase 3 notes
+# Remaining work
 
-What Phases 1 and 2 deliberately left for Phase 3, and the rules that hold from now on.
+What is not implemented yet, and the rules that hold from now on.
 
 ---
 
@@ -39,24 +39,24 @@ For the torch half, run the suite in an environment where the `[embeddings]` ext
 not installed (`importlib.util.find_spec` is what the guard uses, so hiding it with
 `PYTHONPATH` does not work).
 
-**In CI (Phase 3), run the suite twice:** once with R and torch present, once with
-neither. The second run must be green, with skips.
+**In CI, run the suite twice:** once with R and torch present, once with neither. The
+second run must be green, with skips.
 
-**Why this rule exists.** At the Checkpoint D review, on a machine without R or torch,
+**How the rule was found.** On a machine without R or torch,
 `tests/test_execute.py::test_results_do_not_depend_on_n_jobs` failed instead of skipping:
 it called `run_pipeline` without naming a factor backend, so it took the default `"r"`.
 It was the only test missing the guard; the rest of the suite skipped correctly.
 
 ---
 
-## Carried forward to Phase 3
+## Not implemented
 
-| Item | Why it waits | Described in |
+| Item | Why | Described in |
 |---|---|---|
 | Pinned package versions and a lockfile, **including R xgboost < 3.0** so that `SuperLearner` still passes `params = list(tree_method = "hist")` | the current SuperLearner takes a different code path for xgboost ≥ 3.0, so the full six-learner oracle cannot run against R until versions are pinned | PORTING_NOTES C8, K1; VALIDATION_CHECKLIST V4, V7 |
-| Caching in the runner ("skip if up to date", keyed by inputs and function source) | Task 2.4 asked for a runner with no caching framework | docs/ORCHESTRATION.md |
+| Caching in the runner ("skip if up to date", keyed by inputs and function source) | the runner deliberately has no caching framework | docs/ORCHESTRATION.md |
 | The Snakemake wrapper for cluster runs of all 416 fits | same | docs/ORCHESTRATION.md |
-| Containers, CI, HPC job scripts | out of scope for Phases 1–2 | brief Section 9 |
+| Containers, CI, HPC job scripts | | |
 
-Not Phase 3: the format of the released polygenic index files (Phases 5–6), which will
-replace the placeholder reader (PORTING_NOTES M5).
+The format of the released polygenic index files will replace the placeholder reader
+(PORTING_NOTES M5).

@@ -1,9 +1,9 @@
-"""Run the pipeline graph in this process (brief Task 2.4) — the port of ``tar_make()``.
+"""Run the pipeline graph in this process — the port of ``tar_make()``.
 
 Every target of ``pipeline/build.py`` is bound below to the function it calls, with the
 ``_targets.R`` line it comes from. The runner resolves the requested targets'
 dependencies, executes them in topological order, fits the models and scores them, and
-returns the metric rows. There is no caching and no job scheduler: those are Phase 3
+returns the metric rows. There is no caching and no job scheduler
 (docs/ORCHESTRATION.md). The bindings contain no logic of their own beyond passing
 values (the thin-adapter rule); the work happens in ``io/``, ``cleaning/``,
 ``features/``, ``models/`` and ``metrics/``.
@@ -70,7 +70,7 @@ from .variable_lists import CONSTANT_LISTS
 
 logger = logging.getLogger(__name__)
 
-# Owner decision at Checkpoint C: when gene data is absent, the samples that the R
+# When gene data is absent, the samples that the R
 # defines with gene_variables are built without them, so they are not the paper's
 # samples. Every metric row from such a target says so.
 SAMPLE_NOTE_NO_GENE_DATA = "built without gene data, not comparable to the paper"
@@ -226,7 +226,7 @@ def bindings() -> dict[str, Binding]:
             "llm_paper/_targets.R:L94"),
         "gene_data": _bind_gene_data(),
         # --- essays (R: _targets.R:L99–115) ---
-        # TreeTagger tokenisation happens inside r/readability.R (Task 2.5): EXTERNAL.
+        # TreeTagger tokenisation happens inside r/readability.R: EXTERNAL.
         "tokenized_essays": Binding(lambda: None, lambda r: None, "llm_paper/_targets.R:L99"),
         "spelling_errors": Binding(
             get_spelling_error_metrics,

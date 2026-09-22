@@ -1,4 +1,4 @@
-"""Oracle tests: the native port against R itself, through rpy2 (brief Task 2.2).
+"""Oracle tests: the native port against R itself, through rpy2.
 
 Every test skips, with the reason, when rpy2, R or a required R package is missing
 (they need: R, `pip install -e '.[oracle]'`, and the R packages named in each
@@ -45,7 +45,7 @@ def _factor_data(seed: int, n: int = 300) -> pd.DataFrame:
 def test_pearson_factor_matches_psych_fa(seed):
     """R: llm_paper/R/functions.R:L297–306 via psych::fa(x, 1, cor = "cor")$scores
     (psych 2.6.5). The native scores must have the identical NA pattern (no imputation,
-    factor.scores.R:L135) and correlate with psych's at >= 0.9999; measured at Task 2.2:
+    factor.scores.R:L135) and correlate with psych's at >= 0.9999; measured:
     correlation >= 0.99999999997, max |difference| <= 2.2e-5 (loadings APPROX, AP8)."""
     from llm_cong_predict.cleaning.factors import create_factors, create_factors_r
 
@@ -61,7 +61,7 @@ def test_pearson_factor_matches_psych_fa(seed):
 @_needs("psych")
 def test_r_bridge_computes_all_four_factors():
     """factor_backend "r": all four factors from psych::fa, including the three
-    polychoric ones the native path cannot compute (brief Task 2.2)."""
+    polychoric ones the native path cannot compute."""
     from llm_cong_predict.cleaning.factors import FACTOR_DEFINITIONS, create_factors
 
     res = create_factors(_factor_data(0), backend="r")
@@ -91,7 +91,7 @@ function(x, y, foldid, lambda) {
 def test_screen_glmnet_matches_r_on_shared_folds_and_grid():
     """R pkg: SuperLearner/R/screen.glmnet.R:L1–16 replicated in R with an explicit foldid
     and lambda sequence (cv.glmnet, glmnet 5.0); the Python screener gets the same folds
-    and grid and must select the same columns (measured at Task 2.2: 12/12)."""
+    and grid and must select the same columns (measured: 12/12)."""
     import rpy2.robjects as ro
 
     from llm_cong_predict.models import screeners
@@ -133,7 +133,7 @@ function(x, y, foldid) {
 def test_screen_glmnet_default_path_matches_r_on_shared_folds():
     """The whole screener as used in the pipeline (each side builds its own default
     grid and stops its own path early), with shared CV folds: identical selections on
-    40 synthetic datasets (measured at Task 2.2: 40/40). The grids agree to rounding on
+    40 synthetic datasets (measured: 40/40). The grids agree to rounding on
     their common part; the early stop may differ by one point (AP7: measured in 5 of
     40 datasets, when the relative R^2 gain is within ~1e-6 of glmnet's 1e-5 threshold,
     because the two coordinate-descent solutions differ in R^2 by up to 4.8e-4)."""
@@ -172,7 +172,7 @@ def test_sl_mean_and_sl_lm_match_r_superlearner_on_identical_folds():
     """R: llm_paper/R/functions.R:L526–548 (get_lm_cv_model's library) run by R's
     CV.SuperLearner (SuperLearner 2.0-42) and by the native engine on identical outer
     AND inner folds: library predictions, weights, SL predictions and CV risks agree to
-    1e-10 (measured at Task 2.2: max 1.5e-14)."""
+    1e-10 (measured: max 1.5e-14)."""
     from llm_cong_predict.models.base_learners import lm_library
     from llm_cong_predict.models.folds import make_folds, train_indices
     from llm_cong_predict.models.native_superlearner import fit_cv_superlearner

@@ -19,7 +19,7 @@
 #   * tokenize_essays              (llm_paper/R/functions.R:L356-367)
 #   * calculate_readability_metrics(llm_paper/R/functions.R:L369-388)
 #
-# Deviations from the original, both required by the brief (Task 2.5):
+# Deviations from the original:
 #   1. the TreeTagger path comes from the environment variable LCP_TREETAGGER_PATH,
 #      not the hard-coded "C:/TreeTagger" of functions.R:L362;
 #   2. the essays are read from $LCP_DATA_ROOT/essays and the result is written to

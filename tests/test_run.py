@@ -1,4 +1,4 @@
-"""Model runner, data preparation, gene skipping and the run log (brief Task 2.3).
+"""Model runner, data preparation, gene skipping and the run log.
 
 Synthetic data only (IDs SYN000001...), generated from a seed, with a planted linear
 signal.
@@ -52,7 +52,7 @@ def test_fit_model_lm_recovers_planted_signal_and_applies_na_omit():
 
 
 def test_fit_model_refuses_non_numeric_predictors():
-    """Brief Task 2.3: after the documented data preparation every predictor is
+    """after the documented data preparation every predictor is
     numeric; anything else raises instead of being coerced."""
     df = _planted()
     df["flag"] = df["x3"] > 0  # bool
@@ -84,7 +84,7 @@ def test_fit_model_superlearner_recovers_planted_signal():
                     reason=r_unavailable_reason(("SuperLearner", "nnls")) or "")
 def test_fit_model_r_backend_uses_the_same_folds():
     """backend="r" gets the native default outer and inner folds, so the lm library
-    agrees with the native one to rounding (brief Task 2.3; oracle as in Task 2.2)."""
+    agrees with the native one to rounding."""
     df = _planted()
     native, _ = fit_model("y", ["x1", "x2", "x3"], df, method="lm")
     r, _ = fit_model("y", ["x1", "x2", "x3"], df, method="lm", backend="r")
@@ -96,7 +96,7 @@ def test_fit_model_r_backend_uses_the_same_folds():
 
 def test_save_predictions_only_under_data_root(monkeypatch, tmp_path):
     """Per-person predictions are participant-level: written only to
-    $LCP_DATA_ROOT/fits/ (brief Section 2.3, Task 2.3)."""
+    $LCP_DATA_ROOT/fits/."""
     fit, _ = fit_model("y", ["x1", "x2"], _planted(), method="lm")
     monkeypatch.delenv(config.LCP_DATA_ROOT_ENV, raising=False)
     with pytest.raises(config.DataRootError):
@@ -113,7 +113,7 @@ def test_save_predictions_only_under_data_root(monkeypatch, tmp_path):
 
 def test_as_numeric_gives_level_positions_and_logical_codes():
     """R's as.numeric (llm_paper/_targets.R:L208, L258): a factor gives its level
-    position (brief F2), a logical 0/1, a number itself."""
+    position, a logical 0/1, a number itself."""
     pedu = pd.Series(pd.Categorical([7.0, 1.0, np.nan, 3.0], categories=[1.0, 3.0, 7.0]))
     np.testing.assert_array_equal(r_as_numeric_column(pedu), [3.0, 1.0, np.nan, 2.0])
     male = pd.Series(pd.array([True, False, None], dtype="boolean"))
@@ -151,7 +151,7 @@ def test_data_prep_steps_from_the_spec():
 # ------------------------------------------------------ gene data and run log --
 
 def test_gene_dependent_targets_are_skipped_and_logged(monkeypatch, tmp_path):
-    """Brief Task 2.3: without gene data, targets whose predictors include
+    """without gene data, targets whose predictors include
     gene_variables are skipped and listed in the run log (computed: 26 targets,
     166 fits)."""
     runnable, skipped = split_gene_dependent(model_specs(), gene_data_available=False)

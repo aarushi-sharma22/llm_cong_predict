@@ -184,7 +184,7 @@ def _summary_risk_row(Y: np.ndarray, pred: np.ndarray, folds: list[np.ndarray],
       * ``se = (1/sqrt(n)) * sd(w * (Y - pred)^2)`` over all observations, with R's
         ``sd`` (denominator n - 1) and ``n = length(SL.predict)`` (L19).
     Returned as ``mean_mse``/``se_mse``/``min_mse``/``max_mse``. R names the SE column
-    ``se`` (PORTING_NOTES B4); the brief names it ``se_mse``.
+    ``se`` (PORTING_NOTES B4).
     """
     risk = np.array([np.mean(w[idx] * (Y[idx] - pred[idx]) ** 2) for idx in folds])
     se = (1.0 / np.sqrt(len(pred))) * np.std(w * (Y - pred) ** 2, ddof=1)

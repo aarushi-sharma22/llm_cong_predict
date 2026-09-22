@@ -3,7 +3,7 @@
 The original used the R `targets` package: a make-like DAG giving (a) dependency
 tracking, (b) skip-if-unchanged caching, (c) parallelism. This pipeline has 70
 model targets (416 fits), several of them expensive, so caching and parallelism are genuinely
-valuable — you should not re-run everything to regenerate one figure.
+valuable: re-running everything to regenerate one figure is wasteful.
 
 This project provides **both** a lightweight Python runner (default) and an optional
 Snakemake wrapper. The decision to have both is safe only because of one rule:
@@ -14,13 +14,13 @@ Snakemake wrapper. The decision to have both is safe only because of one rule:
 > decide call-order over those functions. This prevents the two entry points from
 > drifting apart, which is the only real risk of maintaining both.
 
-Status (Phase 2, Task 2.4): the graph, the declarative model spec and the in-process
-runner exist and run (`pipeline/execute.py`). There is no caching and no scheduler;
-both are Phase 3. This note is the design they follow.
+The graph, the declarative model spec and the in-process runner exist and run
+(`pipeline/execute.py`). There is no caching and no scheduler. This note is the design
+they follow.
 
 ---
 
-## Decision: torch and xgboost never share a process (owner, Checkpoint B, 2026-09-22)
+## Decision: torch and xgboost never share a process (2026-09-22)
 
 **Rule.** torch and xgboost are never imported in the same Python process.
 
@@ -45,15 +45,15 @@ that order is not relied on.
 - **No environment workaround** (for example `KMP_DUPLICATE_LIB_OK`) is used. Such
   flags can hide crashes or give wrong results.
 
-The runner (Task 2.4) treats the RoBERTa step as an external step, like the SALAT tools
+The runner treats the RoBERTa step as an external step, like the SALAT tools
 and koRpus: its output file is an input of the graph.
 
 ---
 
 ## Where R is used at run time, and where only in tests
 
-R is not optional for a full run. This is where it is needed (owner decision at
-Checkpoint C: keep `FACTOR_BACKEND = "r"` as the default).
+R is not optional for a full run. This is where it is needed, with
+`FACTOR_BACKEND = "r"` as the default.
 
 | Where | What needs R | Consequence if R is missing |
 |---|---|---|
@@ -66,7 +66,7 @@ Versions of R and every R package are recorded in docs/REFERENCE_SOURCES.md.
 
 ---
 
-## The in-process runner (Task 2.4)
+## The in-process runner
 
 `pipeline/execute.py` is the port of `tar_make()`:
 
@@ -95,7 +95,7 @@ python run.py --run --targets essay_lm_lm_metrics
 
 ## Primary: lightweight Python module graph
 
-The design mirrors what `targets` gave us, in plain Python with no external tooling.
+The design mirrors `targets`, in plain Python with no external tooling.
 
 ### 1. Targets as pure functions
 Each step is a function with explicit inputs and one output, e.g.
@@ -118,7 +118,7 @@ runner, which resolves dependencies and executes them in topological order:
 ```
 
 Caching each output keyed by a hash of its inputs and the function source — the
-`targets` "skip if up to date" behaviour — is **Phase 3**. Today every requested target
+`targets` "skip if up to date" behaviour — is not implemented. Today every requested target
 is recomputed.
 
 ### 3. Declarative model spec (the key improvement over the original)
@@ -164,7 +164,7 @@ rule clean_ncds:
 
 ### When to use which
 - **Reproducing a figure / running locally** -> Python runner. No extra install.
-- **Running all 416 fits on a cluster** -> Snakemake wrapper (Phase 3).
+- **Running all 416 fits on a cluster** -> Snakemake wrapper.
 
 ### Honest tradeoff
 Two entry points is a small ongoing maintenance tax and a drift risk. That risk is
