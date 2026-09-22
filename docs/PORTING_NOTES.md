@@ -373,13 +373,35 @@ equivalent, so the readers carry `pyreadstat`'s `variable_value_labels` on
 Caveat: `df.attrs` is not always propagated across pandas operations, so labels are
 re-attached after transforms and should be read early in the cleaning chain.
 
-### E3. `combine_ncds` column-collision handling 🔦 (assumption, verify with data)
-`plyr::join_all(type="full")`'s behaviour when two frames share a non-key column is
-ambiguous. The port does a full outer join on `ncdsid` and, on any non-key overlap,
-*coalesces* (prefer left, fill from right) into one column and records it in
-`df.attrs['combine_ncds_collisions']`, rather than letting pandas suffix `_x`/`_y`.
-The NCDS waves use distinct variable codes so this is not expected to trigger; the
-coalescing rule must be checked against R once real data is available.
+### E3. `combine_ncds` resolves column collisions as plyr does (rewritten in Phase 1, Task 1.5)
+- **Label:** faithful. Owner decision C1 corrects brief F8 item 4.
+- **R source:**
+  - `llm_paper/R/functions.R:L57–62`:
+    `plyr::join_all(by = "ncdsid", type = "full") %>% as_tibble()`.
+  - `plyr/R/join-all.r:L14–23`; `plyr/R/join.r:L122–133` (`.join_all`, full: `matched <-
+    cbind(x[ids$x, ], y[ids$y, y.cols])`, then `rbind.fill(matched, unmatched)`).
+  - `plyr/R/rbind-fill.r:L70–71, L80` (1.8.9; code unchanged since 1.8.4). The output
+    has one column per `unique(names)`, filled with `df[[var]]`, the first occurrence.
+- **Python:** `io/readers.py::combine_ncds`, built on `_plyr_full_join`:
+  - Rows: every row of the accumulated frame, in order, with its matches, then the
+    right frame's unmatched rows.
+  - A column in both frames: rows of the left frame keep the left value, even when it
+    is NA (this is **not** a coalesce). Right-only rows take the right value. The
+    column keeps the left frame's labels.
+  - Every collision is logged (warning) and recorded in
+    `attrs["combine_ncds_collisions"]` with the count of differing cells.
+  - `strict=True` raises `ColumnCollisionError` instead. This option is not in the R.
+- **Why:** the brief (F8) said `join_all` keeps both copies and `as_tibble` then
+  rejects the duplicated names, so the Python should raise. That is not what plyr
+  does. `rbind.fill` removes the duplicates, so `as_tibble` never sees any, and the
+  author's run could have had silent collisions. The earlier port coalesced, which
+  matched neither R nor the brief.
+- **Test:** `tests/test_io.py::test_combine_ncds_collision_keeps_first_frame_like_plyr`,
+  `::test_combine_ncds_right_only_rows_take_right_value_in_plyr_order`,
+  `::test_combine_ncds_strict_mode_raises_on_collision`,
+  `::test_combine_ncds_collided_column_keeps_first_frame_labels`.
+- **Validation:** on real data, check `attrs["combine_ncds_collisions"]`. Any entry
+  means two NCDS files carry the same variable code.
 
 ### E4. `read_camsis` does not lower-case column names ✅ (faithful)
 Matches the R (`haven::read_dta` only). The real CAMSIS files already use lower-case
@@ -408,14 +430,25 @@ unless `include_polychoric=True`, which itself raises until V3 provides a valida
 estimator or an rpy2 `psych::fa` fallback. This is the "don't guess where data/method
 is missing" rule applied to a method gap.
 
-### F2. `create_factors` implemented in numpy, not `factor_analyzer` ✅ (forced + better)
-`factor_analyzer` 0.5.1 (its latest release) is INCOMPATIBLE with the installed
-scikit-learn: it calls the removed `force_all_finite` argument and errors on `fit`.
-So the single-factor minres extraction and regression (Thurstone) scores are
-implemented directly in numpy/scipy. Side benefit: the factor math is auditable for
-a replication rather than hidden in a library. Still PARITY-UNVERIFIED vs `psych`
-(V3) — psych's minres and scoring differ in detail; V3 compares via |correlation|
-because factor scores are identified only up to sign and scale.
+### F2. `create_factors` implemented in numpy; Pearson-factor scoring follows `factor.scores` (scoring fixed in Phase 1, Task 1.5)
+- **Label:** faithful for the scoring; APPROX for the loadings.
+- **R source:** `llm_paper/R/functions.R:L297–306`; `psych/R/fa.R:L19–41` (defaults:
+  minres, regression scores, `missing = FALSE`, `impute = "none"`), `L811` (no
+  `rho` passed); `psych/R/factor.scores.R:L8, L21–30, L135`.
+- **Python:** `cleaning/factors.py`. The one-factor minres loadings come from
+  iterated eigen-decompositions on the pairwise Pearson correlation. The scores are
+  `scale(x) %*% solve(r, loadings)`, falling back to a pseudo-inverse as psych does:
+  columns centred on their means and divided by the SD with denominator **n − 1**,
+  both over non-missing values, and **no imputation**, so a row with any missing item
+  gets NaN. The earlier port mean-imputed missing items and used the n denominator
+  (brief F3).
+- **Why:** faithful scoring. `factor_analyzer` 0.5.1 is incompatible with the
+  installed scikit-learn. APPROX: psych fits the uniquenesses by `optim`, which
+  minimises the same criterion, but identical loadings are not guaranteed.
+- **Test:** `tests/test_cleaning.py::test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling`,
+  `::test_create_factors_computes_pearson_defers_polychoric`.
+- **Validation:** V3. The Task 2.2 oracle compares the scores and the NA pattern
+  with `psych::fa`.
 
 ### F3. `create_aspirations` sex comparison reproduced faithfully, incl. its quirk ✅
 The R computes `sex = as.character(as_factor(sex))` and then
@@ -430,10 +463,42 @@ latent data-dependent quirk of the original to check against real data.
 The R definition takes 4 args but is called with 5 (`gene_data`), silently dropped.
 The port adds an explicit optional `ncds_gene`; `None` reproduces the 4-arg R exactly.
 
-### F5. `find_essay_teacher_genetics_overlap` — raw teacher codes grounded ✅
-Uses raw codes `n876`–`n885`, which are explicit in the R and correspond to the
-age-11 teacher ratings; converts to labels, sets the "Dont know" label to missing,
-keeps complete cases, then inner-joins with essays and the ability-complete frame.
+### F5. `find_essay_teacher_genetics_overlap`: haven integer codes, unlabelled values kept (rewritten in Phase 1, Task 1.5)
+- **Label:** faithful. Owner decision C9 and brief F8 item 3.
+- **R source:** `llm_paper/R/functions.R:L330–346`; `haven/R/as_factor.R:L62–84`
+  (2.5.5, `levels = "default"`); `r-source/src/library/base/R/ifelse.R:L46–55`.
+- **Python:**
+  - `ncds_1_to_9` is still labelled, so each of `n876`–`n885` becomes
+    `haven::as_factor` with the default levels. Those are every label plus every
+    observed unlabelled value, sorted by the underlying value, **including labels
+    that never occur**. Unlabelled values are kept as levels, not set to missing.
+  - `ifelse(x == "Dont know", NA, x)` returns the factor's **integer codes**, i.e. the
+    position in that level set (`io/labels.py::labelled_factor_codes`). The earlier
+    port returned label text and dropped unlabelled values.
+  - Both `inner_join` calls join on every shared column (`io/joins.py`).
+  - This coding differs from clean_ncds' teacher block, where the labels are already
+    gone and the code is the rank among observed values
+    (`io/labels.py::observed_rank_codes`).
+  - The function is defined but never called by `_targets.R` or `create_data.R`.
+- **Why:** faithful.
+- **Test:** `tests/test_cleaning.py::test_find_essay_teacher_genetics_overlap_keeps_unlabelled_codes_as_integer_codes`,
+  `::test_find_essay_teacher_genetics_overlap_inner_joins_and_labels`;
+  `tests/test_io.py::test_haven_codes_differ_from_observed_rank_codes_when_a_label_is_unobserved`,
+  `::test_as_factor_keeps_unlabelled_values_like_haven_default`.
+- **Validation:** none (unused by the pipeline).
+
+### F6. `read_ncds` drops the labels of the codes it sets to missing (Phase 1, Task 1.5)
+- **Label:** faithful.
+- **R source:** `llm_paper/R/functions.R:L51` (`sjlabelled::set_na(na = -99:-1)`);
+  `sjlabelled/R/set_na.R:L258–263` (values become NA), `L268–272` (their labels are
+  removed), `L177` (an all-NA column is returned untouched).
+- **Python:** `io/labels.py::set_na_range` drops those labels as well.
+  `read_ncds` attaches the labels **before** recoding. The earlier port attached them
+  afterwards, so the missing-code labels survived and would have become
+  `haven::as_factor` levels.
+- **Why:** faithful level sets for every later `as_factor`.
+- **Test:** `tests/test_io.py::test_read_ncds_drops_labels_of_recoded_missing_codes`.
+- **Validation:** none.
 
 ---
 
@@ -449,21 +514,67 @@ Parquet/CSV with `ncdsid` + embedding columns, and (b) makes the reshaper read t
 and return the reshaper's INTENDED output (`id` + embedding columns). Deviation and
 the original contradiction both documented.
 
-### G2. RoBERTa mean-pooling matches the R exactly, including padding ✅
-`get_roberta_embeddings` takes `tf$reduce_mean(last_hidden_state, axis=1)` after
-passing only input_ids (no attention_mask), so padding positions ARE included in the
-mean. The port (PyTorch) reproduces this exactly — mean over all `max_len=250`
-positions, padding included. A mask-weighted mean would give different numbers, so it
-is deliberately NOT used. Framework differs (TF→PyTorch) but the `roberta-base`
-weights are identical. Runnable with the real essays; not run in the sandbox.
+### G2. RoBERTa: mean over all positions, padding included; batched (batching added in Phase 1, Task 1.5)
+- **Label:** faithful. Batching does not change the numbers.
+- **R source:** `llm_paper/R/functions.R:L446–490`, in particular `L480–482`: a keras
+  input of token ids only, no attention mask, and
+  `tf$reduce_mean(roberta_model(input)[[1]], axis = 1L)`.
+- **Python:** `features/embeddings.py::roberta_pool(input_ids, model)` returns the mean
+  of the last hidden state over all positions, padding included. `roberta_embeddings`
+  tokenises as the R does (`max_length = 250`, truncation, padding to max length) and
+  runs the model `batch_size` essays at a time. Model and tokenizer can be passed in;
+  by default the public `roberta-base` weights are loaded locally. PyTorch replaces
+  TensorFlow.
+- **Why:** a single forward pass over about 10,000 essays of 250 tokens runs out of
+  memory (brief F8). Rows are independent, so batching gives the same numbers.
+- **Test:** `tests/test_features.py::test_roberta_pool_batched_equals_unbatched`
+  (bit-identical on a tiny randomly initialised `RobertaConfig` model),
+  `::test_roberta_embeddings_batch_size_does_not_change_output`. The real
+  `roberta-base` weights were not loaded here.
+- **Validation:** V2 (essay feature width) on real essays.
+- **Note: process isolation.** torch bundles its own OpenMP runtime (install name
+  `/opt/llvm-openmp/lib/libomp.dylib`), while xgboost loads Homebrew's
+  (`/opt/homebrew/opt/libomp/lib/libomp.dylib`). Once torch has been imported, an
+  xgboost fit in the same process segfaults. This was observed with torch 2.14.0 and
+  xgboost 3.3.0 on macOS; xgboost first and then torch worked. RoBERTa embeddings must
+  therefore be generated in a separate process from the Super Learner fits. The
+  RoBERTa tests run in a subprocess for this reason, and the pipeline (Task 2.4) must
+  do the same.
 
-### G3. SALAT + spelling = INGESTION ONLY (user decision) ✅ flagged
-`get_salat_metrics` and `get_spelling_error_metrics` read CSVs from external tools
-(SALAT desktop apps; LanguageTool CLI) and reshape them. They do NOT generate the
-metrics. Reimplementing the metrics in Python would produce different numbers than
-the paper, so generation stays external and these consume its output. Tested on
-synthetic CSVs. One pandas-specific fix: the spelling merge coerces `ncdsid` to
-string on both sides (pandas refuses to merge str-vs-int keys; R was type-tolerant).
+### G3. SALAT and spelling: ingestion only, with R's join and pivot semantics (rewritten in Phase 1, Task 1.5)
+- **Label:** faithful. Owner decision C8 and brief F8 items 1–2.
+- **R source:** `llm_paper/R/functions.R:L390–417` (spelling), `L419–444` (SALAT);
+  `dplyr/R/join.R:L624`, `join-by.R:L376–379` (joins without `by`).
+- **Python** (`features/salat.py`):
+  - **Spelling:**
+    - An essay without any error row is kept. The left join gives it rule type NA,
+      `pivot_wider` makes an "NA" column, and its nine categories are filled with 0.
+      The earlier port dropped such essays, and `create_essay_variables` then removed
+      every spelling column for having NAs.
+    - Rows follow essay order. Columns follow first appearance, with each essay's
+      rule types sorted, as `count()` returns them.
+    - The two cases where the R stops raise `SpellingMetricsError` with a message
+      naming the R line: a category of the nine never occurs (`L410–414`), or no
+      essay is error-free (`L415`).
+    - `ncdsid` is compared as text (pandas refuses mixed key types).
+  - **SALAT:**
+    - Each `left_join` joins on every column the two sides share (`io/joins.py`), as
+      dplyr does without `by`.
+    - The keys used at each step are logged and kept in `attrs["salat_join_keys"]`.
+      A metric reported by two tools becomes a join key, and essays whose values
+      differ lose the later tool's columns.
+  - Neither function generates metrics: the external tools do (SALAT desktop apps,
+    LanguageTool).
+- **Why:** faithful.
+- **Test:** `tests/test_features.py::test_spelling_keeps_essays_without_errors_with_zeros`,
+  `::test_spelling_columns_follow_first_appearance_with_sorted_types`,
+  `::test_spelling_raises_like_r_when_no_essay_is_error_free`,
+  `::test_spelling_raises_like_r_when_a_category_never_occurs`,
+  `::test_salat_natural_join_uses_shared_metric_as_key`,
+  `::test_get_spelling_error_metrics_pivots_fills_and_sums` (fixture extended so the R
+  would run on it).
+- **Validation:** V2. On real data, check `attrs["salat_join_keys"]`: any key other
+  than `filename` means a shared metric column.
 
 ### G4. Readability/tokenization are an EXTERNAL-TOOL BOUNDARY that raises 🔦
 `tokenize_essays` (TreeTagger) and `calculate_readability_metrics` (koRpus) generate

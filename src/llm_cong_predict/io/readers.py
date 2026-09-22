@@ -16,6 +16,7 @@ dataset, the logic is ported and the gap is flagged, not filled in.
 from __future__ import annotations
 
 import glob
+import logging
 import os
 
 import pandas as pd
@@ -28,6 +29,8 @@ from .labels import (
     merge_value_labels,
     set_na_range,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _lower_map(d: dict | None) -> dict:
@@ -88,7 +91,7 @@ def read_ncds(file: str, varlist: list[str]) -> pd.DataFrame:
       2. lower-case all column names;
       3. keep only the requested columns (``ncdsid`` + ``varlist``) that exist,
          in the requested order (``dplyr::one_of`` ignores missing names);
-      4. recode values in ``[-99, -1]`` to missing;
+      4. recode values in ``[-99, -1]`` to missing and drop their value labels;
       5. (the R lower-cases again, a no-op here).
 
     The commented-out ``as_factor`` / ``mutate_if`` lines in the R are NOT executed,
@@ -107,16 +110,15 @@ def read_ncds(file: str, varlist: list[str]) -> pd.DataFrame:
         if c in present and c not in seen:
             keep.append(c)
             seen.add(c)
-    df = df[keep]
-
-    df = set_na_range(df, -99, -1)
-
+    df = df[keep].copy()
     attach_labels(
         df,
         value_labels={c: value_labels[c] for c in keep if c in value_labels},
         column_labels={c: column_labels[c] for c in keep if c in column_labels and column_labels[c]},
     )
-    return df
+    # set_na(-99:-1) after the labels are attached, so that the labels of the recoded
+    # values are dropped as sjlabelled does (R pkg: sjlabelled/R/set_na.R:L268–272).
+    return set_na_range(df, -99, -1)
 
 
 def read_gene_data(path: str | None = None):
@@ -182,40 +184,76 @@ def read_essays(folder: str, encoding: str = "utf-8") -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["doc_id", "ncdsid", "text", "words"])
 
 
-def combine_ncds(*frames: pd.DataFrame) -> pd.DataFrame:
+class ColumnCollisionError(ValueError):
+    """Raised by ``combine_ncds(..., strict=True)`` when frames share a non-key column."""
+
+
+def _plyr_full_join(x: pd.DataFrame, y: pd.DataFrame, by: str) -> tuple[pd.DataFrame, list[dict]]:
+    """``plyr::join(x, y, by, type = "full", match = "all")``.
+
+    R pkg: plyr/R/join.r:L104–133 and plyr/R/rbind-fill.r (1.8.9; code unchanged since
+    1.8.4). ``.join_all`` builds ``matched = cbind(x[ids$x, ], y[ids$y, y.cols])`` (every
+    x row with its matches, in x order), where a column present in both frames appears
+    twice, then ``rbind.fill(matched, unmatched)`` appends the y rows with no match.
+    ``rbind.fill`` keeps one column per name (``unique(names)``, rbind-fill.r:L80) and
+    fills it with ``df[[var]]``, the FIRST occurrence (L70–71). So for a column in both
+    frames: rows of x keep x's value (an NA stays NA; this is not a coalesce), rows only
+    in y take y's value, and the column keeps x's attributes.
+    """
+    y_cols = [c for c in y.columns if c != by]
+    shared = [c for c in y_cols if c in x.columns]
+    new = [c for c in y_cols if c not in x.columns]
+    matched = x.merge(y[[by] + new], on=by, how="left")  # x order; repeated for several matches
+    unmatched = y[~y[by].isin(x[by])]
+    out = pd.concat([matched, unmatched], ignore_index=True)
+
+    records = []
+    for col in shared:
+        both = x[[by, col]].merge(y[[by, col]], on=by, suffixes=("_left", "_right"))
+        l, r = both[f"{col}_left"], both[f"{col}_right"]
+        differing = int((~((l == r) | (l.isna() & r.isna()))).sum())
+        records.append({"column": col, "rows_in_both": int(len(both)),
+                        "cells_differing": differing, "right_only_rows": int(len(unmatched))})
+    return out, records
+
+
+def combine_ncds(*frames: pd.DataFrame, strict: bool = False) -> pd.DataFrame:
     """Port of ``combine_ncds(...)``.
 
-    R:
+    R (llm_paper/R/functions.R:L57–62):
         list(...) %>% plyr::join_all(by = "ncdsid", type = "full") %>% as_tibble()
 
-    Successive FULL outer join of all frames on ``ncdsid``. The R signature has an
-    unused ``varlist`` argument, which we omit.
-
-    COLLISION HANDLING (flagged, verify with real data — PORTING_NOTES): the NCDS
-    waves use distinct variable codes, so non-key column overlaps are not expected.
-    If a non-``ncdsid`` column appears in more than one frame, pandas' outer merge
-    would suffix them ``_x``/``_y``; instead we coalesce (prefer the left, fill from
-    the right) into a single column and record it. plyr's exact behaviour on such
-    collisions is ambiguous; this assumption should be checked against R once real
-    data is available.
+    Successive full joins on ``ncdsid`` with plyr's semantics (:func:`_plyr_full_join`):
+    rows in the order plyr produces them, and a column that appears in more than one
+    frame resolved as plyr resolves it (the earlier frame's value for its rows, the
+    later frame's value only for rows the earlier frames did not have). plyr never
+    produces duplicated names, so ``as_tibble``'s name check never fires (PORTING_NOTES
+    E3). Every collision is logged and recorded in ``attrs["combine_ncds_collisions"]``
+    with the number of cells where the two versions differ. ``strict=True`` raises
+    :class:`ColumnCollisionError` instead (not in the R). The R signature's unused
+    ``varlist`` argument is omitted.
     """
     dfs = [f for f in frames if f is not None]
     if not dfs:
         return pd.DataFrame()
 
     merged = dfs[0]
-    collisions: list[str] = []
-    for right in dfs[1:]:
-        overlap = (set(merged.columns) & set(right.columns)) - {"ncdsid"}
-        merged = pd.merge(merged, right, on="ncdsid", how="outer", suffixes=("", "__r"))
-        for col in overlap:
-            rcol = f"{col}__r"
-            if rcol in merged.columns:
-                merged[col] = merged[col].combine_first(merged[rcol])
-                merged = merged.drop(columns=[rcol])
-                collisions.append(col)
+    collisions: list[dict] = []
+    for i, right in enumerate(dfs[1:], start=1):
+        shared = sorted((set(merged.columns) & set(right.columns)) - {"ncdsid"})
+        if shared and strict:
+            raise ColumnCollisionError(
+                f"combine_ncds(strict=True): frame {i} shares column(s) {shared} with earlier "
+                "frames; plyr::join_all would keep the earlier frame's values")
+        merged, records = _plyr_full_join(merged, right, "ncdsid")
+        for rec in records:
+            rec["frame"] = i
+            logger.warning("combine_ncds: column %r in frame %d collides with an earlier frame "
+                           "(%d rows in both, %d cells differ); plyr keeps the earlier values",
+                           rec["column"], i, rec["rows_in_both"], rec["cells_differing"])
+        collisions.extend(records)
 
     merged.attrs[VALUE_LABELS_KEY] = merge_value_labels(dfs)
     if collisions:
-        merged.attrs["combine_ncds_collisions"] = sorted(set(collisions))
+        merged.attrs["combine_ncds_collisions"] = collisions
     return merged

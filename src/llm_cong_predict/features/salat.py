@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import pandas as pd
 
+from ..io.joins import natural_join
+
 # The spelling rule-issue categories the R fills-to-zero and sums (verbatim order).
 _SPELLING_FILL_ZERO = [
     "grammar", "misspelling", "typographical", "locale-violation", "duplication",
@@ -31,7 +33,13 @@ _SPELLING_FILL_ZERO = [
 _SPELLING_OTHER = ["locale-violation", "whitespace", "uncategorized", "inconsistency"]
 
 
+class SpellingMetricsError(ValueError):
+    """Raised where the R ``get_spelling_error_metrics`` stops with an error
+    (owner decision C8: reproduce R's errors)."""
+
+
 def _read_and_concat(paths: list[str]) -> pd.DataFrame:
+    # dplyr::bind_rows: stack, aligning columns by name (R: llm_paper/R/functions.R:L424–435)
     return pd.concat([pd.read_csv(p) for p in paths], ignore_index=True)
 
 
@@ -41,92 +49,102 @@ def get_salat_metrics(
     taales: list[str],
     seance: list[str],
 ) -> pd.DataFrame:
-    """Port of ``get_salat_metrics``.
+    """Port of ``get_salat_metrics`` (R: llm_paper/R/functions.R:L419–444).
 
-    R reads three CSVs each for TAALED / TAALES / SEANCE, row-binds within each
-    tool, renames TAALES' ``Filename`` -> ``filename``, then left-joins all three
-    onto the essay frame (keyed on ``filename`` = the essay ``doc_id``) and drops
-    ``filename``.
+    R reads three CSVs each for TAALED / TAALES / SEANCE, row-binds within each tool,
+    renames TAALES' ``Filename`` -> ``filename`` (L431), then (L437–443):
 
-    Signature simplified: the R took nine positional CSV paths
-    (``taaled_1..3``, ``taales_1..3``, ``seance_1..3``); here they are three lists.
-    Join keys follow dplyr's natural-join (shared columns) — ``filename`` after the
-    rename.
+        ncds_essays %>% select(filename = doc_id, ncdsid) %>%
+          left_join(taaled) %>% left_join(taales) %>% left_join(seance) %>%
+          select(-filename)
+
+    Each ``left_join`` has no ``by``, so dplyr joins on EVERY column the two sides
+    share at that step (io/joins.py). If two tools report a column with the same name
+    (a shared metric), that column becomes a join key for the later tool, and essays
+    whose values differ get NA in all of that tool's columns. The keys used at each
+    step are logged and stored in ``attrs["salat_join_keys"]``.
+
+    Signature simplified: the R took nine positional CSV paths; here, three lists.
     """
     taaled_df = _read_and_concat(taaled)
     taales_df = _read_and_concat(taales).rename(columns={"Filename": "filename"})
     seance_df = _read_and_concat(seance)
 
-    base = ncds_essays.rename(columns={"doc_id": "filename"}).loc[:, ["filename", "ncdsid"]]
-    out = (
-        base.merge(taaled_df, on=_common(base, taaled_df), how="left")
-        .merge(taales_df, on="filename", how="left")
-        .merge(seance_df, on=_common_after(seance_df), how="left")
-    )
-    return out.drop(columns=[c for c in ["filename"] if c in out.columns])
-
-
-def _common(a: pd.DataFrame, b: pd.DataFrame) -> list[str]:
-    """Shared columns for a dplyr natural join (falls back to 'filename')."""
-    shared = [c for c in a.columns if c in b.columns]
-    return shared if shared else ["filename"]
-
-
-def _common_after(seance_df: pd.DataFrame) -> str:
-    # SEANCE CSVs key on filename too (the R relies on a shared 'filename' column).
-    return "filename"
+    out = ncds_essays.rename(columns={"doc_id": "filename"}).loc[:, ["filename", "ncdsid"]]
+    keys = {}
+    for step, tool in (("taaled", taaled_df), ("taales", taales_df), ("seance", seance_df)):
+        out, keys[step] = natural_join(out, tool, "left", step=f"get_salat_metrics: {step}")
+    out = out.drop(columns=["filename"])
+    out.attrs["salat_join_keys"] = keys
+    return out
 
 
 def get_spelling_error_metrics(ncds_essays: pd.DataFrame, path: str) -> pd.DataFrame:
-    """Port of ``get_spelling_error_metrics``.
+    """Port of ``get_spelling_error_metrics`` (R: llm_paper/R/functions.R:L390–417).
 
     R:
-        spelling <- read_csv(path)
-        counts <- spelling %>% group_by(ncdsid, rule_issue_type) %>% count()
-        essays %>% select(ncdsid, words) %>%
-          left_join(counts, by="ncdsid") %>%
-          mutate(error_per_words = n / as.numeric(words)) %>%
+        counts <- read_csv(path) %>% group_by(ncdsid, rule_issue_type) %>% count()   # L394–396
+        ncds_essays %>% select(ncdsid, words) %>%
+          left_join(counts, by = "ncdsid") %>%                                      # L399–400
+          mutate(error_per_words = n / as.numeric(words)) %>%                       # L402
           select(ncdsid, rule_issue_type, error_per_words) %>%
-          pivot_wider(names_from=rule_issue_type, values_from=error_per_words) %>%
-          mutate_at(<the nine categories>, ~ ifelse(is.na(.), 0, .)) %>%
-          mutate(total = rowSums(<nine>), other = rowSums(<four>)) %>%
-          select(-"NA")
+          pivot_wider(names_from = rule_issue_type, values_from = error_per_words) %>%  # L404
+          mutate_at(vars(one_of(<nine categories>)), ~ ifelse(is.na(.), 0, .)) %>%  # L405–408
+          mutate(total = rowSums(select(., <nine>)), other = rowSums(select(., <four>))) %>%  # L410–414
+          select(-"NA")                                                             # L415
 
-    Reproduced faithfully: per-essay error counts by rule type, normalised by word
-    count, pivoted wide, missing categories filled with 0, plus ``total`` and
-    ``other`` row-sums, and the literal ``NA`` column (from missing rule types)
-    dropped.
+    Reproduced:
+      * an essay with no error row is KEPT: the left join gives it rule type NA, so
+        ``pivot_wider`` makes a column literally named "NA" and the essay's categories
+        are filled with 0 (brief F8: the old port dropped these essays);
+      * rows in essay order; columns in order of first appearance, where each essay's
+        rule types come sorted (``count()`` returns groups sorted, NA last);
+      * the two cases where the R stops with an error raise
+        :class:`SpellingMetricsError` (owner decision C8): a category of the nine never
+        occurring (``select(., grammar, ...)`` on L410–414 names a missing column), and
+        no essay without errors (``select(-"NA")`` on L415 names a missing column).
+    ``ncdsid`` is compared as text on both sides (pandas refuses mixed key types).
     """
     spelling = pd.read_csv(path)
     counts = (
-        spelling.groupby(["ncdsid", "rule_issue_type"], dropna=False)
+        spelling.groupby(["ncdsid", "rule_issue_type"], dropna=False, sort=True)
         .size()
         .reset_index(name="n")
     )
-    # Align the join-key dtype (pandas will not merge str vs int keys; R was
-    # type-tolerant here). Coerce both sides' ncdsid to string.
     essays = ncds_essays.loc[:, ["ncdsid", "words"]].copy()
     essays["ncdsid"] = essays["ncdsid"].astype(str)
     counts["ncdsid"] = counts["ncdsid"].astype(str)
 
-    merged = essays.merge(counts, on="ncdsid", how="left")
-    merged["error_per_words"] = merged["n"] / pd.to_numeric(merged["words"], errors="coerce")
-    wide = merged.loc[:, ["ncdsid", "rule_issue_type", "error_per_words"]].pivot_table(
-        index="ncdsid", columns="rule_issue_type", values="error_per_words", aggfunc="first"
-    ).reset_index()
+    long = essays.merge(counts, on="ncdsid", how="left")
+    long["error_per_words"] = long["n"] / pd.to_numeric(long["words"], errors="coerce")
+    # pivot_wider names the column of a missing rule type "NA"
+    long["rule_issue_type"] = long["rule_issue_type"].astype(object).where(long["rule_issue_type"].notna(), "NA")
+    if long.duplicated(["ncdsid", "rule_issue_type"]).any():
+        raise SpellingMetricsError(
+            "duplicate (ncdsid, rule_issue_type) pairs after the join: an ncdsid occurs more "
+            "than once in the essays; pivot_wider would build list-columns here")
+    rows = list(dict.fromkeys(long["ncdsid"]))
+    cols = list(dict.fromkeys(long["rule_issue_type"]))
+    wide = (long.pivot(index="ncdsid", columns="rule_issue_type", values="error_per_words")
+            .reindex(index=rows, columns=cols).reset_index())
     wide.columns.name = None
 
-    for cat in _SPELLING_FILL_ZERO:
+    for cat in _SPELLING_FILL_ZERO:  # one_of(): categories that exist
         if cat in wide.columns:
             wide[cat] = wide[cat].fillna(0)
-        else:
-            wide[cat] = 0.0  # category absent entirely -> all zero (R's one_of tolerates absence)
 
+    missing = [c for c in _SPELLING_FILL_ZERO if c not in wide.columns]
+    if missing:
+        raise SpellingMetricsError(
+            f"spelling categories {missing} never occur. The R stops here: "
+            "rowSums(dplyr::select(., grammar, misspelling, ...)) names a column that does not "
+            "exist (R: llm_paper/R/functions.R:L410-414).")
     wide["total"] = wide[_SPELLING_FILL_ZERO].sum(axis=1)
     wide["other"] = wide[_SPELLING_OTHER].sum(axis=1)
 
-    # drop the literal "NA" column (essays whose rule_issue_type was missing)
-    for na_col in ("NA", "nan", float("nan")):
-        if na_col in wide.columns:
-            wide = wide.drop(columns=[na_col])
-    return wide
+    if "NA" not in wide.columns:
+        raise SpellingMetricsError(
+            "every essay has at least one spelling error, so pivot_wider created no 'NA' column. "
+            "The R stops here: dplyr::select(-\"NA\") names a column that does not exist "
+            "(R: llm_paper/R/functions.R:L415).")
+    return wide.drop(columns=["NA"])

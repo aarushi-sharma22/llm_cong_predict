@@ -15,7 +15,8 @@ from functools import reduce
 
 import pandas as pd
 
-from ..io.labels import as_factor
+from ..io.joins import natural_join
+from ..io.labels import labelled_factor_codes
 
 
 def get_complete_ncds(
@@ -90,16 +91,26 @@ def find_essay_teacher_genetics_overlap(
           inner_join(ncds_essays) %>%
           inner_join(extended_teacher_evaluations)
 
-    Faithful translation. The raw teacher codes are converted to their labels, the
-    "Dont know" label is set to missing, and complete cases are kept; the result is
-    inner-joined (on ``ncdsid``) with essays and the ability-complete genetics frame.
+    What the R returns for the teacher columns (R: llm_paper/R/functions.R:L332–336):
+    ``ncds_1_to_9`` still carries its value labels, so ``haven::as_factor`` builds each
+    factor from every label plus every observed unlabelled value, sorted by the
+    underlying value, including labels that never occur (haven/R/as_factor.R:L74–82).
+    Unlabelled values are KEPT as levels, not set to missing (brief F8). ``ifelse(x ==
+    "Dont know", NA, x)`` then returns the factor's INTEGER CODES, i.e. the position in
+    that level set (io/labels.py::labelled_factor_codes). This differs from the
+    rank-of-observed-values coding of clean_ncds' teacher block, where labels are
+    already gone. ``na.omit`` drops incomplete rows. Both ``inner_join`` calls have no
+    ``by``, so they join on every shared column (io/joins.py).
+
+    This function is defined in the R but never called by ``_targets.R`` or
+    ``create_data.R`` (PORTING_NOTES F5).
     """
     ext = ncds_1_to_9.loc[:, ["ncdsid"] + _EXTENDED_TEACHER_CODES].copy()
     for code in _EXTENDED_TEACHER_CODES:
-        labelled = pd.Series(as_factor(ncds_1_to_9, code).astype("string"), index=ncds_1_to_9.index)
-        labelled = labelled.where(labelled != "Dont know")
-        ext[code] = labelled.values
+        ext[code] = labelled_factor_codes(ncds_1_to_9, code, missing_labels=("Dont know",))
     ext = ext.dropna()
 
     base = ncds_complete_genetics.dropna(subset=_ABILITY_NONMISSING)
-    return base.merge(ncds_essays, on="ncdsid", how="inner").merge(ext, on="ncdsid", how="inner")
+    out, _ = natural_join(base, ncds_essays, "inner", step="find_essay_teacher_genetics_overlap: essays")
+    out, _ = natural_join(out, ext, "inner", step="find_essay_teacher_genetics_overlap: teacher")
+    return out

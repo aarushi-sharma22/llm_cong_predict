@@ -177,3 +177,44 @@ def test_create_factors_polychoric_raises_not_guesses():
     df = pd.DataFrame({"ncdsid": ["1", "2", "3", "4"], **cols})
     with pytest.raises(NotImplementedError):
         create_factors(df, include_polychoric=True)
+
+
+def test_find_essay_teacher_genetics_overlap_keeps_unlabelled_codes_as_integer_codes():
+    """R: llm_paper/R/functions.R:L332–345. haven::as_factor keeps an unlabelled teacher
+    code (brief F8), so that row survives na.omit; the columns returned are integer
+    positions in haven's level set, not label text (owner decision C9)."""
+    codes = ["n876", "n877", "n878", "n879", "n880", "n881", "n882", "n883", "n884", "n885"]
+    raw = pd.DataFrame({"ncdsid": ["1", "2"], **{c: [1.0, 7.0] for c in codes}})  # 7 unlabelled
+    raw.attrs["value_labels"] = {c: {1: "Good", 5: "Poor", 8: "Dont know"} for c in codes}
+    ability = ["s2_co_factor_ability", "s2_co_verbal_ability", "s2_co_nonverbal_ability",
+               "s2_co_reading_ability", "s2_co_mathematics_ability"]
+    genetics = pd.DataFrame({"ncdsid": ["1", "2"], **{a: [0.1, 0.2] for a in ability}})
+    essays = pd.DataFrame({"ncdsid": ["1", "2"], "text": ["a", "b"]})
+    out = find_essay_teacher_genetics_overlap(genetics, essays, raw)
+    assert list(out["ncdsid"]) == ["1", "2"]
+    # levels: Good(1), Poor(5), "7", Dont know(8) -> codes 1 and 3
+    assert list(out["n876"]) == [1.0, 3.0]
+
+
+def test_pearson_factor_scores_na_for_incomplete_rows_and_n_minus_1_scaling():
+    """R pkg: psych/R/factor.scores.R:L21–27, L135 (2.6.5): scores = scale(x) %*% solve(r, L),
+    r the pairwise Pearson correlation, scale() with the n-1 SD over non-missing values,
+    and no imputation (fa.R:L28–29), so a row with a missing item gets NA (brief F3)."""
+    from llm_cong_predict.cleaning.factors import _minres_one_factor, _pearson_corr
+
+    rng = np.random.default_rng(3)
+    base = rng.normal(size=30)
+    X = np.column_stack([base + rng.normal(scale=0.4, size=30) for _ in range(4)])
+    X[5, 2] = np.nan
+    names = FACTOR_DEFINITIONS["s2_co_factor_ability"]["vars"]
+    df = pd.DataFrame(X, columns=names)
+    df.insert(0, "ncdsid", [f"SYN{i:06d}" for i in range(30)])
+    scores = create_factors(df).scores["s2_co_factor_ability"].to_numpy()
+
+    R = _pearson_corr(X)
+    L = _minres_one_factor(R)
+    Xs = (X - np.nanmean(X, 0)) / np.nanstd(X, 0, ddof=1)
+    expected = Xs @ np.linalg.solve(R, L)
+    assert np.isnan(scores[5]) and np.isnan(expected[5])
+    np.testing.assert_allclose(np.delete(scores, 5), np.delete(expected, 5))
+    assert np.isfinite(np.delete(scores, 5)).all()

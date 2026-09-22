@@ -13,10 +13,12 @@ from grounded, hard-coded variable lists (the lists are explicit in the R):
 Two reasons this is the least-certain port in the project and is explicitly flagged:
 
 1. ``psych::fa`` defaults must be matched, not assumed. The R relies on ``psych``
-   defaults: factoring method ``fm = "minres"`` (OLS/minimum-residual) and
-   regression-based (Thurstone) factor scores. We set ``method="minres"`` in
-   ``factor_analyzer`` to match the factoring method. Score computation differs
-   between packages and is part of what V3 checks.
+   defaults (psych/R/fa.R:L19–41): factoring method ``fm = "minres"`` and
+   regression (Thurstone) scores computed without imputation. The one-factor minres
+   loadings are computed here in numpy by iterating eigen-decompositions; psych fits
+   the uniquenesses with ``optim``. Both minimise the same least-squares criterion,
+   but identical loadings are not guaranteed; V3 and the Task 2.2 oracle measure it.
+   Scoring follows ``factor.scores`` exactly (:func:`_regression_scores`).
 
 2. Polychoric correlation must be computed by hand (no standard dependency provides
    a psych-matching one). Three of the four
@@ -108,6 +110,8 @@ def _minres_one_factor(R: np.ndarray, max_iter: int = 500, tol: float = 1e-8) ->
     eigenpair. This mirrors ``psych``'s default ``fm = "minres"`` in spirit; exact
     agreement is a V3 question.
     """
+    # APPROX: psych fits minres by optim() on the uniquenesses, starting from SMCs
+    # (psych/R/fa.R:L213ff); this iteration minimises the same criterion (AP8, V3).
     p = R.shape[0]
     Rc = R.copy()
     comm = np.full(p, 0.5)  # initial communalities
@@ -148,13 +152,27 @@ def _polychoric_corr(X: np.ndarray) -> np.ndarray:
 
 
 def _regression_scores(X: np.ndarray, loadings: np.ndarray, corr: np.ndarray) -> np.ndarray:
-    """Regression (Thurstone) factor scores: standardise X, then X_std @ inv(R) @ loadings."""
+    """Regression (Thurstone) factor scores, as ``psych::fa`` computes them.
+
+    R pkg: psych/R/factor.scores.R (2.6.5):
+      * ``method = "regression"`` is Thurstone (L8); the weights are ``solve(r, S)``
+        with ``S = loadings`` for one factor (L25–27), falling back to the
+        pseudo-inverse if ``r`` is singular (L28–30). ``r`` is the Pearson pairwise
+        correlation of the raw items (L21–22; ``fa`` passes no ``rho``, fa.R:L811).
+      * scores are ``scale(x) %*% w`` (L135): centred on the column means and divided
+        by the SD with denominator n - 1, both over the non-missing values (base R
+        ``scale``). With ``missing = FALSE`` / ``impute = "none"`` (fa.R:L28–29) nothing
+        is imputed, so a row with any missing item gets an NA score.
+    The previous port mean-imputed missing items and used the n denominator (brief F3).
+    """
     mean = np.nanmean(X, axis=0)
-    std = np.nanstd(X, axis=0, ddof=0)
+    std = np.nanstd(X, axis=0, ddof=1)
     Xs = (X - mean) / std
-    Xs = np.nan_to_num(Xs, nan=0.0)  # mean-impute standardised missings for scoring
-    weights = np.linalg.pinv(corr) @ loadings
-    return Xs @ weights
+    try:
+        weights = np.linalg.solve(corr, loadings)
+    except np.linalg.LinAlgError:  # factor.scores.R:L28–30: pseudo-inverse if singular
+        weights = np.linalg.pinv(corr) @ loadings
+    return Xs @ weights  # NaN propagates: incomplete rows get NaN
 
 
 @dataclass

@@ -149,15 +149,52 @@ def test_combine_ncds_full_outer_join():
     assert bool(pd.isna(out.set_index("ncdsid").loc["4", "x"]))
 
 
-def test_combine_ncds_coalesces_column_collision():
-    # Overlapping non-key column should coalesce, not suffix.
+def test_combine_ncds_collision_keeps_first_frame_like_plyr():
+    """R pkg: plyr/R/join.r:L127–130 and rbind-fill.r:L70–71, L80 (1.8.9): a column in
+    both frames is not duplicated and not coalesced; rows of the first frame keep the
+    first frame's value, even when it is NA (owner decision C1; this test replaced one
+    that asserted a coalesce)."""
     a = pd.DataFrame({"ncdsid": ["1", "2"], "shared": [1, np.nan]})
     b = pd.DataFrame({"ncdsid": ["1", "2"], "shared": [np.nan, 2]})
     out = combine_ncds(a, b)
-    assert "shared" in out.columns and "shared__r" not in out.columns
+    assert list(out.columns) == ["ncdsid", "shared"]
     vals = out.set_index("ncdsid")["shared"]
-    assert vals.loc["1"] == 1 and vals.loc["2"] == 2
-    assert out.attrs.get("combine_ncds_collisions") == ["shared"]
+    assert vals.loc["1"] == 1 and bool(pd.isna(vals.loc["2"]))  # NOT filled from b
+    (rec,) = out.attrs["combine_ncds_collisions"]
+    assert rec["column"] == "shared" and rec["cells_differing"] == 2 and rec["frame"] == 1
+
+
+def test_combine_ncds_right_only_rows_take_right_value_in_plyr_order():
+    """R pkg: plyr/R/join.r:L125–130: matched = every x row (x order) with its y match;
+    unmatched y rows are appended and bring their own values, also for shared columns."""
+    a = pd.DataFrame({"ncdsid": ["2", "1"], "shared": [np.nan, 1.0], "x": [5, 6]})
+    b = pd.DataFrame({"ncdsid": ["3", "2"], "shared": [30.0, 20.0], "y": [7, 8]})
+    out = combine_ncds(a, b)
+    assert list(out["ncdsid"]) == ["2", "1", "3"]
+    assert list(out.columns) == ["ncdsid", "shared", "x", "y"]
+    assert pd.isna(out.loc[0, "shared"]) and out.loc[1, "shared"] == 1.0 and out.loc[2, "shared"] == 30.0
+    assert out.loc[0, "y"] == 8 and pd.isna(out.loc[2, "x"])
+
+
+def test_combine_ncds_strict_mode_raises_on_collision():
+    """Opt-in strict mode (not in the R, owner decision C1) refuses shared columns."""
+    from llm_cong_predict.io.readers import ColumnCollisionError
+
+    a = pd.DataFrame({"ncdsid": ["1"], "shared": [1]})
+    b = pd.DataFrame({"ncdsid": ["1"], "shared": [2]})
+    with pytest.raises(ColumnCollisionError, match="shared"):
+        combine_ncds(a, b, strict=True)
+    assert combine_ncds(a, pd.DataFrame({"ncdsid": ["1"], "other": [3]}), strict=True).shape == (1, 3)
+
+
+def test_combine_ncds_collided_column_keeps_first_frame_labels():
+    """rbind.fill takes a column's attributes from its first occurrence
+    (R pkg: plyr/R/rbind-fill.r:L70–71), so the first frame's labels win."""
+    a = pd.DataFrame({"ncdsid": ["1"], "v": [1]})
+    a.attrs["value_labels"] = {"v": {1: "first"}}
+    b = pd.DataFrame({"ncdsid": ["1"], "v": [1]})
+    b.attrs["value_labels"] = {"v": {1: "second"}}
+    assert get_value_labels(combine_ncds(a, b))["v"] == {1: "first"}
 
 
 def test_combine_ncds_carries_merged_value_labels():
@@ -185,3 +222,62 @@ def test_as_factor_maps_codes_to_labels():
     df.attrs["value_labels"] = {"c": {1: "yes", 2: "no"}}
     fac = as_factor(df, "c")
     assert list(fac.astype(str)) == ["yes", "no", "yes"]
+
+
+# ------------------------------------------ haven / sjlabelled label semantics --
+
+def test_read_ncds_drops_labels_of_recoded_missing_codes(tmp_path):
+    """R pkg: sjlabelled/R/set_na.R:L268–272 (1.2.0): set_na(na = -99:-1) removes the
+    value labels of the values it sets to NA, so they never become factor levels."""
+    import pyreadstat
+
+    df = pd.DataFrame({"ncdsid": ["SYN000001", "SYN000002"], "n876": [2.0, -1.0]})
+    pyreadstat.write_dta(df, str(tmp_path / "w.dta"), variable_value_labels={
+        "n876": {-1: "Not answered", 1: "Very poor", 2: "Poor"}})
+    out = read_ncds(str(tmp_path / "w.dta"), ["n876"])
+    assert bool(pd.isna(out.loc[1, "n876"]))
+    assert set(get_value_labels(out)["n876"]) == {1, 2}
+
+
+def test_as_factor_keeps_unlabelled_values_like_haven_default():
+    """R pkg: haven/R/as_factor.R:L62–84 (2.5.5), levels = "default": an unlabelled value
+    keeps its value as a level (it is not set to missing, brief F8); levels are all
+    labels plus observed unlabelled values, sorted by value, unobserved labels included."""
+    df = pd.DataFrame({"c": [2.0, 47.0, 20.5, np.nan]})
+    df.attrs["value_labels"] = {"c": {1: "one", 2: "two", 50: "fifty"}}
+    fac = as_factor(df, "c")
+    assert list(fac.categories) == ["one", "two", "20.5", "47", "fifty"]
+    assert list(fac.astype(object)[:3]) == ["two", "47", "20.5"] and pd.isna(fac[3])
+
+
+def test_as_factor_unlabelled_numeric_uses_r_number_strings():
+    """forcats::as_factor.numeric = factor(x) (R pkg: forcats/R/as_factor.R:L52–54):
+    levels are the sorted distinct values printed as R prints them (1, not 1.0)."""
+    df = pd.DataFrame({"c": [3.0, 1.0, 3.0]})
+    assert list(as_factor(df, "c").categories) == ["1", "3"]
+
+
+def test_haven_codes_differ_from_observed_rank_codes_when_a_label_is_unobserved():
+    """Owner decision C9. find_essay_teacher_genetics_overlap (functions.R:L332–336)
+    codes a still-labelled column by its position in haven's level set, which includes
+    labels that never occur (haven/R/as_factor.R:L74–82). clean_ncds' teacher block
+    (functions.R:L190–191) codes a column whose labels are gone by its rank among the
+    observed values (forcats factor(x)). With label 1 unobserved the two differ."""
+    from llm_cong_predict.io.labels import labelled_factor_codes, observed_rank_codes
+
+    df = pd.DataFrame({"n876": [2.0, 3.0, 3.0, np.nan]})
+    df.attrs["value_labels"] = {"n876": {1: "Very poor", 2: "Poor", 3: "Average"}}
+    haven = labelled_factor_codes(df, "n876")
+    rank = observed_rank_codes(df["n876"])
+    np.testing.assert_array_equal(haven, [2.0, 3.0, 3.0, np.nan])
+    np.testing.assert_array_equal(rank, [1.0, 2.0, 2.0, np.nan])
+    assert not np.array_equal(haven[:3], rank[:3])
+
+
+def test_labelled_factor_codes_sets_dont_know_to_missing():
+    """ifelse(x == "Dont know", NA, x) on the factor (functions.R:L335)."""
+    from llm_cong_predict.io.labels import labelled_factor_codes
+
+    df = pd.DataFrame({"c": [1.0, 8.0, 9.0]})  # 9 is unlabelled
+    df.attrs["value_labels"] = {"c": {1: "Good", 8: "Dont know"}}
+    np.testing.assert_array_equal(labelled_factor_codes(df, "c", ("Dont know",)), [1.0, np.nan, 3.0])
