@@ -217,7 +217,7 @@ def test_spelling_columns_follow_first_appearance_with_sorted_types(tmp_path):
 
 
 def test_spelling_raises_like_r_when_no_essay_is_error_free(tmp_path):
-    """Owner decision C8: with no error-free essay, pivot_wider makes no "NA" column and
+    """With no error-free essay, pivot_wider makes no "NA" column and
     R's select(-"NA") stops (functions.R:L415)."""
     essays = pd.DataFrame({"ncdsid": ["A", "B"], "words": ["10", "20"]})
     rows = [("A", c) for c in _NINE] + [("B", "grammar")]
@@ -226,7 +226,7 @@ def test_spelling_raises_like_r_when_no_essay_is_error_free(tmp_path):
 
 
 def test_spelling_raises_like_r_when_a_category_never_occurs(tmp_path):
-    """Owner decision C8: rowSums(select(., grammar, ..., inconsistency)) names every
+    """rowSums(select(., grammar, ..., inconsistency)) names every
     category, so R stops when one never occurs (functions.R:L410–414)."""
     essays = pd.DataFrame({"ncdsid": ["A", "B"], "words": ["10", "20"]})
     rows = [("A", c) for c in _NINE[:-1]]

@@ -230,7 +230,7 @@ and **V7** (learner settings).
   those lines. Any exception in a learner or screener is caught, as R's `try()`
   catches any error, and recorded in `CVSuperLearnerFit.failures`.
   `CVSuperLearnerFit.cv_risk` holds the per-fold learner risks.
-  - Owner decision C10: `cv_risk` is NaN only for learners that failed in the inner
+  - `cv_risk` is NaN only for learners that failed in the inner
     CV. A learner that fails only in the refit keeps a number, as in R. When its
     positive weight forced a recomputation, that number is computed from its zeroed Z
     column.

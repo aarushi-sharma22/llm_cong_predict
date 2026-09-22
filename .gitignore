@@ -46,5 +46,3 @@ venv/
 # --- per-person tables written at the repository root ------------------------
 /*.csv
 
-# --- AI assistant instructions (kept on disk, not tracked) -------------------
-/CLAUDE.md

@@ -278,7 +278,7 @@ def test_as_factor_unlabelled_numeric_uses_r_number_strings():
 
 
 def test_haven_codes_differ_from_observed_rank_codes_when_a_label_is_unobserved():
-    """Owner decision C9. find_essay_teacher_genetics_overlap (functions.R:L332–336)
+    """find_essay_teacher_genetics_overlap (functions.R:L332–336)
     codes a still-labelled column by its position in haven's level set, which includes
     labels that never occur (haven/R/as_factor.R:L74–82). clean_ncds' teacher block
     (functions.R:L190–191) codes a column whose labels are gone by its rank among the
